@@ -11,6 +11,7 @@ type ModalProps = {
   title: string;
   subtitle?: string;
   toolbar?: React.ReactNode;
+  footer?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 };
@@ -21,6 +22,7 @@ export default function Modal({
   title,
   subtitle,
   toolbar,
+  footer,
   children,
   className,
 }: ModalProps) {
@@ -84,6 +86,7 @@ export default function Modal({
         </div>
         {toolbar ? <div className="shrink-0 border-b border-border px-4 py-3">{toolbar}</div> : null}
         <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        {footer ? <div className="shrink-0 border-t border-border px-4 py-3">{footer}</div> : null}
       </div>
     </div>,
     document.body,

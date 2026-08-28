@@ -3,16 +3,10 @@ const DEMO_FUEL_STORAGE_KEY = "fuel-optimizer-demo-fuel-percent";
 
 export function getStoredDemoMode() {
   if (typeof window === "undefined") {
-    return true;
+    return false;
   }
 
-  const stored = window.localStorage.getItem(DEMO_MODE_STORAGE_KEY);
-
-  if (stored === null) {
-    return process.env.NODE_ENV === "development";
-  }
-
-  return stored === "true";
+  return window.localStorage.getItem(DEMO_MODE_STORAGE_KEY) === "true";
 }
 
 export function setStoredDemoMode(enabled: boolean) {

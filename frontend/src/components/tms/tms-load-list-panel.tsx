@@ -1,7 +1,11 @@
+import { useState } from "react";
 import Card from "@/components/common/card";
-import { IconChevronLeft, IconSearch } from "@/components/common/icons";
+import { IconChevronLeft, IconFilter, IconSearch } from "@/components/common/icons";
 import Input from "@/components/common/input";
+import TmsLoadFiltersModal from "@/components/tms/tms-load-filters-modal";
 import TripContextRow from "@/components/tms/trip-context-row";
+import { countActiveLoadFilters, EMPTY_TMS_LOAD_FILTERS, type TmsLoadListFilters } from "@/lib/tms-load-filters";
+import { cn } from "@/lib/utils";
 import type { TripContext } from "@/types/tms";
 
 type TmsLoadListPanelProps = {
@@ -11,6 +15,9 @@ type TmsLoadListPanelProps = {
   onSelect: (trip: TripContext) => void;
   search: string;
   onSearchChange: (value: string) => void;
+  filters: TmsLoadListFilters;
+  onFiltersChange: (filters: TmsLoadListFilters) => void;
+  extraFilterPredicate?: (trip: TripContext) => boolean;
   collapsed: boolean;
   onToggleCollapsed: () => void;
 };
@@ -22,9 +29,15 @@ export default function TmsLoadListPanel({
   onSelect,
   search,
   onSearchChange,
+  filters,
+  onFiltersChange,
+  extraFilterPredicate,
   collapsed,
   onToggleCollapsed,
 }: TmsLoadListPanelProps) {
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount = countActiveLoadFilters(filters);
+
   if (collapsed) {
     return (
       <Card className="flex h-12 flex-row items-center justify-between gap-2 p-0 lg:h-full lg:min-h-0 lg:flex-col lg:justify-start lg:py-2">
@@ -59,15 +72,38 @@ export default function TmsLoadListPanel({
             {visibleTrips.length} of {trips.length}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onToggleCollapsed}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition hover:bg-primary-muted hover:text-primary"
-          aria-label="Collapse load list"
-          title="Collapse load list"
-        >
-          <IconChevronLeft className="h-4 w-4" />
-        </button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            aria-expanded={filtersOpen}
+            aria-haspopup="dialog"
+            aria-label={activeFilterCount > 0 ? `Filter loads, ${activeFilterCount} active` : "Filter loads"}
+            className={cn(
+              "inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-medium transition",
+              activeFilterCount > 0
+                ? "bg-primary-muted text-primary"
+                : "text-muted hover:bg-primary-muted hover:text-primary",
+            )}
+          >
+            <IconFilter className="h-3.5 w-3.5" />
+            Filters
+            {activeFilterCount > 0 ? (
+              <span className="rounded-full bg-primary px-1.5 py-px text-[10px] leading-4 font-semibold text-white tabular-nums">
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </button>
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition hover:bg-primary-muted hover:text-primary"
+            aria-label="Collapse load list"
+            title="Collapse load list"
+          >
+            <IconChevronLeft className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       <div className="shrink-0 border-b border-border px-3 py-2">
@@ -91,6 +127,18 @@ export default function TmsLoadListPanel({
       ) : visibleTrips.length === 0 ? (
         <div className="px-3 py-8 text-center">
           <p className="text-sm text-muted">No loads match this search or filter.</p>
+          {activeFilterCount > 0 || search.trim() ? (
+            <button
+              type="button"
+              onClick={() => {
+                onSearchChange("");
+                onFiltersChange(EMPTY_TMS_LOAD_FILTERS);
+              }}
+              className="mt-2 text-xs font-medium text-primary hover:text-primary-hover"
+            >
+              Clear search and filters
+            </button>
+          ) : null}
         </div>
       ) : (
         <div className="max-h-[40vh] min-h-0 flex-1 overflow-y-auto lg:max-h-none">
@@ -104,6 +152,15 @@ export default function TmsLoadListPanel({
           ))}
         </div>
       )}
+
+      <TmsLoadFiltersModal
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        trips={trips}
+        filters={filters}
+        onApply={onFiltersChange}
+        extraPredicate={extraFilterPredicate}
+      />
     </Card>
   );
 }

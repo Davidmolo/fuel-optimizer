@@ -6,6 +6,7 @@ import Button from "@/components/common/button";
 import { IconRefresh } from "@/components/common/icons";
 import Select, { type SelectOption } from "@/components/common/select";
 import Spinner from "@/components/common/spinner";
+import Tooltip from "@/components/common/tooltip";
 import DashboardShell from "@/components/dashboard/dashboard-shell";
 import TmsLoadListPanel from "@/components/tms/tms-load-list-panel";
 import TmsSummaryCards, { type TmsLoadFilter } from "@/components/tms/tms-summary-cards";
@@ -21,7 +22,12 @@ import {
   setStoredDemoMode,
 } from "@/lib/demo-mode";
 import type { InspectedMapStation } from "@/lib/trip-route-map-markers";
-import { usePersistedBoolean } from "@/lib/use-persisted-state";
+import {
+  EMPTY_TMS_LOAD_FILTERS,
+  normalizeLoadFilters,
+  tripMatchesLoadFilters,
+} from "@/lib/tms-load-filters";
+import { usePersistedBoolean, usePersistedJson } from "@/lib/use-persisted-state";
 import type { Recommendation } from "@/types/recommendation";
 import type { TripContext, TripContextListResponse, TmsSyncResponse } from "@/types/tms";
 
@@ -64,6 +70,11 @@ export default function TmsPage() {
   const [demoFuelPercent, setDemoFuelPercent] = useState(() => getStoredDemoFuelPercent());
   const [loadFilter, setLoadFilter] = useState<TmsLoadFilter>("all");
   const [loadSearch, setLoadSearch] = useState("");
+  const [storedLoadFilters, setStoredLoadFilters] = usePersistedJson(
+    "tms:load-list-filters",
+    EMPTY_TMS_LOAD_FILTERS,
+  );
+  const loadListFilters = useMemo(() => normalizeLoadFilters(storedLoadFilters), [storedLoadFilters]);
   const [inspectedStation, setInspectedStation] = useState<InspectedMapStation | null>(null);
   const [loadListOpen, setLoadListOpen] = usePersistedBoolean("tms:load-list-open", true);
 
@@ -181,10 +192,9 @@ export default function TmsPage() {
 
   const trips = useMemo(() => data?.items ?? [], [data]);
   const summary = data?.summary;
-  const visibleTrips = useMemo(() => {
-    const query = loadSearch.trim().toLowerCase();
 
-    return trips.filter((trip) => {
+  const matchesReadinessAndSearch = useCallback(
+    (trip: TripContext) => {
       if (loadFilter === "truck" && !trip.linkage.hasTruckAssignment) {
         return false;
       }
@@ -201,6 +211,7 @@ export default function TmsPage() {
         return false;
       }
 
+      const query = loadSearch.trim().toLowerCase();
       if (!query) {
         return true;
       }
@@ -220,8 +231,27 @@ export default function TmsPage() {
         .toLowerCase();
 
       return haystack.includes(query);
-    });
-  }, [loadFilter, loadSearch, trips]);
+    },
+    [loadFilter, loadSearch],
+  );
+
+  const visibleTrips = useMemo(
+    () => trips.filter((trip) => matchesReadinessAndSearch(trip) && tripMatchesLoadFilters(trip, loadListFilters)),
+    [loadListFilters, matchesReadinessAndSearch, trips],
+  );
+
+  useEffect(() => {
+    if (visibleTrips.length === 0) {
+      if (selectedTrip) {
+        setSelectedTrip(null);
+      }
+      return;
+    }
+
+    if (!selectedTrip || !visibleTrips.some((trip) => trip.load.id === selectedTrip.load.id)) {
+      setSelectedTrip(visibleTrips[0]);
+    }
+  }, [selectedTrip, visibleTrips]);
 
   const displayTrip = useMemo(() => {
     if (!selectedTrip) {
@@ -290,30 +320,35 @@ export default function TmsPage() {
           )}
 
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <div className="flex flex-wrap items-center gap-2 rounded-full border border-border bg-surface px-2.5 py-1">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={demoMode}
-                title={demoMode ? "Demo uses synthetic GPS and fuel for the selected load." : "Enable demo GPS and fuel"}
-                onClick={toggleDemoMode}
-                className="inline-flex items-center gap-2 text-xs font-medium text-foreground"
+            <div className="relative z-20 flex flex-wrap items-center gap-2 rounded-full border border-border bg-surface px-2.5 py-1">
+              <Tooltip
+                id="demo-mode-tooltip"
+                content="Uses the real load, stations, and optimizer. Only the truck GPS and fuel level are simulated so you can preview a plan without live telemetry."
               >
-                <span
-                  className={cn(
-                    "relative h-5 w-9 shrink-0 rounded-full transition-colors",
-                    demoMode ? "bg-primary" : "bg-track",
-                  )}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={demoMode}
+                  aria-describedby="demo-mode-tooltip"
+                  onClick={toggleDemoMode}
+                  className="inline-flex items-center gap-2 text-xs font-medium text-foreground"
                 >
                   <span
                     className={cn(
-                      "absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
-                      demoMode && "translate-x-4",
+                      "relative h-5 w-9 shrink-0 rounded-full transition-colors",
+                      demoMode ? "bg-primary" : "bg-track",
                     )}
-                  />
-                </span>
-                Demo
-              </button>
+                  >
+                    <span
+                      className={cn(
+                        "absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
+                        demoMode && "translate-x-4",
+                      )}
+                    />
+                  </span>
+                  Demo
+                </button>
+              </Tooltip>
 
               {demoMode ? (
                 <div className="inline-flex items-center gap-1.5 text-xs text-muted">
@@ -385,6 +420,9 @@ export default function TmsPage() {
               onSelect={handleSelectTrip}
               search={loadSearch}
               onSearchChange={setLoadSearch}
+              filters={loadListFilters}
+              onFiltersChange={setStoredLoadFilters}
+              extraFilterPredicate={matchesReadinessAndSearch}
               collapsed={!loadListOpen}
               onToggleCollapsed={() => setLoadListOpen((open) => !open)}
             />

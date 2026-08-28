@@ -160,3 +160,11 @@ export function IconX({ className }: IconProps) {
     </svg>
   );
 }
+
+export function IconFilter({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={cn("h-4 w-4", className)}>
+      <path d="M4 5h16l-6.5 8.5V19l-3 1.5v-7L4 5z" strokeLinejoin="round" />
+    </svg>
+  );
+}
