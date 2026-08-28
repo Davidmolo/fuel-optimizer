@@ -1,14 +1,9 @@
 import { Router } from "express";
-import { validateRequest } from "../../../middlewares/validate-request";
-import {
-  getMailConfigController,
-  updateMailConfigController,
-} from "../controllers/mail-config.controller";
-import { updateMailConfigSchema } from "../validators/mail-config.validator";
+import { getMailConfigController, verifyMailConfigController } from "../controllers/mail-config.controller";
 
 const mailConfigRouter = Router();
 
 mailConfigRouter.get("/", getMailConfigController);
-mailConfigRouter.put("/", validateRequest(updateMailConfigSchema), updateMailConfigController);
+mailConfigRouter.post("/verify", verifyMailConfigController);
 
 export default mailConfigRouter;

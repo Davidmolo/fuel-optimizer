@@ -1,6 +1,5 @@
-import nodemailer from "nodemailer";
 import { OtpModel } from "../models/otp.model";
-import { getEmailConfig } from "../../mail-config/services/mail-config.service";
+import { createMailTransporter, requireEmailConfig } from "../../mail-config/services/mail-config.service";
 import { buildOtpTemplate } from "./otp-template.service";
 
 function generateSixDigitOtp() {
@@ -9,11 +8,7 @@ function generateSixDigitOtp() {
 
 export async function sendOtpToEmail(email: string, purpose: "login" | "reset" = "login") {
   const normalizedEmail = email.trim().toLowerCase();
-  const emailConfig = await getEmailConfig();
-
-  if (!emailConfig) {
-    throw new Error("Email configuration not found in database");
-  }
+  const emailConfig = requireEmailConfig();
 
   const otpCode = generateSixDigitOtp();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -25,14 +20,7 @@ export async function sendOtpToEmail(email: string, purpose: "login" | "reset" =
     isUsed: false,
   });
 
-  const transporter = nodemailer.createTransport({
-    service: emailConfig.service,
-    host: emailConfig.host,
-    auth: {
-      user: emailConfig.username,
-      pass: emailConfig.password,
-    },
-  });
+  const transporter = createMailTransporter(emailConfig);
 
   await transporter.sendMail({
     from: `"${emailConfig.fromName}" <${emailConfig.username}>`,

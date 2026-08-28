@@ -1,92 +1,94 @@
-import { MailConfigModel } from "../models/mail-config.model";
+import nodemailer from "nodemailer";
+import { env } from "../../../config/env";
+import { HttpError } from "../../../utils/http-error";
 
-const DEFAULT_MAIL_CONFIG_KEY = "email_config";
-
-export async function getEmailConfig() {
-  return MailConfigModel.findOne({ key: DEFAULT_MAIL_CONFIG_KEY }).lean();
-}
-
-export async function ensureEmailConfig(payload: {
+export type EmailRuntimeConfig = {
   service: string;
   host: string;
   username: string;
   password: string;
   fromName: string;
-}) {
-  await MailConfigModel.findOneAndUpdate(
-    { key: DEFAULT_MAIL_CONFIG_KEY },
-    {
-      $set: {
-        key: DEFAULT_MAIL_CONFIG_KEY,
-        service: payload.service,
-        host: payload.host,
-        username: payload.username,
-        password: payload.password,
-        fromName: payload.fromName,
-      },
-    },
-    { upsert: true, returnDocument: "after" },
-  );
+};
+
+function trimOrEmpty(value?: string) {
+  return value?.trim() ?? "";
 }
 
-export async function getEmailConfigForSettings() {
-  const config = await getEmailConfig();
-  if (!config) {
+export function getEmailConfig(): EmailRuntimeConfig | null {
+  const service = trimOrEmpty(env.MAIL_SERVICE);
+  const host = trimOrEmpty(env.MAIL_HOST);
+  const username = trimOrEmpty(env.MAIL_USERNAME);
+  const password = env.MAIL_PASSWORD ?? "";
+  const fromName = trimOrEmpty(env.MAIL_FROM_NAME);
+
+  if (!service || !host || !username || !password || !fromName) {
     return null;
   }
 
+  return { service, host, username, password, fromName };
+}
+
+export function requireEmailConfig(): EmailRuntimeConfig {
+  const config = getEmailConfig();
+
+  if (!config) {
+    throw new HttpError(
+      "Email is not configured. Set MAIL_SERVICE, MAIL_HOST, MAIL_USERNAME, MAIL_PASSWORD, and MAIL_FROM_NAME in the API environment.",
+      503,
+    );
+  }
+
+  return config;
+}
+
+export function createMailTransporter(config = requireEmailConfig()) {
+  return nodemailer.createTransport({
+    service: config.service,
+    host: config.host,
+    auth: {
+      user: config.username,
+      pass: config.password,
+    },
+  });
+}
+
+export function getEmailConfigForSettings() {
+  const config = getEmailConfig();
+
+  if (!config) {
+    return {
+      configured: false,
+      source: "environment" as const,
+      service: "",
+      host: "",
+      username: "",
+      fromName: "",
+      hasPassword: false,
+    };
+  }
+
   return {
-    key: config.key,
+    configured: true,
+    source: "environment" as const,
     service: config.service,
     host: config.host,
     username: config.username,
     fromName: config.fromName,
-    hasPassword: Boolean(config.password),
-    updatedAt: config.updatedAt,
+    hasPassword: true,
   };
 }
 
-export async function updateEmailConfig(payload: {
-  service: string;
-  host: string;
-  username: string;
-  password?: string;
-  fromName: string;
-}) {
-  const existing = await MailConfigModel.findOne({ key: DEFAULT_MAIL_CONFIG_KEY });
-
-  if (!existing) {
-    return null;
-  }
-
-  const updatePayload: Record<string, string> = {
-    service: payload.service,
-    host: payload.host,
-    username: payload.username,
-    fromName: payload.fromName,
-  };
-
-  if (payload.password && payload.password.trim().length > 0) {
-    updatePayload.password = payload.password.trim();
-  }
-
-  const updated = await MailConfigModel.findOneAndUpdate(
-    { key: DEFAULT_MAIL_CONFIG_KEY },
-    { $set: updatePayload },
-    { returnDocument: "after" },
-  ).lean();
-
-  if (!updated) {
-    return null;
-  }
+export async function verifyEmailTransport() {
+  const config = requireEmailConfig();
+  const transporter = createMailTransporter(config);
+  await transporter.verify();
 
   return {
-    key: updated.key,
-    service: updated.service,
-    host: updated.host,
-    username: updated.username,
-    fromName: updated.fromName,
-    hasPassword: Boolean(updated.password),
-    updatedAt: updated.updatedAt,
+    configured: true,
+    source: "environment" as const,
+    service: config.service,
+    host: config.host,
+    username: config.username,
+    fromName: config.fromName,
   };
 }

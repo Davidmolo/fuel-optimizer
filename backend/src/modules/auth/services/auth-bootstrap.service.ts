@@ -1,5 +1,4 @@
 import { hash } from "bcryptjs";
-import { ensureEmailConfig } from "../../mail-config/services/mail-config.service";
 import { ensureRecommendationConfigSeed } from "../../recommendation-config/services/recommendation-config.service";
 import { ensureTwilioConfigSeed } from "../../twilio-config/services/twilio-config.service";
 import { RoleModel } from "../../role/models/role.model";
@@ -8,21 +7,8 @@ import { UserModel } from "../../user/models/user.model";
 const ADMIN_ROLE_NAME = "admin";
 const ADMIN_EMAIL = "maaz@azfsllc.com";
 const ADMIN_PASSWORD = "T$@dmin123456";
-const EMAIL_SERVICE = "gmail";
-const EMAIL_HOST = "smtp.gmail.com";
-const EMAIL_USERNAME = "hello@fuelcap.ai";
-const EMAIL_PASSWORD = "lmys tfox lqwo zzzl";
-const EMAIL_FROM_NAME = "Fuel Distribution System";
 
 export async function ensureAdminUser() {
-  await ensureEmailConfig({
-    service: EMAIL_SERVICE,
-    host: EMAIL_HOST,
-    username: EMAIL_USERNAME,
-    password: EMAIL_PASSWORD,
-    fromName: EMAIL_FROM_NAME,
-  });
-
   await ensureRecommendationConfigSeed();
 
   await ensureTwilioConfigSeed();

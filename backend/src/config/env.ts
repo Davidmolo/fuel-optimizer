@@ -28,6 +28,11 @@ const envSchema = z.object({
     .url()
     .default("https://pcmiler.alk.com/apis/rest/v1.0/Service.svc"),
   TRIMBLE_API_KEY: z.string().min(1).optional(),
+  MAIL_SERVICE: z.string().trim().min(1).optional(),
+  MAIL_HOST: z.string().trim().min(1).optional(),
+  MAIL_USERNAME: z.string().trim().min(1).optional(),
+  MAIL_PASSWORD: z.string().min(1).optional(),
+  MAIL_FROM_NAME: z.string().trim().min(1).optional(),
   API_AUTH_REQUIRED: z
     .enum(["true", "false"])
     .default("false")
