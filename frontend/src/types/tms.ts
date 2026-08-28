@@ -108,6 +108,10 @@ export type TmsSyncResponse = {
   activeLoadCount: number;
   loadsWithTruck: number;
   loadsSyncedAt: string;
+  telemetryStatus?: "succeeded" | "skipped" | "failed";
+  telemetryError?: string;
+  telemetrySkipReason?: string;
+  telemetrySyncedAt?: string;
 };
 
 export type TripDrivingRoute = {

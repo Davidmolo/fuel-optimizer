@@ -71,3 +71,25 @@ export async function runManualJob(jobId: JobId, payload?: Record<string, unknow
   const run = await getRuntime().runManual(jobId, payload);
   return resultFromJobRun(run);
 }
+
+export type ManualJobOutcome =
+  | { status: "succeeded"; result: Record<string, unknown> }
+  | { status: "skipped"; skipReason?: string }
+  | { status: "failed"; error: string };
+
+export async function runManualJobOutcome(jobId: JobId, payload?: Record<string, unknown>): Promise<ManualJobOutcome> {
+  const run = await getRuntime().runManual(jobId, payload);
+
+  if (run.status === "succeeded") {
+    return { status: "succeeded", result: run.result ?? {} };
+  }
+
+  if (run.status === "skipped") {
+    return { status: "skipped", skipReason: run.skipReason };
+  }
+
+  return {
+    status: "failed",
+    error: run.error || (run.status === "timed_out" ? "Sync timed out" : "Sync failed"),
+  };
+}

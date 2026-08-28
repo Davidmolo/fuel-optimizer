@@ -4,7 +4,7 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
   {
     id: "samsara.telemetry",
     name: "Samsara GPS & fuel",
-    description: "Live truck position and fuel percent used to recommend stations on the current haul.",
+    description: "Live truck position and fuel percent. Also runs from the Active loads Sync button.",
     cron: "*/5 * * * *",
     cadenceLabel: "Every 5 minutes",
     timeoutMs: 45_000,
@@ -64,7 +64,7 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
   {
     id: "openroad.full",
     name: "Open Road full sync",
-    description: "Fleet, assignments, and active loads. Used by the Active loads Sync button.",
+    description: "Fleet, assignments, and active loads. Paired with live GPS/fuel on the Active loads Sync button.",
     cron: null,
     cadenceLabel: "On demand",
     timeoutMs: 300_000,

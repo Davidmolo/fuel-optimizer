@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { runManualJob } from "../../jobs/jobs.service";
+import { runManualJob, runManualJobOutcome } from "../../jobs/jobs.service";
 import {
   getActiveLoad,
   getTripContext,
@@ -10,12 +10,27 @@ import {
 import { getTripDrivingRoute } from "../services/trip-route.service";
 
 export async function syncTmsController(_req: Request, res: Response) {
-  const result = await runManualJob("openroad.full");
+  const tms = await runManualJob("openroad.full");
+  const telemetry = await runManualJobOutcome("samsara.telemetry");
+  const telemetryData = telemetry.status === "succeeded" ? telemetry.result : {};
+
+  const message =
+    telemetry.status === "succeeded"
+      ? "Loads and live truck GPS/fuel synced"
+      : telemetry.status === "skipped"
+        ? "TMS data synced from Open Road"
+        : "TMS data synced from Open Road, but live GPS/fuel did not refresh";
 
   return res.status(200).json({
     success: true,
-    message: "TMS data synced from Open Road",
-    data: result,
+    message,
+    data: {
+      ...tms,
+      ...telemetryData,
+      telemetryStatus: telemetry.status,
+      telemetryError: telemetry.status === "failed" ? telemetry.error : undefined,
+      telemetrySkipReason: telemetry.status === "skipped" ? telemetry.skipReason : undefined,
+    },
   });
 }
 

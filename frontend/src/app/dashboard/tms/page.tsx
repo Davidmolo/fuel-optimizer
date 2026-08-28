@@ -110,13 +110,17 @@ export default function TmsPage() {
     try {
       const response = await apiRequest<TmsSyncResponse>("/api/v1/tms/sync", { method: "POST" });
       if (!response.success || !response.data) {
-        throw new Error(response.message || "Failed to sync TMS data from Open Road");
+        throw new Error(response.message || "Failed to refresh loads and live truck data");
       }
 
-      setLastSyncedAt(response.data.loadsSyncedAt);
+      setLastSyncedAt(response.data.loadsSyncedAt || response.data.telemetrySyncedAt || null);
       await loadTripContexts();
+
+      if (response.data.telemetryError) {
+        setError(response.data.telemetryError);
+      }
     } catch (syncError) {
-      setError(syncError instanceof Error ? syncError.message : "Failed to sync TMS data from Open Road");
+      setError(syncError instanceof Error ? syncError.message : "Failed to refresh loads and live truck data");
     } finally {
       setSyncing(false);
     }
@@ -314,8 +318,8 @@ export default function TmsPage() {
           ) : (
             <p className="min-w-0 flex-1 text-xs text-muted">
               {lastSyncedAt
-                ? `Last Open Road sync ${formatTimestamp(lastSyncedAt)}`
-                : "Sync Open Road TMS, then select a load to plan fuel."}
+                ? `Last sync ${formatTimestamp(lastSyncedAt)}`
+                : "Sync loads and live truck GPS/fuel, then select a load to plan fuel."}
             </p>
           )}
 
@@ -367,36 +371,41 @@ export default function TmsPage() {
               ) : null}
             </div>
 
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => void syncTms()}
-              disabled={syncing}
-              title={
-                lastSyncedAt
-                  ? `Last Open Road sync ${formatTimestamp(lastSyncedAt)}`
-                  : "Sync Open Road TMS, then select a load to plan fuel."
-              }
+            <Tooltip
+              id="tms-sync-tooltip"
+              className="relative z-20"
+              content="Refreshes active loads from Open Road and live GPS/fuel from Samsara. Station prices stay on their own schedule."
             >
-              {syncing ? (
-                <>
-                  <span
-                    className="inline-block h-3.5 w-3.5 animate-spin-slow rounded-full border-2 border-white/30 border-t-white"
-                    aria-hidden="true"
-                  />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <IconRefresh className="h-3.5 w-3.5" />
-                  Sync
-                </>
-              )}
-            </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => void syncTms()}
+                disabled={syncing}
+                aria-describedby="tms-sync-tooltip"
+              >
+                {syncing ? (
+                  <>
+                    <span
+                      className="inline-block h-3.5 w-3.5 animate-spin-slow rounded-full border-2 border-white/30 border-t-white"
+                      aria-hidden="true"
+                    />
+                    Syncing...
+                  </>
+                ) : (
+                  <>
+                    <IconRefresh className="h-3.5 w-3.5" />
+                    Sync
+                  </>
+                )}
+              </Button>
+            </Tooltip>
           </div>
         </div>
 
-        <SyncStatusLine jobIds={["openroad.loads", "openroad.assignments"]} lastManualSyncAt={lastSyncedAt} />
+        <SyncStatusLine
+          jobIds={["samsara.telemetry", "openroad.loads", "openroad.assignments"]}
+          lastManualSyncAt={lastSyncedAt}
+        />
 
         {error ? <Alert variant="error">{error}</Alert> : null}
 
