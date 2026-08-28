@@ -38,7 +38,7 @@ const menuNavItems: NavItem[] = [
 
 const otherNavItems: NavItem[] = [
   {
-    href: "/dashboard/settings/profile",
+    href: "/dashboard/settings",
     label: "Settings",
     icon: IconSettings,
     match: (path: string) => path.startsWith("/dashboard/settings"),

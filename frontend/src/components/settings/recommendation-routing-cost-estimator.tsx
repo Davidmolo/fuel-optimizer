@@ -114,11 +114,11 @@ export default function RecommendationRoutingCostEstimator({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-lg)] text-muted transition hover:bg-primary-muted hover:text-primary"
-        aria-label="Estimate Google routing cost"
-        title="Estimate routing cost"
+        className="inline-flex h-8 shrink-0 items-center gap-1.5 text-xs font-medium text-muted transition hover:text-foreground"
+        title="Estimate Google routing cost"
       >
         <IconCircleDollar className="h-4 w-4" />
+        Estimate cost
       </button>
 
       {open ? (

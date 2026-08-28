@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import Alert from "@/components/common/alert";
-import Card from "@/components/common/card";
 import Spinner from "@/components/common/spinner";
 import { useJobsStatus } from "@/hooks/use-jobs-status";
 import { formatDurationMs, formatRelativeFuture } from "@/lib/job-status";
@@ -29,6 +28,9 @@ function statusClass(status?: JobRunStatus | "idle" | "queued" | "running") {
   if (status === "skipped") {
     return "text-warning";
   }
+  if (status === "succeeded") {
+    return "text-success";
+  }
   return "text-muted";
 }
 
@@ -47,27 +49,36 @@ export default function DataSyncSettingsPage() {
 
   return (
     <div className="space-y-4">
-      <Card compact>
-        <p className="text-sm font-medium text-foreground">Background data sync</p>
-        <p className="mt-1 text-sm text-muted">
-          Jobs run one at a time so Samsara, Open Road, and Relay never pile onto the server together.
-          Live GPS refreshes most often because fuel recommendations need a current truck position.
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        <div className="max-w-2xl">
+          <h2 className="text-base font-semibold tracking-tight text-foreground">Background data sync</h2>
+          <p className="mt-1 text-sm text-muted">
+            Jobs run one at a time. Live GPS updates most often so fuel recommendations have a current truck
+            position.
+          </p>
+        </div>
+        <p className="text-xs text-muted">
+          Scheduler {data.enabled ? "on" : "off"}
+          <span aria-hidden="true"> · </span>
+          {data.maxConcurrency} at a time
+          {runningName ? (
+            <>
+              <span aria-hidden="true"> · </span>
+              Running {runningName}
+            </>
+          ) : null}
         </p>
-        <p className="mt-3 text-xs text-muted">
-          Scheduler {data.enabled ? "on" : "off"} · max {data.maxConcurrency} job at a time
-          {runningName ? ` · currently running ${runningName}` : ""}
-        </p>
-      </Card>
+      </div>
 
-      <div className="overflow-x-auto rounded-[var(--radius-xl)] border border-border">
+      <div className="overflow-x-auto rounded-[var(--radius-xl)] border border-border bg-surface">
         <table className="min-w-full text-left text-sm">
           <thead className="bg-surface-muted text-xs font-medium tracking-wide text-muted uppercase">
             <tr>
-              <th className="px-4 py-3">Job</th>
-              <th className="px-4 py-3">Cadence</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Last run</th>
-              <th className="px-4 py-3">Next</th>
+              <th className="px-4 py-3 font-medium">Job</th>
+              <th className="px-4 py-3 font-medium">Cadence</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Last run</th>
+              <th className="px-4 py-3 font-medium">Next</th>
             </tr>
           </thead>
           <tbody>

@@ -125,14 +125,14 @@ export default function FuelRecommendationsSettingsPage() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {message ? <Alert variant={isError ? "error" : "success"}>{message}</Alert> : null}
       <RecommendationConfigForm
         values={values}
         loading={loading}
         onChange={(field, value) => setValues((prev) => ({ ...prev, [field]: value }))}
         onSubmit={handleSubmit}
       />
-      {message ? <Alert variant={isError ? "error" : "success"}>{message}</Alert> : null}
     </div>
   );
 }

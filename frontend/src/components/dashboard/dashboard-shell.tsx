@@ -94,7 +94,7 @@ function UserMenu({ email, onLogout }: { email: string; onLogout: () => void }) 
           className="absolute top-full right-0 z-40 mt-2 w-52 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
         >
           <Link
-            href="/dashboard/settings/profile"
+            href="/dashboard/settings"
             role="menuitem"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2.5 px-3 py-2 text-sm text-foreground transition hover:bg-surface-muted"
