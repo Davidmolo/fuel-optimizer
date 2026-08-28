@@ -8,9 +8,9 @@ import DashboardShell from "@/components/dashboard/dashboard-shell";
 import FleetSummaryCards from "@/components/dashboard/fleet-summary-cards";
 import FleetVehicleDetailPanel from "@/components/fleet/fleet-vehicle-detail-panel";
 import FleetVehicleTable from "@/components/fleet/fleet-vehicle-table";
+import SyncStatusLine from "@/components/jobs/sync-status-line";
 import { apiRequest } from "@/lib/api";
 import { applyFleetFilters, defaultFleetFilters } from "@/lib/fleet-filters";
-import { formatFleetTimestamp } from "@/lib/fleet-utils";
 import type { FleetListResponse, FleetSyncResponse, FleetVehicle } from "@/types/fleet";
 
 export default function FleetPage() {
@@ -75,9 +75,7 @@ export default function FleetPage() {
                 ? `${summary.activeVehicles} active trucks · stale threshold ${summary.staleThresholdMinutes} min`
                 : "Sync to load Paul's Assets fleet from Samsara"}
             </p>
-            {lastSyncedAt ? (
-              <p className="mt-1 text-xs text-muted">Last Samsara sync {formatFleetTimestamp(lastSyncedAt)}</p>
-            ) : null}
+            <SyncStatusLine jobIds={["samsara.telemetry", "samsara.registry"]} lastManualSyncAt={lastSyncedAt} />
           </div>
           <Button onClick={() => void syncFleet()} disabled={syncing}>
             {syncing ? (

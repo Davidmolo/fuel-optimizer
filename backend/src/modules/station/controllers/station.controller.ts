@@ -1,15 +1,11 @@
 import type { Request, Response } from "express";
 import type { RelayAccount } from "../../../integrations/relay";
+import { runManualJob } from "../../jobs/jobs.service";
 import {
   getFuelStation,
   listFuelStations,
   listStoredRelayDrivers,
 } from "../services/station-query.service";
-import {
-  syncRelayDrivers,
-  syncRelayTransactions,
-  syncStationsFromRelay,
-} from "../services/station-sync.service";
 
 function parseRelayAccount(value: unknown): RelayAccount | undefined {
   if (value === "blue_stallion" || value === "azfs") {
@@ -19,15 +15,18 @@ function parseRelayAccount(value: unknown): RelayAccount | undefined {
   return undefined;
 }
 
-export async function syncStationsController(req: Request, res: Response) {
-  const relayAccount = parseRelayAccount(req.body?.relayAccount);
-  const accounts = relayAccount ? [relayAccount] : undefined;
+function relaySyncPayload(body: { relayAccount?: unknown; dtstart?: unknown; dtend?: unknown }) {
+  const relayAccount = parseRelayAccount(body.relayAccount);
 
-  const result = await syncStationsFromRelay({
-    dtstart: typeof req.body?.dtstart === "string" ? req.body.dtstart : undefined,
-    dtend: typeof req.body?.dtend === "string" ? req.body.dtend : undefined,
-    accounts,
-  });
+  return {
+    dtstart: typeof body.dtstart === "string" ? body.dtstart : undefined,
+    dtend: typeof body.dtend === "string" ? body.dtend : undefined,
+    accounts: relayAccount ? [relayAccount] : undefined,
+  };
+}
+
+export async function syncStationsController(req: Request, res: Response) {
+  const result = await runManualJob("relay.full", relaySyncPayload(req.body ?? {}));
 
   return res.status(200).json({
     success: true,
@@ -37,9 +36,7 @@ export async function syncStationsController(req: Request, res: Response) {
 }
 
 export async function syncStationDriversController(req: Request, res: Response) {
-  const relayAccount = parseRelayAccount(req.body?.relayAccount);
-  const accounts = relayAccount ? [relayAccount] : undefined;
-  const result = await syncRelayDrivers(accounts);
+  const result = await runManualJob("relay.drivers", relaySyncPayload(req.body ?? {}));
 
   return res.status(200).json({
     success: true,
@@ -49,13 +46,7 @@ export async function syncStationDriversController(req: Request, res: Response) 
 }
 
 export async function syncStationTransactionsController(req: Request, res: Response) {
-  const relayAccount = parseRelayAccount(req.body?.relayAccount);
-
-  const result = await syncRelayTransactions({
-    dtstart: typeof req.body?.dtstart === "string" ? req.body.dtstart : undefined,
-    dtend: typeof req.body?.dtend === "string" ? req.body.dtend : undefined,
-    accounts: relayAccount ? [relayAccount] : undefined,
-  });
+  const result = await runManualJob("relay.transactions", relaySyncPayload(req.body ?? {}));
 
   return res.status(200).json({
     success: true,

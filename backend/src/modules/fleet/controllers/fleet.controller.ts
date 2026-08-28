@@ -1,13 +1,9 @@
 import type { Request, Response } from "express";
+import { runManualJob } from "../../jobs/jobs.service";
 import { getFleetVehicle, listFleetVehicles } from "../services/fleet-query.service";
-import {
-  syncFleetFromSamsara,
-  syncFleetRegistry,
-  syncFleetTelemetry,
-} from "../services/fleet-sync.service";
 
 export async function syncFleetController(_req: Request, res: Response) {
-  const result = await syncFleetFromSamsara();
+  const result = await runManualJob("samsara.full");
 
   return res.status(200).json({
     success: true,
@@ -17,7 +13,7 @@ export async function syncFleetController(_req: Request, res: Response) {
 }
 
 export async function syncFleetRegistryController(_req: Request, res: Response) {
-  const result = await syncFleetRegistry();
+  const result = await runManualJob("samsara.registry");
 
   return res.status(200).json({
     success: true,
@@ -27,7 +23,7 @@ export async function syncFleetRegistryController(_req: Request, res: Response) 
 }
 
 export async function syncFleetTelemetryController(_req: Request, res: Response) {
-  const result = await syncFleetTelemetry();
+  const result = await runManualJob("samsara.telemetry");
 
   return res.status(200).json({
     success: true,

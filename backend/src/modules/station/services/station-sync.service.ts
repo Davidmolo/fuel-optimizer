@@ -11,6 +11,7 @@ import { mapRelayDriverFields, mapRelayTransactionToStationUpdate } from "../map
 import { syncMerchantContractsFromStations } from "../../contract/services/contract-merchant-sync.service";
 
 const DEFAULT_TRANSACTION_LOOKBACK_DAYS = 30;
+const SCHEDULED_TRANSACTION_LOOKBACK_DAYS = 2;
 
 type TransactionSyncOptions = {
   dtstart?: string;
@@ -22,15 +23,23 @@ function toRfc3339(date: Date) {
   return date.toISOString();
 }
 
-function getDefaultTransactionWindow() {
+function getTransactionWindow(lookbackDays: number) {
   const dtend = new Date();
   const dtstart = new Date(dtend);
-  dtstart.setUTCDate(dtstart.getUTCDate() - DEFAULT_TRANSACTION_LOOKBACK_DAYS);
+  dtstart.setUTCDate(dtstart.getUTCDate() - lookbackDays);
 
   return {
     dtstart: toRfc3339(dtstart),
     dtend: toRfc3339(dtend),
   };
+}
+
+function getDefaultTransactionWindow() {
+  return getTransactionWindow(DEFAULT_TRANSACTION_LOOKBACK_DAYS);
+}
+
+export function getScheduledTransactionWindow() {
+  return getTransactionWindow(SCHEDULED_TRANSACTION_LOOKBACK_DAYS);
 }
 
 async function syncRelayDriversForAccount(account: RelayAccount) {

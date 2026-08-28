@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { runManualJob } from "../../jobs/jobs.service";
 import {
   getActiveLoad,
   getTripContext,
@@ -7,14 +8,9 @@ import {
   listTripContexts,
 } from "../services/tms-query.service";
 import { getTripDrivingRoute } from "../services/trip-route.service";
-import {
-  syncTmsActiveLoads,
-  syncTmsFleet,
-  syncTmsFromOpenRoad,
-} from "../services/tms-sync.service";
 
 export async function syncTmsController(_req: Request, res: Response) {
-  const result = await syncTmsFromOpenRoad();
+  const result = await runManualJob("openroad.full");
 
   return res.status(200).json({
     success: true,
@@ -24,17 +20,21 @@ export async function syncTmsController(_req: Request, res: Response) {
 }
 
 export async function syncTmsFleetController(_req: Request, res: Response) {
-  const result = await syncTmsFleet();
+  const roster = await runManualJob("openroad.fleet");
+  const assignments = await runManualJob("openroad.assignments");
 
   return res.status(200).json({
     success: true,
     message: "TMS fleet data synced from Open Road",
-    data: result,
+    data: {
+      ...roster,
+      ...assignments,
+    },
   });
 }
 
 export async function syncTmsLoadsController(_req: Request, res: Response) {
-  const result = await syncTmsActiveLoads();
+  const result = await runManualJob("openroad.loads");
 
   return res.status(200).json({
     success: true,

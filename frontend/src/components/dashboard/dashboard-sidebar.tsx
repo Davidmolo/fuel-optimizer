@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -101,19 +101,47 @@ export default function DashboardSidebar({ userEmail, onLogout }: DashboardSideb
   const { collapsed, setCollapsed } = useSidebar();
   const [hovering, setHovering] = useState(false);
   const [allowHoverExpand, setAllowHoverExpand] = useState(true);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isExpanded = !collapsed || hovering;
   const isOverlay = collapsed && hovering;
 
+  const clearHoverTimer = () => {
+    if (hoverTimerRef.current === null) {
+      return;
+    }
+    clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = null;
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current !== null) {
+        clearTimeout(hoverTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleCollapse = () => {
+    clearHoverTimer();
     setCollapsed(true);
     setHovering(false);
     setAllowHoverExpand(false);
   };
 
   const handleExpand = () => {
+    clearHoverTimer();
     setCollapsed(false);
+    setHovering(false);
     setAllowHoverExpand(true);
+  };
+
+  const handleTogglePinned = () => {
+    if (collapsed) {
+      handleExpand();
+      return;
+    }
+    handleCollapse();
   };
 
   return (
@@ -131,11 +159,16 @@ export default function DashboardSidebar({ userEmail, onLogout }: DashboardSideb
         )}
         aria-label="Main navigation"
         onMouseEnter={() => {
-          if (collapsed && allowHoverExpand) {
-            setHovering(true);
+          if (!collapsed || !allowHoverExpand) {
+            return;
           }
+          clearHoverTimer();
+          hoverTimerRef.current = setTimeout(() => {
+            setHovering(true);
+          }, 120);
         }}
         onMouseLeave={() => {
+          clearHoverTimer();
           setHovering(false);
           setAllowHoverExpand(true);
         }}
@@ -169,12 +202,12 @@ export default function DashboardSidebar({ userEmail, onLogout }: DashboardSideb
               </div>
               <button
                 type="button"
-                onClick={handleCollapse}
+                onClick={handleTogglePinned}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sidebar-muted transition hover:bg-sidebar-hover hover:text-sidebar-foreground"
-                aria-label="Collapse sidebar"
-                title="Collapse sidebar"
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               >
-                <IconChevronLeft className="h-4 w-4" />
+                <IconChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
               </button>
             </>
           )}

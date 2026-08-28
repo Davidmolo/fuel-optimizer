@@ -7,7 +7,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   return (
     <DashboardShell
       title="Settings"
-      subtitle="Manage profile, email, and recommendation settings"
+      subtitle="Manage profile, email, recommendation, and data sync settings"
     >
       <div className="space-y-6">
         <SettingsTabs />

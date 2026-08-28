@@ -8,6 +8,7 @@ const settingsTabs = [
   { href: "/dashboard/settings/profile", label: "Profile" },
   { href: "/dashboard/settings/email", label: "Email" },
   { href: "/dashboard/settings/fuel-recommendations", label: "Fuel recommendations" },
+  { href: "/dashboard/settings/data-sync", label: "Data sync" },
 ];
 
 export default function SettingsTabs() {

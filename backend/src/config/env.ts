@@ -37,6 +37,9 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((value) => value === "true"),
+  SYNC_SCHEDULER_ENABLED: z.enum(["true", "false"]).optional(),
+  SYNC_SCHEDULER_MAX_CONCURRENCY: z.coerce.number().int().positive().default(1),
+  SYNC_SCHEDULER_STARTUP_DELAY_MS: z.coerce.number().int().nonnegative().default(45_000),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -46,4 +49,14 @@ if (!parsed.success) {
   throw new Error("Invalid environment configuration");
 }
 
-export const env = parsed.data;
+const { SYNC_SCHEDULER_ENABLED: schedulerEnabledFlag, ...parsedEnv } = parsed.data;
+
+export const env = {
+  ...parsedEnv,
+  SYNC_SCHEDULER_ENABLED:
+    schedulerEnabledFlag === "true"
+      ? true
+      : schedulerEnabledFlag === "false"
+        ? false
+        : parsedEnv.NODE_ENV !== "test",
+};

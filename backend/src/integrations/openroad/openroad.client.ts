@@ -19,14 +19,20 @@ type RequestOptions = {
   query?: Record<string, string | number | undefined>;
 };
 
+export function isOpenRoadConfigured() {
+  return Boolean(env.OPENROAD_API_TOKEN?.trim());
+}
+
 function getOpenRoadRuntimeConfig() {
-  if (!env.OPENROAD_API_TOKEN) {
+  const token = env.OPENROAD_API_TOKEN?.trim();
+
+  if (!token) {
     throw new HttpError("Open Road API token is not configured", 503);
   }
 
   return {
     baseUrl: env.OPENROAD_API_BASE_URL.replace(/\/$/, ""),
-    token: env.OPENROAD_API_TOKEN,
+    token,
   };
 }
 

@@ -11,6 +11,7 @@ import TmsLoadListPanel from "@/components/tms/tms-load-list-panel";
 import TmsSummaryCards, { type TmsLoadFilter } from "@/components/tms/tms-summary-cards";
 import TmsTripSidePanel from "@/components/tms/tms-trip-side-panel";
 import TripRouteMap from "@/components/tms/trip-route-map";
+import SyncStatusLine from "@/components/jobs/sync-status-line";
 import { apiRequest } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
@@ -359,6 +360,8 @@ export default function TmsPage() {
             </Button>
           </div>
         </div>
+
+        <SyncStatusLine jobIds={["openroad.loads", "openroad.assignments"]} lastManualSyncAt={lastSyncedAt} />
 
         {error ? <Alert variant="error">{error}</Alert> : null}
 

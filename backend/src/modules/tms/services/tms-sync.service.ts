@@ -13,8 +13,6 @@ import { mapOpenRoadLoadFields } from "../mappers/tms-load.mapper";
 import { getPrimaryDriverIdFromDestinations, isOpenRoadDriverActive } from "../utils/tms-normalize";
 import { linkFleetVehiclesToOpenRoad } from "./fleet-linking.service";
 
-let activeTmsSync: Promise<Awaited<ReturnType<typeof runTmsSyncFromOpenRoad>>> | null = null;
-
 function buildDriverDisplayName(driver: {
   first_name?: string;
   last_name?: string;
@@ -134,14 +132,22 @@ export async function syncTmsTrucksAndFleetLink() {
   };
 }
 
-export async function syncTmsFleet() {
+export async function syncTmsFleetRoster() {
   const trucks = await syncTmsTrucksAndFleetLink();
   const drivers = await syncTmsDrivers();
-  const assignments = await syncTmsAssignments();
 
   return {
     ...trucks,
     ...drivers,
+  };
+}
+
+export async function syncTmsFleet() {
+  const roster = await syncTmsFleetRoster();
+  const assignments = await syncTmsAssignments();
+
+  return {
+    ...roster,
     ...assignments,
   };
 }
@@ -209,18 +215,6 @@ export async function syncTmsActiveLoads() {
 }
 
 export async function syncTmsFromOpenRoad() {
-  if (activeTmsSync) {
-    return activeTmsSync;
-  }
-
-  activeTmsSync = runTmsSyncFromOpenRoad().finally(() => {
-    activeTmsSync = null;
-  });
-
-  return activeTmsSync;
-}
-
-async function runTmsSyncFromOpenRoad() {
   ensureDatabaseConnected();
 
   try {

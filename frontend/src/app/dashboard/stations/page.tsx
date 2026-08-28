@@ -8,8 +8,9 @@ import DashboardShell from "@/components/dashboard/dashboard-shell";
 import RelayDriverTable from "@/components/station/relay-driver-table";
 import StationSummaryCards from "@/components/station/station-summary-cards";
 import StationTable from "@/components/station/station-table";
+import SyncStatusLine from "@/components/jobs/sync-status-line";
 import { apiRequest } from "@/lib/api";
-import { formatStationTimestamp, summarizeStationDiscounts } from "@/lib/station-utils";
+import { summarizeStationDiscounts } from "@/lib/station-utils";
 import { applyStationFilters, defaultStationFilters } from "@/components/station/station-filters";
 import type {
   RelayDriverListResponse,
@@ -108,9 +109,7 @@ export default function StationsPage() {
                 ? `${driverData.driverCount} Relay drivers · ${stationData?.summary.stationCount ?? 0} stations cached`
                 : "Sync to pull Relay drivers and last 30 days of station pricing"}
             </p>
-            {lastSyncedAt ? (
-              <p className="mt-1 text-xs text-muted">Last Relay sync {formatStationTimestamp(lastSyncedAt)}</p>
-            ) : null}
+            <SyncStatusLine jobIds={["relay.transactions", "relay.drivers"]} lastManualSyncAt={lastSyncedAt} />
           </div>
 
           <Button type="button" onClick={() => void syncStations()} disabled={syncing}>
