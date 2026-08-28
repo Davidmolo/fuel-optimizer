@@ -1,0 +1,1 @@
+export const LOW_FUEL_PERCENT_THRESHOLD = 25;

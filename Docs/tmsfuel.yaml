@@ -1,0 +1,1305 @@
+openapi: 3.0.0
+
+servers:
+- url: https://staging.relaypayments.com/api/integrations
+  description: QA environment 
+- url: https://app.relaypayments.com/api/integrations
+  description: Production environment
+
+info:
+  version: '1.0'
+  title: 'TMS Fuel'
+  description: |
+    Endpoints needed for TMS - Relay fuel integration.
+tags: 
+  - name: Transactions
+    description: |
+      Allows the TMS or carrier to query Relay for fuel transactions.
+    
+  - name: Drivers
+    description: |
+      Allows the TMS or carrier to manage drivers within Relay.  
+
+  - name: Fuel Codes
+    description: |
+      Generate and manage one-time fuel codes.
+
+  - name: Driver Fuel Policies
+    description: |
+      View, assign and monitor driver fuel policies.
+
+  - name: Webhooks (BETA)
+    description: |
+      Webhooks are used to allow Relay to update a customer's system as events occur.  Primarily, the customer
+      will use the webhook to be notified of when a fuel transaction has been created.  As part of the webhook payload, the
+      customer will receive the amount of the transaction and a break down of the fuel items or products purchased in that transaction.
+
+      Webhooks will be configured by the Relay integration team.  We will need the customer to give us the URL to direct API
+      calls to.  To facilitate testing, we will need a URL for both stage and production.
+
+      ### Webhook events
+      At this time, Relay supports sending a webhook when a transaction is created.
+
+      ### Webhook delivery
+      Webhooks are sent immediately whenever an event occurs. When events occur with the Relay system, 
+      Relay will attempt to deliver webhook events up to 10 times with an increasing delay over a few minutes. As a result, it is possible 
+      that same event will be sent multiple times - an event handler should ignore previously processed events.
+      
+      There is 60 second timeout in place - if your URL won't respond with 200 status within a minute, the delivery will be considered 
+      failed and retried at a later time.
+
+      ### Webhook payload validation
+      It is recommended that you validate the messages that are received via webhook. You can use the signature
+      that is supplied in the header of the request to your URL.  That header will come as the `X-Relay-Signature` 
+      and contains an HMAC signature of the payload. 
+
+      HMAC signature has a following format: [timestamp]|[HMAC signature]
+
+      To verify the signature, follow the steps:
+
+      1. Extract the timestamp and signature portion by splitting a header value using `|`
+         character.
+      2. Generate the payload for the HMAC calculationg by concatenating timestamp and the POSTed
+         body.
+
+         For example, if timestamp was 137458791 and body was `{}`, the result should be
+         `137458791{}`.
+      3. Calculate HMAC using SHA256 signature using your API key from the payload that
+         was generated in a previous step and store result as hexadecimal string.
+      4. Concatenate the received timestamp with the calculated HMAC: `137458791|[YOUR HMAC]`
+      5. Compare received header signature against the calculated HMAC signature to validate.      
+
+      The payload you receive in the webhook will have the following schema: 
+
+      <SchemaDefinition schemaRef="#/components/schemas/WebhookEvent" />
+paths:
+   /fuel/policies/:
+    get:
+      summary: Get a list of fuel policies
+      description: Get a full of fuel policies for the given organization.  The API only allows for viewing
+                   fuel policies.  Fuel policies must be created, updated or deleted within the Relay portal.
+      tags:
+        - Driver Fuel Policies
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FuelPolicy'
+   
+   /fuelcodes/:
+    post:
+      summary: Create a one-time code
+      description: Create a new one-time code for a driver.  One-time fuel codes are not subject to the driver's policy and, as the name
+                   suggests, can only be used to purchase fuel one time.  One-time cash codes can also be created.
+      tags:
+        - Fuel Codes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OneTimeCode'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneTimeCode'
+    get:
+      summary: Get a list of one-time codes
+      description: Retrieve a list of one-time codes active for the current organization.  This will return one-time codes that are in `active` or `locked` status.
+      tags:
+        - Fuel Codes
+      parameters:
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          description: A number of records to skip
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+          description: A number of records in a single page
+        - in: query
+          name: driver_id
+          schema:
+            type: string
+          description:
+            Relay external driver ID.  This will filter results to one-time codes assigned to this driver.
+        - name: dtstart
+          required: true
+          in: query
+          description: Start date in RFC3339 format.
+          schema:
+            type: string
+            format: date-time
+        - name: dtend
+          required: true
+          in: query
+          description: End date in RFC3339 format.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: A list of one-time codes.
+          content:
+            application/json:
+              schema:
+                array:
+                items:
+                  $ref: '#/components/schemas/OneTimeCode'
+      
+   /fuelcodes/{id}:
+    get:
+      summary: Get a one-time code
+      description: Get details about a single one-time code.
+      tags:
+        - Fuel Codes
+      parameters:
+        - in: path
+          name: code_id
+          schema:
+            type: string
+          description: Relay external ID for one-time code.
+          example: 'code_6mebjn3jCAQr17'
+      responses:
+        '200':
+          description: One-time code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneTimeCode'
+
+    put:
+      summary: Update a one-time code
+      description: Update a one-time code.  This is only allowed for codes in `created` status.
+      tags:
+        - Fuel Codes
+      parameters:
+        - in: path
+          name: code_id
+          schema:
+            type: string
+          description:
+            Relay external ID for one-time code.
+          example: 'code_6mebjn3jCAQr17'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OneTimeCode'
+      responses:
+        '200':
+          description: One-time code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OneTimeCode'      
+
+    delete:
+      summary: Delete a one-time code
+      descrition: Soft delete a one-time code.  This will only be allowed for codes in a `created` status.
+      tags:
+        - Fuel Codes
+      parameters:
+        - in: path
+          name: code_id
+          schema:
+            type: string
+          description:
+            Relay external ID for one-time code.
+          example: 'code_6mebjn3jCAQr17'
+      responses:
+        '200':
+          description: Code was successfully deleted.
+        '404':
+          description: Code not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+   /fuel/policies/{id}:
+    get:
+      summary: Get a single fuel policy
+      description: Get details about a single fuel policy. The API only allows for viewing
+                   fuel policies.  Fuel policies must be created, updated or deleted within the Relay portal.
+      tags:
+        - Driver Fuel Policies
+      parameters:
+        - in: path
+          name: fuel_policy_id
+          schema:
+            type: string
+          description: Relay external fuel policy ID
+      responses:
+        '200':
+          description: Single fuel policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FuelPolicy'
+        '404':
+          description: Fuel policy not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+   /fuel/policies/policy-assignments/{driver_id}:
+    get:
+      summary: Get driver's fuel policy assignment
+      description: Get a driver's current fuel policy assignment. This endpoint provides detailed information regarding the limits
+                   of the fuel policy as well as remaining amounts.
+      tags:
+        - Driver Fuel Policies
+      parameters:
+        - in: query
+          name: driver_id
+          schema:
+            type: string
+          description: Relay external driver ID
+          example: 'dr_FECwNMDrvXzHH8'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyAssignmentFuelPolicy'
+        '404':
+          description: Driver policy assignment not found for driver
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        
+   /fuel/policies/policy-assignments/:
+    post:
+      summary: Assign fuel policy to driver
+      description: Assign a specific fuel policy to a driver.  Note, by assigning a new policy the usage amounts reset to 0.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverPolicyAssignment'
+      tags:
+        - Driver Fuel Policies
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyAssignmentFuelPolicy'
+        '404':
+          description: Driver(s) or policy not found
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/Error'
+              examples: 
+                driver_not_found:
+                  summary: Driver not found
+                  value:
+                    message: Driver not found
+                policy_not_found:
+                  summary: Policy not found
+                  value:
+                    message: Policy not found
+
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+   /fuel/policies/policy-assignments/{id}:
+    put:
+      summary: Update a policy assignment
+      description: Update a the policy instance assigned to a specific driver
+      parameters:
+        - in: query
+          name: driver_id
+          schema:
+            type: string
+          description: Relay external driver ID
+          example: 'dr_FECwNMDrvXzHH8'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePolicyAssignment'
+      tags:
+        - Driver Fuel Policies
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#components/schemas/PolicyAssignment'
+        '404':
+          description: Driver not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete a policy assignment
+      description: Delete a policy assignment for a driver. The result is that their is no fuel policy
+                    assigned to the driver and they will be unable to fuel with a policy code.
+      parameters:
+        - in: query
+          name: driver_id
+          schema:
+            type: string
+          description: Relay external driver ID
+          example: 'dr_FECwNMDrvXzHH8'
+      tags:
+        - Driver Fuel Policies
+      responses:
+      '200':
+        description: Policy was successfully unassigned
+      '404':
+        description: Driver does not exist
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+
+   /fuel/transactions/:
+    get:
+      summary: Get a list of transactions
+      description: Request fuel transactions for a specified date range.
+      servers: 
+        - url: https://staging.relaypayments.com/api
+          description: QA environment 
+        - url: https://app.relaypayments.com/api
+          description: Production environment
+      parameters:
+        - name: dtstart
+          required: true
+          in: query
+          description: Start date in RFC3339 format.
+          schema:
+            type: string
+            format: date-time
+        - name: dtend
+          required: true
+          in: query
+          description: End date in RFC3339 format.
+          schema:
+            type: string
+            format: date-time
+      tags:
+        - Transactions
+      responses:
+        '200':
+          description: Success
+          content:  
+            application/json:
+              schema:
+                type: array
+                items: 
+                  $ref: '#/components/schemas/Transaction' 
+
+   /drivers/:
+    post:
+      summary: Create a driver
+      description: Create a driver within Relay for your organization.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Driver'
+      tags:
+        - Drivers
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: Get a list of drivers
+      description: Get a list of all drivers for your organization.
+      tags:
+        - Drivers
+      parameters:
+        - in: query
+          name: integration_id
+          schema:
+            type: string
+          description: Filter by a driver's integration ID (commonly referred to by card number)
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          description: A number of records to skip
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+          description: A number of records in a single page
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          description: A number of records to skip
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: An optional filter parameter.  Records are filtered by phone number, name and email.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Driver'
+
+   /drivers/{id}:
+    get:
+      summary: Get driver
+      description: Get a single driver record for Id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Driver Id
+          schema:
+            type: string
+          example: 'drv_48fdlKDL32gf'
+      tags: 
+        - Drivers
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+
+    put:
+      summary: Update driver
+      description: Update a single driver record for Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Driver'
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Driver Id
+          schema:
+            type: string
+          example: 'drv_48fdlKDL32gf'
+      tags: 
+        - Drivers
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+      
+    delete:
+      summary: Delete driver
+      description: Delete a single driver for Id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Driver Id
+          schema:
+            type: string
+          example: 'drv_48fdlKDL32gf'
+      tags: 
+        - Drivers
+      responses:
+        '200':
+          description: Driver was successfully deleted
+        '404':
+          description: Driver does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
+components:
+
+  # Security
+  securitySchemes:
+    ApiKeyAuth:        
+      type: apiKey
+      in: header       
+      name: Authorization
+
+  # Schemas
+  schemas:
+    # Generic error
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+          type: string        
+
+    OneTimeCode:
+      required:
+        - id
+        - code
+        - constraint_amount
+        - type
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          readOnly: true
+          descriptin: Relay external ID for this one-time code.
+          example: 'code_6mebjn3jCAQr17'
+        code:
+          type: string
+          readOnly: true
+          description: Relay fuel code to be used to pay for fuel or obtain cash at the merchant.
+          example: '730161769614'
+        constraint_amount:
+          type: string
+          description: Maximum amount the code can be used to purchase fuel.
+        type:
+          string:
+          description: Type of one-time code.
+          enum:
+            - 'fuel'
+            - 'cash'
+        driver_id:
+          type: string
+          description: Relay external driver ID.  The driver this code is assigned to.
+          example: 'dr_FECwNMDrvXzHH8'
+        note:
+          type: string
+          description: Note to be included with code.
+        location_id:
+          type: string
+          description: Relay unique external ID for location.  By specifying the location here, this one-time code can only
+                       be used at this location.
+          example: loc_tr249dk3748zdde
+        allow_prohibited_location_redemption:
+          type: boolean
+          description: True if this one-time code can be used at a prohibited location.  For example, an out of network location 
+                       that would normally not be allowed.
+        created_at:
+          type: string
+          readOnly: true
+          format: date-time
+          description: Date/Time one-time code was created.
+        updated_at:
+          type: string
+          readOnly: true
+          format: date-time
+          description: Date/Time one-time code was last updated.
+        deleted_at:
+          type: string
+          readOnly: true
+          format: date-time
+          description: Date/Time one-time code was deleted.
+
+    UpdatePolicyAssignment:
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+          description: True if policy assignment is enabled, false otherwise.  This setting can be used to quickly turn on 
+                       and off the ability for the driver to fuel using their fuel policy while maintaining their usage amounts
+                       on the assigned policy.  For example, the policy assignment might be disabled if the driver is not
+                       active on a trip in the TMS.
+          example: true
+
+    PolicyAssignmentFuelPolicy:
+      properties:
+        id:
+          type: string
+          description: Relay external ID for this fuel policy assignment.
+        policy_id:
+          type: string
+          description: Relay external ID for policy.
+        policy_name:
+          type: string
+          description: Name assigned to policy.
+        enabled:
+          type: boolean
+          description: True if this policy assignment is enabled and driver can fuel using this policy.
+          example: true
+        limits:
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyAssignmentFuelPolicyLimit'
+
+    PolicyAssignmentFuelPolicyLimit:
+      properties:
+        type:
+          type: string
+          description: The type of product/service this limit applies to (diesel, DEF, scales, etc)
+          enum:
+            - PolicyLimitTypeDef             
+            - PolicyLimitTypeReefer          
+            - PolicyLimitTypeCash            
+            - PolicyLimitTypeNonFuel         
+            - PolicyLimitTypeNonFuelAdditive 
+            - PolicyLimitTypeNonFuelOil      
+            - PolicyLimitTypeNonFuelScales   
+            - PolicyLimitTypeCardGeneral     
+            - PolicyLimitTypeCardCATScales   
+            - PolicyLimitTypeGas             
+            - PolicyLimitTypeLumper          
+        mode:
+          type: string
+          description: The mode/payment type for which this limit applies.
+          enum:
+            - PolicyLimitModeInNetwork   
+            - PolicyLimitModeLumper      
+            - PolicyLimitModeOutOfNetwork
+            - PolicyLimitModeRelayGo     
+            - PolicyLimitModeCATScale            
+        amount:
+          type: string
+          description: Limit amount.  For example, the number of gallons of diesel.
+          example: '100'
+        unit:
+          type: string
+          description: Unit of measurement applied to `amount` field.
+          enum:
+            - gallons
+            - dollars
+            - transactions
+        frequency:
+          type: string
+          description: Over what time period the limit applies.  For example, per day.
+          enum:
+            - per_day
+            - per_week
+        usage:
+          type: string
+          description: Amount used so far by the driver on this policy assignment.
+        remaining:
+          type: string
+          description: Amount remaining on this limit.
+
+    FuelPolicy:
+      required:
+        - id
+        - name
+        - limits
+      properties:
+        id:
+          type: string
+          readOnly: true
+          description: Relay external ID for this fuel policy.
+        name:
+          type: string
+          description: Name given to identify this fuel policy.
+        eld_enabled:
+          type: boolean
+          description: True if this policy is enabled for ELD validation.
+        authorization_prompts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationPrompt'
+          description: Prompts that must be met in order unlock a code for usage
+        limits:
+          type: array
+          items:
+            $ref: '#/components/schemas/FuelPolicyLimit'
+          description: Product limits for ths policy
+
+    AuthorizationPrompt:
+      properties:
+        name:
+          type: string
+          description: Name given to prompt
+          example: 'Truck #'
+        validation_mode:
+          type: string
+          description: How this authorization prompt is validated.
+          enum:
+            - optional
+            - required (must input before unlock code)
+            - require_match (must match list of values before unlock code)
+            - require_preset (must match preset value for driver)
+            - require_match_individual
+        eld_integration_fiel:
+          type: string
+          description: Data field from ELD (if this policy is enabled for ELD).  If mapped to ELD field, these will be populated automatically from ELD.
+          enum:
+            - truck_number
+            - odometer
+
+    FuelPolicyLimit:
+      required:
+        - type
+        - mode
+        - amount
+        - unit
+        - frequency
+      properties:
+        type:
+          type: string
+          description: The type of product/service this limit applies to (diesel, DEF, scales, etc)
+        mode:
+          type: string
+          description: The mode/payment type for which this limit applies.
+          enum:
+            - 'in_network'
+            - 'out_network'
+            - 'relay_go'
+            - 'lumper'
+            - 'cat_scale'
+        amount:
+          type: string
+          description: Limit amount.  For example, the number of gallons of diesel.
+          example: '100'
+        unit:
+          type: string
+          description: Unit of measurement applied to `amount` field.
+          enum:
+            - gallons
+            - dollars
+            - transactions
+        frequency:
+          type: string
+          description: Over what time period the limit applies.  For example, per day.
+          enum:
+            - per_day
+            - per_week
+
+    DriverPolicyAssignment:
+      required:
+        - id
+        - driver_id
+        - policy_id
+      properties:
+        id:
+          type: string
+          readOnly: true
+          description: Relay external ID for this policy assignment
+        driver_id:
+          type: string
+          description: Relay external driver ID to assign policy
+          example: 'dr_FECwNMDrvXzHH8'
+        policy_id:
+          type: string 
+          description: Relay external policy ID to assign driver
+          example: 'pa_Eoz8wPAUopn6pF'
+
+    Driver:
+      required:
+        - id
+        - first_name
+        - last_name
+        - phone
+      properties:
+        id: 
+          type: string
+          readOnly: true
+          description: Relay external ID for the driver
+          example: 'dr_FECwNMDrvXzHH8'
+        first_name:
+          type: string
+          description: First name of driver.
+          example: 'John'
+        last_name:
+          type: string
+          description: Last name of driver.
+          example: 'Smith'
+        phone:
+          type: string
+          description: Phone number of driver.
+          example: '+15555555555'
+        email: 
+          type: string
+          description: Email address of driver.
+          example: 'john.smith@email.com'
+        data_fields:
+          type: array
+          items: 
+            $ref: '#/components/schemas/DriverDataField'
+          description: Data fields associated with this driver.  This is typically a truck number or some other ID tied specifically
+                       to this driver.  These must be set up in Relay beforehand and the `field_name` field must match exactly to Relay.
+                       If a field is supplied that does not match a field configured in Relay, it will be ignored.Some or all of these 
+                       can be configured as optional or required within Relay.  If required, they must be passed as part of driver
+                       creation.
+        integration_id:
+          type: string
+          readOnly: true
+          description: Relay generated ID for this driver.  Typically used as the card number in TMS.
+          example: '3847384737857348'
+        created_at:
+          type: string
+          readOnly: true
+          format: date-time
+          description: Date/Time driver was created.
+        updated_at:
+          type: string
+          readOnly: true
+          format: date-time
+          description: Date/Time driver was last updated.
+    
+    DriverDataField:
+      required:
+        - field_name
+        - field_value
+      properties:
+        field_name:
+          type: string
+          description: Name of the data field.  Must match exactly to data field in Relay.
+          example: "Truck #"
+        field_value:
+          type: string
+          description: Value for the data field.
+          example: "23843"
+
+    FuelTransactionDriver:
+      required:
+        - id
+        - first_name
+        - last_name
+        - phone
+      properties:
+        id: 
+          type: string
+          description: Relay external ID for the driver
+          example: 'drv_38dk38349t'
+        first_name:
+          type: string
+          description: First name of driver.
+          example: 'John'
+        last_name:
+          type: string
+          description: Last name of driver.
+          example: 'Smith'
+        phone:
+          type: string
+          description: Phone number of driver.
+          example: '+15555555555'
+        email: 
+          type: string
+          description: Email address of driver.
+          example: 'john.smith@email.com'
+        integration_id:
+          type: string
+          readOnly: true
+          description: Relay generated ID for this driver.  Typically used as the card number in TMS.
+          example: '3847384737857348'
+
+    Merchant:
+      required:
+        - id
+        - name
+        - number
+      properties:
+        id: 
+          type: string
+          description: Relay external Id for the merchant's organization.
+          example: 'org_383dk2383'
+        name:
+          type: string
+          description: Name of merchant
+          example: 'Pilot'
+        number:
+          type: string
+          description: Relay assigned number for this merchant organization.
+          example: '92926262'
+
+    Location:
+      required:
+        - id
+        - name
+        - fuel_merchant_location_id
+        - address
+        - city
+        - state
+        - zip_code
+        - latitude
+        - longitude
+        - timezone
+      properties:
+        id: 
+          type: string
+          description: Relay external ID for the location.
+          example: 'loc_249dk3748'
+        name: 
+          type: string
+          description: Name of location.
+          example: 'Pilot Travel Center #1212'
+        fuel_merchant_location_id:
+          type: string
+          description: Merchant's assigned ID for this location.
+          example: '1212'
+        address:
+          type: string
+          description: Address of fuel location.
+          example: '853 Interchange Drive'
+        city: 
+          type: string
+          description: City of fuel location.
+          example: 'Holland'
+        state: 
+          type: string
+          description: State of fuel location.
+          example: 'MI'
+        zip_code:
+          type: string
+          description: Zip code of fuel location.
+          example: '49423'
+        latitude: 
+          type: number
+          descripton: Latitude of fuel location.
+          example: 32.281339
+        longitude:
+          type: number
+          description: Longitude of fuel location.
+          example: -107.760101
+        opis_id: 
+          type: string
+          description: OPIS assigned ID for fuel location.
+          example: '383473'
+        timezone: 
+          type: string
+          description: Time zone of fuel location.
+
+    Prompt:
+      properties:
+        label:
+          type: string
+          description: Label for prompt.
+          example: 'Truck #'
+        value:
+          type: string
+          description: Value entered by the driver for this prompt.
+          example: '3848484'
+
+    FuelItem:
+      required:
+        - fuel_type
+        - fuel_type_description
+        - fuel_product_code
+        - retail_price_per_unit
+        - discounted_price_per_unit
+        - volume
+        - volume_uom
+        - total_retail_price
+        - total_discounted_price
+      properties:
+        fuel_type: 
+          type: string
+          description: General, short description for the type of fuel.
+          example: 'diesel'
+          enum:
+            - diesel
+            - def
+            - reefer
+            - diesel_1
+            - diesel_dyed
+            - reefer_2
+            - gas_unleaded
+            - gas_plus
+            - gas_super
+            - gas_plus2
+            - gas_ethanol_lea
+            - diesel_auto
+            - cng
+            - propane
+            - lng
+            - gas_e15
+            - gas_e85
+            - racing_fuel
+            - diesel_b2
+            - diesel_b5
+            - diesel_b11
+            - diesel_b20
+            - biodiesel
+            - diesel_uls2
+            - biodiesel_uls
+            - lcng
+            - kerosene
+            - heating_oil
+        fuel_type_description:
+          type: string
+          description: Longer, more specific description for type of fuel.
+          example: 'Diesel #2'
+          enum:
+            - Diesel
+            - Def
+            - Reefer
+            - Diesel 1
+            - Diesel dyed
+            - Reefer 2
+            - Gas Unleaded
+            - Gas plus
+            - Gas super
+            - Gas plus 2
+            - Gas ethanol leaded
+            - Diesel auto
+            - Cng
+            - Propane
+            - Lng
+            - Gas e15
+            - Gas e85
+            - Racing fuel
+            - Diesel b2
+            - Diesel b5
+            - Diesel b11
+            - Diesel b20
+            - Biodiesel
+            - Diesel uls 2
+            - Biodiesel uls
+            - Lcng
+            - Kerosene
+            - Heating oil          
+        fuel_product_code:
+          type: string
+          description: Product code for fuel type.
+          example: '022'
+        retail_price_per_unit:
+          type: string
+          description: Retail price for this fuel type at time of transaction.
+          example: '3.994'
+        discounted_price_per_unit:
+          type: string
+          description: Discounted price for this fuel type at time of transaction.
+          example: '3.669'
+        volume:
+          type: string 
+          description: Number of gallons pumped.
+          example: '20.838'
+        volume_uom:
+          type: string
+          description: For now, gallons is the only unit of measure supported.
+          example: 'gallons'
+        total_retail_price:
+          type: string
+          description: Total retail price for this fuel type.
+          example: '78.37'
+        total_discounted_price:
+          type: string
+          description: Total discounted price for this fuel type.
+          example: '73.38'
+        fees:          
+          type: array
+          description: List of transaction fees for this fuel item.
+          items:
+            $ref: '#/components/schemas/Fee'
+
+    Product:
+      required:
+        - product_type
+        - purchase_price_total
+        - quantity
+      properties:
+        product_type:
+          type: string
+          description: Type of product purchased.
+          example: 'wipers'
+        product_type_description:
+          type: string
+          description: Decription of product purchased.
+          example: 'Wiper Blades'
+        purchase_price_total:
+          type: string
+          description: Total purchase price of this product.
+          example: '34.67'
+        quantity: 
+          type: string
+          description: Number of items purchased of this type.
+          example: '3'
+        price_per_unit:
+          type: string
+          description: Price per of this product type.
+          example: '11.56'
+        fees:          
+          type: array
+          description: List of transaction fees for this product.
+          items:
+            $ref: '#/components/schemas/Fee'
+
+    Fee:
+      required:
+        - type
+        - amount
+      properties:
+        type:
+          type: string
+          description: Type of fee.
+          example: 'sender_fee'
+        amount:
+          type: string
+          description: Fee amount.
+          example: '5.00'
+
+    WebhookEvent:
+      properties:
+        id:
+          type: string
+          example: 'whe_chgKtNdPzLHkKQ'
+        category:
+          type: string
+          default: generic
+          example: generic
+        type:
+          type: string
+          enum:
+            - transaction
+        action:
+          type: string
+          enum:
+            - created
+        created_at:
+          type: string
+          format: date-time
+        entity:
+          oneOf:
+            - $ref: '#/components/schemas/Transaction'
+      required:
+        - id
+        - type
+        - action
+        - entity
+    
+    TransactionFuelPolicy:
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: Relay external Id for the fuel policy.  Can be used to retrieve details about fuel policy using the `/fuel/policies/` endpoint.
+          example: 'plc_9DtjsfhbDBiQEu'
+        name:
+          type: string
+          description: Name given to fuel policy within Relay portal.
+          example: 'Fuel Only - No out of network'
+
+    Transaction:
+      required:
+        - transaction_id
+        - created_at
+        - total_amount_paid
+        - total_retail_price
+        - total_amount_saved
+        - is_direct_bill
+        - currency_code
+        - driver
+        - merchant
+        - location
+      properties:
+        transaction_id: 
+          type: string
+          description: Relay external ID for transaction.
+          example: 'txn_238c303jd303kd9'
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp in RFC3339 format in UTC timezone
+        relay_fuel_code:
+          type: string
+          description: Relay fuel code used to purchase fuel.
+          example: '384794857473'
+        total_amount_paid:
+          type: string
+          description: Total amount paid by carrier to fuel merchant.
+        total_retail_price:
+          type: string
+          description: Total retail price for transaction.
+        total_amount_saved:
+          type: string
+          description: total_retail_price - total_amount_paid
+        is_direct_bill:
+          type: boolean
+          description: true if carrier is billed by invoice, false if paid immediately
+        currency_code:
+          type: string
+          description: For now, this will always be 'USD'
+        cash_advance:
+          type: string
+          description: Amount of cash advanced that was peformed as part of this transaction.
+        driver:
+          $ref: '#/components/schemas/FuelTransactionDriver'
+        merchant:
+          $ref: '#/components/schemas/Merchant'
+        location: 
+          $ref: '#/components/schemas/Location'
+        prompts:
+          type: array
+          description: Prompts entered by the driver for use of the Relay code.
+          items:
+            $ref: '#/components/schemas/Prompt'
+        fuel_items:
+          type: array
+          description: Detail list of fuel products purchased on this transaction.
+          items: 
+            $ref: '#/components/schemas/FuelItem'
+        products:
+          type: array
+          description: Detail list of other products (besides fuel) purchased on this transaction.
+          items:
+            $ref: '#/components/schemas/Product'
+        fees:
+          type: array
+          description: List of transaction fees for this transaction.
+          items:
+            $ref: '#/components/schemas/Fee'
+        fuel_policy:
+          $ref: '#/components/schemas/TransactionFuelPolicy'
+        fuel_code_type:
+          type: string
+          oneOf:
+            - title: Policy code
+              const: 'policy'
+              description: Fuel code based on a fuel policy.  For more information on the fuel policy used, look to the `fuel_policy` field on the transaction.
+            - title: One time code
+              const: 'one_time'
+              description: Fuel code based on a one-time generated code not associated with a fuel policy.  
+
+                
+
+
+security:
+  - ApiKeyAuth: []

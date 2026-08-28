@@ -1,0 +1,44 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev:local",
+    "dev:local": "dotenv -e .env.local -- next dev",
+    "dev:prod": "dotenv -e .env.prod -- next dev",
+    "build": "npm run build:prod",
+    "build:prod": "dotenv -e .env.prod -- next build",
+    "start": "npm run start:prod",
+    "start:prod": "dotenv -e .env.prod -- next start",
+    "lint": "eslint",
+    "postinstall": "node scripts/ensure-native-binaries.mjs"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.12.0",
+    "dotenv": "^17.4.2",
+    "leaflet": "^1.9.4",
+    "next": "16.2.7",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-redux": "^9.3.0",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.21",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv-cli": "^10.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.7",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "optionalDependencies": {
+    "@next/swc-wasm-nodejs": "16.2.7",
+    "@next/swc-win32-x64-msvc": "16.2.7",
+    "@tailwindcss/oxide-win32-x64-msvc": "4.3.2",
+    "lightningcss-win32-x64-msvc": "1.32.0"
+  }
+}
