@@ -44,7 +44,7 @@ export default function DashboardPage() {
       ) : summary ? (
         <FleetOverview summary={summary} />
       ) : (
-        <p className="text-sm text-muted">No fleet data available yet. Sync from the Fleet page.</p>
+        <p className="text-sm text-muted">No fleet data available yet. Data syncs automatically in the background.</p>
       )}
     </DashboardShell>
   );

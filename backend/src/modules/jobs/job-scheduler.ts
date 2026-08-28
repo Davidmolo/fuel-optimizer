@@ -67,9 +67,13 @@ export function createJobScheduler(options: JobSchedulerOptions) {
 
     delayTimer = setTimeout(() => {
       markReady(options.now?.() ?? new Date());
-      void tick();
+      void tick().catch((error) => {
+        console.error("Sync scheduler tick failed", error);
+      });
       intervalTimer = setInterval(() => {
-        void tick();
+        void tick().catch((error) => {
+          console.error("Sync scheduler tick failed", error);
+        });
       }, intervalMs);
     }, options.startupDelayMs);
   }

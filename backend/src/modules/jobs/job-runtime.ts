@@ -66,7 +66,9 @@ export function createJobRuntime(options: JobRuntimeOptions) {
       payload,
     });
 
-    void pump();
+    void pump().catch((error) => {
+      console.error("Job worker failed", error);
+    });
     return result;
   }
 
@@ -152,9 +154,11 @@ export function createJobRuntime(options: JobRuntimeOptions) {
     const work = handler({ trigger: run.trigger, payload: run.payload });
     inflight.set(
       run.jobId,
-      work.finally(() => {
-        inflight.delete(run.jobId);
-      }),
+      work
+        .finally(() => {
+          inflight.delete(run.jobId);
+        })
+        .catch(() => undefined),
     );
 
     try {
@@ -202,6 +206,7 @@ export function createJobRuntime(options: JobRuntimeOptions) {
       }
 
       const message = error instanceof Error ? error.message : "Unknown job error";
+      console.warn(`Job ${run.jobId} failed: ${message}`);
       const finished = await store.markFinished(run.id, {
         status: "failed",
         error: message,
@@ -249,16 +254,22 @@ export function createJobRuntime(options: JobRuntimeOptions) {
           });
 
           await executeRun(next);
+        } catch (error) {
+          console.error("Job run failed unexpectedly", error);
         } finally {
           await store.releaseLock(ownerId);
         }
       }
+    } catch (error) {
+      console.error("Job worker failed", error);
     } finally {
       activeSlots -= 1;
       if (!stopping) {
         const remaining = await store.dequeueNext({ excludeJobIds: inflight.keys() });
         if (remaining) {
-          void pump();
+          void pump().catch((error) => {
+            console.error("Job worker failed", error);
+          });
         }
       }
     }

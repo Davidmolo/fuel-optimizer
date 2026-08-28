@@ -166,6 +166,42 @@ describe("job runtime", () => {
     hang.resolve({ late: true });
     await runtime.stop();
   });
+
+  it("marks a failed upstream sync without crashing or leaving an unhandled rejection", async () => {
+    const store = createMemoryJobStore();
+    const rejections: unknown[] = [];
+    const onRejection = (reason: unknown) => {
+      rejections.push(reason);
+    };
+    process.on("unhandledRejection", onRejection);
+
+    const runtime = createJobRuntime({
+      store,
+      waitPollMs: 10,
+      handlers: {
+        async "openroad.loads"() {
+          throw new Error("Open Road API is unreachable: fetch failed");
+        },
+      },
+    });
+
+    try {
+      const enqueued = await runtime.enqueue("openroad.loads", "schedule");
+      await waitUntil(async () => {
+        const run = await store.getRun(enqueued.run.id);
+        return run?.status === "failed";
+      });
+      await sleep(30);
+
+      const finished = await store.getRun(enqueued.run.id);
+      assert.equal(finished?.status, "failed");
+      assert.match(finished?.error ?? "", /unreachable/);
+      assert.equal(rejections.length, 0);
+    } finally {
+      process.off("unhandledRejection", onRejection);
+      await runtime.stop();
+    }
+  });
 });
 
 describe("job scheduler", () => {

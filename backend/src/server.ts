@@ -34,6 +34,9 @@ async function bootstrap() {
     process.on("SIGTERM", () => {
       void shutdown("SIGTERM");
     });
+    process.on("unhandledRejection", (reason) => {
+      console.error("Unhandled promise rejection", reason);
+    });
   } catch (error) {
     console.error("Failed to start server", error);
     process.exit(1);

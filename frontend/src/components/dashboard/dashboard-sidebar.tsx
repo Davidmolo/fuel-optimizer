@@ -10,8 +10,6 @@ import {
   IconLogOut,
   IconRoute,
   IconSettings,
-  IconStation,
-  IconTruck,
 } from "@/components/common/icons";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "./sidebar-context";
@@ -31,22 +29,10 @@ type NavItem = {
 const menuNavItems: NavItem[] = [
   { href: "/dashboard", label: "Overview", icon: IconLayoutDashboard, match: (path: string) => path === "/dashboard" },
   {
-    href: "/dashboard/fleet",
-    label: "Fleet",
-    icon: IconTruck,
-    match: (path: string) => path.startsWith("/dashboard/fleet"),
-  },
-  {
     href: "/dashboard/tms",
     label: "Active loads",
     icon: IconRoute,
     match: (path: string) => path.startsWith("/dashboard/tms"),
-  },
-  {
-    href: "/dashboard/stations",
-    label: "Stations",
-    icon: IconStation,
-    match: (path: string) => path.startsWith("/dashboard/stations"),
   },
 ];
 

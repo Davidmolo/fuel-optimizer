@@ -53,10 +53,3 @@ export type FleetListResponse = {
   items: FleetVehicle[];
 };
 
-export type FleetSyncResponse = {
-  registryCount: number;
-  registrySyncedAt: string;
-  telemetryCount: number;
-  missingRegistryCount: number;
-  telemetrySyncedAt: string;
-};

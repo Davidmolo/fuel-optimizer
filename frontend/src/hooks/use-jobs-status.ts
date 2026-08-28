@@ -7,11 +7,14 @@ export function useJobsStatus(refreshMs = 30_000) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const response = await apiRequest<JobsStatusResponse>("/api/v1/jobs");
-    if (response.success && response.data) {
-      setData(response.data);
+    try {
+      const response = await apiRequest<JobsStatusResponse>("/api/v1/jobs");
+      if (response.success && response.data) {
+        setData(response.data);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
