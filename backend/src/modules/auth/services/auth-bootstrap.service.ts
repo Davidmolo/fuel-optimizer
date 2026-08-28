@@ -15,9 +15,6 @@ const EMAIL_HOST = "smtp.gmail.com";
 const EMAIL_USERNAME = "hello@fuelcap.ai";
 const EMAIL_PASSWORD = "lmys tfox lqwo zzzl";
 const EMAIL_FROM_NAME = "Fuel Distribution System";
-const SAMSARA_API_BASE_URL = "https://api.samsara.com";
-const SAMSARA_API_TOKEN = "";
-const SAMSARA_TELEMETRY_STALE_MINUTES = 30;
 
 export async function ensureAdminUser() {
   await ensureEmailConfig({
@@ -28,11 +25,7 @@ export async function ensureAdminUser() {
     fromName: EMAIL_FROM_NAME,
   });
 
-  await ensureSamsaraConfigSeed({
-    apiBaseUrl: SAMSARA_API_BASE_URL,
-    apiToken: SAMSARA_API_TOKEN,
-    telemetryStaleMinutes: SAMSARA_TELEMETRY_STALE_MINUTES,
-  });
+  await ensureSamsaraConfigSeed();
 
   await ensureTrimbleConfigSeed();
 

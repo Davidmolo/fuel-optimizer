@@ -1,6 +1,7 @@
 import { SamsaraConfigModel } from "../models/samsara-config.model";
 
 const DEFAULT_SAMSARA_CONFIG_KEY = "samsara_config";
+export const DEFAULT_SAMSARA_API_BASE_URL = "https://api.samsara.com";
 const DEFAULT_STALE_MINUTES = 30;
 
 export async function getSamsaraConfig() {
@@ -32,19 +33,19 @@ export async function ensureSamsaraConfig(payload: {
   );
 }
 
-export async function ensureSamsaraConfigSeed(payload: {
-  apiBaseUrl: string;
-  apiToken: string;
-  telemetryStaleMinutes: number;
+export async function ensureSamsaraConfigSeed(payload?: {
+  apiBaseUrl?: string;
+  apiToken?: string;
+  telemetryStaleMinutes?: number;
 }) {
   await SamsaraConfigModel.findOneAndUpdate(
     { key: DEFAULT_SAMSARA_CONFIG_KEY },
     {
       $setOnInsert: {
         key: DEFAULT_SAMSARA_CONFIG_KEY,
-        apiBaseUrl: payload.apiBaseUrl,
-        apiToken: payload.apiToken,
-        telemetryStaleMinutes: payload.telemetryStaleMinutes,
+        apiBaseUrl: payload?.apiBaseUrl?.trim() || DEFAULT_SAMSARA_API_BASE_URL,
+        apiToken: payload?.apiToken?.trim() || "",
+        telemetryStaleMinutes: payload?.telemetryStaleMinutes ?? DEFAULT_STALE_MINUTES,
       },
     },
     { upsert: true, returnDocument: "after" },
