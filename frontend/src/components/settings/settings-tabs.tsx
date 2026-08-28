@@ -7,8 +7,6 @@ import { cn } from "@/lib/utils";
 const settingsTabs = [
   { href: "/dashboard/settings/profile", label: "Profile" },
   { href: "/dashboard/settings/email", label: "Email" },
-  { href: "/dashboard/settings/samsara", label: "Samsara" },
-  { href: "/dashboard/settings/trimble", label: "Trimble" },
   { href: "/dashboard/settings/fuel-recommendations", label: "Fuel recommendations" },
 ];
 

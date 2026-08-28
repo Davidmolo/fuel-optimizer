@@ -171,7 +171,7 @@ export async function getRecommendationForTruck(identifier: string, options: Get
   }
 
   const useEstimatedDistances = !isRecommendationUsingGoogleRouting();
-  const routingProvider = (await isRecommendationUsingTrimbleRouting())
+  const routingProvider = isRecommendationUsingTrimbleRouting()
     ? ("trimble" as const)
     : ("osrm" as const);
   const corridorSearchMiles = Math.max(

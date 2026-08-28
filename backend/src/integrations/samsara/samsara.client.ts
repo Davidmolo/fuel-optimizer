@@ -1,5 +1,5 @@
-import { getSamsaraConfig } from "../../modules/samsara-config/services/samsara-config.service";
 import { HttpError } from "../../utils/http-error";
+import { getSamsaraRuntimeConfig } from "./samsara.config";
 import type {
   SamsaraPaginatedResponse,
   SamsaraVehicle,
@@ -11,21 +11,8 @@ type RequestOptions = {
   query?: Record<string, string | undefined>;
 };
 
-async function getSamsaraRuntimeConfig() {
-  const config = await getSamsaraConfig();
-
-  if (!config?.apiToken) {
-    throw new HttpError("Samsara API token is not configured", 503);
-  }
-
-  return {
-    baseUrl: config.apiBaseUrl.replace(/\/$/, ""),
-    token: config.apiToken,
-  };
-}
-
 async function samsaraRequest<T>({ path, query }: RequestOptions): Promise<T> {
-  const { baseUrl, token } = await getSamsaraRuntimeConfig();
+  const { baseUrl, token } = getSamsaraRuntimeConfig();
   const url = new URL(`${baseUrl}${path}`);
 
   if (query) {

@@ -9,8 +9,6 @@ export {
 } from "./routing.config";
 export * from "./routing.provider";
 export { computeOsrmDrivingRoute } from "./osrm-routes.client";
-export {
-  computeTrimbleDrivingRoute,
-  isTrimbleRoutingConfigured,
-} from "./trimble-routes.client";
+export { computeTrimbleDrivingRoute } from "./trimble-routes.client";
+export { isTrimbleRoutingConfigured } from "./trimble.config";
 export * from "./decode-polyline";

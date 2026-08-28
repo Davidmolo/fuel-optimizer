@@ -1,10 +1,8 @@
 import type { GeoPoint } from "../../utils/geo";
 import { haversineDistanceMiles } from "../../utils/geo";
 import { computeOsrmDrivingRoute } from "./osrm-routes.client";
-import {
-  computeTrimbleDrivingRoute,
-  isTrimbleRoutingConfigured,
-} from "./trimble-routes.client";
+import { isTrimbleRoutingConfigured } from "./trimble.config";
+import { computeTrimbleDrivingRoute } from "./trimble-routes.client";
 import type { DrivingDistanceResult, DrivingRouteResult } from "./routing.types";
 
 function estimateDrivingMinutes(distanceMiles: number) {
@@ -21,12 +19,12 @@ export function usesGoogleRouting() {
   return false;
 }
 
-export async function usesTrimbleRouting() {
+export function usesTrimbleRouting() {
   return isTrimbleRoutingConfigured();
 }
 
 export async function computeDrivingRoute(waypoints: GeoPoint[]): Promise<DrivingRouteResult> {
-  if (await isTrimbleRoutingConfigured()) {
+  if (isTrimbleRoutingConfigured()) {
     return computeTrimbleDrivingRoute(waypoints);
   }
 

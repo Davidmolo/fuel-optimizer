@@ -47,7 +47,8 @@ A system that combines **truck position + fuel level** (Samsara ELD), **active t
 **Env vars** (see `backend/.env.local` / `.env.example`):
 
 - `OPENROAD_API_BASE_URL`, `OPENROAD_API_TOKEN`
-- `SAMSARA_API_BASE_URL`, `SAMSARA_API_TOKEN`
+- `SAMSARA_API_BASE_URL`, `SAMSARA_API_TOKEN`, `SAMSARA_TELEMETRY_STALE_MINUTES`
+- `TRIMBLE_API_BASE_URL`, `TRIMBLE_API_KEY`
 - `RELAY_API_BASE_URL`, `RELAY_API_KEY_BLUE_STALLION`, `RELAY_API_KEY_AZFS` (API keys only — unrelated company/fee fields from other systems are out of scope)
 
 **Known API quirks:**

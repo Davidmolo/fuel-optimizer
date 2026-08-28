@@ -23,7 +23,7 @@ export function isRecommendationUsingGoogleRouting() {
   return usesGoogleRouting();
 }
 
-export async function isRecommendationUsingTrimbleRouting() {
+export function isRecommendationUsingTrimbleRouting() {
   return usesTrimbleRouting();
 }
 

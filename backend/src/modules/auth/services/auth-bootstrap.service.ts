@@ -1,8 +1,6 @@
 import { hash } from "bcryptjs";
 import { ensureEmailConfig } from "../../mail-config/services/mail-config.service";
 import { ensureRecommendationConfigSeed } from "../../recommendation-config/services/recommendation-config.service";
-import { ensureSamsaraConfigSeed } from "../../samsara-config/services/samsara-config.service";
-import { ensureTrimbleConfigSeed } from "../../trimble-config/services/trimble-config.service";
 import { ensureTwilioConfigSeed } from "../../twilio-config/services/twilio-config.service";
 import { RoleModel } from "../../role/models/role.model";
 import { UserModel } from "../../user/models/user.model";
@@ -24,10 +22,6 @@ export async function ensureAdminUser() {
     password: EMAIL_PASSWORD,
     fromName: EMAIL_FROM_NAME,
   });
-
-  await ensureSamsaraConfigSeed();
-
-  await ensureTrimbleConfigSeed();
 
   await ensureRecommendationConfigSeed();
 

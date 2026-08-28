@@ -1,9 +1,6 @@
-import {
-  DEFAULT_TRIMBLE_API_BASE_URL,
-  getTrimbleConfig,
-} from "../../modules/trimble-config/services/trimble-config.service";
 import { HttpError } from "../../utils/http-error";
 import type { GeoPoint } from "../../utils/geo";
+import { getTrimbleRuntimeConfig } from "./trimble.config";
 import type { DrivingRouteResult } from "./routing.types";
 
 type TrimbleRoutePathResponse = {
@@ -18,15 +15,6 @@ type TrimbleRoutePathResponse = {
 
 function roundMiles(miles: number) {
   return Math.round(miles * 10) / 10;
-}
-
-function normalizeBaseUrl(apiBaseUrl: string) {
-  return apiBaseUrl.trim().replace(/\/+$/, "");
-}
-
-export async function isTrimbleRoutingConfigured() {
-  const config = await getTrimbleConfig();
-  return Boolean(config?.apiKey?.trim());
 }
 
 export function buildTrimbleStopsPath(waypoints: GeoPoint[]) {
@@ -58,14 +46,7 @@ export async function computeTrimbleDrivingRoute(waypoints: GeoPoint[]): Promise
     throw new HttpError("At least two waypoints are required to compute a driving route", 400);
   }
 
-  const config = await getTrimbleConfig();
-  const apiKey = config?.apiKey?.trim();
-
-  if (!apiKey) {
-    throw new HttpError("Trimble API key is not configured. Add it in Settings → Trimble.", 503);
-  }
-
-  const baseUrl = normalizeBaseUrl(config?.apiBaseUrl || DEFAULT_TRIMBLE_API_BASE_URL);
+  const { apiKey, baseUrl } = getTrimbleRuntimeConfig();
   const url = new URL(`${baseUrl}/route/routePath`);
   url.searchParams.set("stops", buildTrimbleStopsPath(waypoints));
   url.searchParams.set("vehType", "0");

@@ -63,10 +63,7 @@ export async function getTripDrivingRoute(identifier: string) {
     );
   }
 
-  const [route, usingTrimble] = await Promise.all([
-    computeDrivingRoute(waypoints),
-    usesTrimbleRouting(),
-  ]);
+  const route = await computeDrivingRoute(waypoints);
 
   return {
     routeLabel: trip.load.routeLabel,
@@ -75,6 +72,6 @@ export async function getTripDrivingRoute(identifier: string) {
     polyline: route.polyline,
     distanceMiles: route.distanceMiles,
     durationMinutes: route.durationMinutes,
-    source: usingTrimble ? ("trimble" as const) : ("osrm" as const),
+    source: usesTrimbleRouting() ? ("trimble" as const) : ("osrm" as const),
   };
 }

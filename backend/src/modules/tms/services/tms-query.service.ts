@@ -2,7 +2,7 @@ import { HttpError } from "../../../utils/http-error";
 import { isValidObjectId } from "mongoose";
 import { FleetVehicleModel } from "../../fleet/models/fleet-vehicle.model";
 import { toFleetVehicleView } from "../../fleet/mappers/fleet-vehicle.mapper";
-import { getSamsaraTelemetryStaleMs } from "../../samsara-config/services/samsara-config.service";
+import { getSamsaraTelemetryStaleMs } from "../../../integrations/samsara";
 import { TmsAssignmentModel } from "../models/tms-assignment.model";
 import { TmsDriverModel } from "../models/tms-driver.model";
 import { TmsLoadModel } from "../models/tms-load.model";
@@ -114,7 +114,7 @@ async function buildTripContextForLoad(loadId: string): Promise<TripContextView>
     throw new HttpError("Active load not found", 404);
   }
 
-  const staleThresholdMs = await getSamsaraTelemetryStaleMs();
+  const staleThresholdMs = getSamsaraTelemetryStaleMs();
   const loadView = toTmsLoadView(load);
 
   let driver: TmsDriverView | undefined;
@@ -195,7 +195,7 @@ export async function getTripContext(identifier: string): Promise<TripContextVie
 
 export async function listTripContexts() {
   const loads = await TmsLoadModel.find({ isActive: true }).sort({ updatedAt: -1 }).lean();
-  const staleThresholdMs = await getSamsaraTelemetryStaleMs();
+  const staleThresholdMs = getSamsaraTelemetryStaleMs();
 
   const driverIds = loads.map((load) => load.primaryDriverId).filter((id): id is number => Boolean(id));
   const truckIds = loads.map((load) => load.openroadTruckId).filter((id): id is number => Boolean(id));

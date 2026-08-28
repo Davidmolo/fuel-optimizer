@@ -27,11 +27,12 @@ API tokens are created in the Samsara dashboard (**Settings → API Tokens**). R
 
 ## Environment variables
 
-Configured in `backend/.env.local`:
+Configured in `backend/.env.local` (not stored in the database or Settings UI):
 
 ```env
 SAMSARA_API_BASE_URL=https://api.samsara.com
 SAMSARA_API_TOKEN=samsara_api_...
+SAMSARA_TELEMETRY_STALE_MINUTES=30
 ```
 
 ---
