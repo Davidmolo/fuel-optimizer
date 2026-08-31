@@ -444,20 +444,20 @@ export default function TripRouteMap({
         .bindTooltip(point.label, { direction: "top", offset: [0, -14], opacity: 0.92 });
     }
 
-    const boundsPoints = [
-      ...mapData.points.map((point) => [point.lat, point.lng] as [number, number]),
-      ...routeCoords,
-      ...mappableCorridorStations.map(
-        (station) => [station.latitude, station.longitude] as [number, number],
-      ),
-    ];
+    const currentTripPoints = mapData.points.filter((point) => point.kind === "truck" || !point.completed);
+    const boundsPoints =
+      drivingRoute && routeCoords.length >= 2
+        ? routeCoords
+        : (currentTripPoints.length > 0 ? currentTripPoints : mapData.points).map(
+            (point) => [point.lat, point.lng] as [number, number],
+          );
 
     if (boundsPoints.length > 0) {
       const bounds = L.latLngBounds(boundsPoints);
       map.fitBounds(bounds, {
-        paddingTopLeft: [16, 56],
-        paddingBottomRight: [56, 56],
-        maxZoom: useCorridorStations ? 9 : 8,
+        paddingTopLeft: [28, 72],
+        paddingBottomRight: [72, 72],
+        maxZoom: 14,
       });
     }
   }, [

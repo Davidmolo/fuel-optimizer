@@ -16,6 +16,7 @@ type TripRecommendationPanelProps = {
   error: string | null;
   demoMode?: boolean;
   embedded?: boolean;
+  notReadyMessage?: string;
 };
 
 function formatLocation(stop: Pick<FuelPlanStop, "name" | "city" | "state" | "merchantDisplayName">) {
@@ -243,7 +244,7 @@ function FuelPlanExtras({
       {includeRecommended ? <RecommendedStops recommendation={recommendation} /> : null}
 
       {status !== "ready" ? (
-        <Alert variant="info">{copy}</Alert>
+        <p className="text-sm leading-relaxed text-amber-800">{copy}</p>
       ) : twoStep && compactCopy ? (
         <p className="text-xs leading-snug text-muted">Add fuel now, then fill at the cheapest stop ahead.</p>
       ) : showMessage ? (
@@ -278,6 +279,7 @@ export default function TripRecommendationPanel({
   error,
   demoMode = false,
   embedded = false,
+  notReadyMessage,
 }: TripRecommendationPanelProps) {
   const [corridorOpen, setCorridorOpen] = useState(false);
 
@@ -302,10 +304,10 @@ export default function TripRecommendationPanel({
     const empty = (
       <>
         <p className="text-sm font-semibold text-foreground">Fuel plan</p>
-        <p className="mt-1 text-sm text-muted">
+        <p className={cn("mt-1 text-sm", notReadyMessage ? "text-amber-800" : "text-muted")}>
           {demoMode
             ? "Select a load with mapped stops to preview a demo fuel plan."
-            : "Pick a load with live truck telemetry to see where to fuel."}
+            : notReadyMessage || "Pick a load with live truck telemetry to see where to fuel."}
         </p>
       </>
     );

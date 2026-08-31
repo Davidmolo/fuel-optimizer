@@ -183,16 +183,21 @@ export async function getTripContext(identifier: string): Promise<TripContextVie
     throw new HttpError("Trip context not found for identifier", 404);
   }
 
-  if (!fleetVehicle.openroadTruckId) {
-    throw new HttpError("Fleet vehicle is not linked to Open Road TMS", 404);
+  if (!fleetVehicle.openroadTruckId && !fleetVehicle.samsaraId) {
+    throw new HttpError("Fleet vehicle has no linked Open Road or Samsara identifier", 404);
   }
 
-  const load = await TmsLoadModel.findOne({ openroadTruckId: fleetVehicle.openroadTruckId, isActive: true })
+  const activeLoadFilters = [
+    ...(fleetVehicle.openroadTruckId ? [{ openroadTruckId: fleetVehicle.openroadTruckId }] : []),
+    ...(fleetVehicle.samsaraId ? [{ samsaraVehicleId: fleetVehicle.samsaraId }] : []),
+    ...(fleetVehicle.unitNumber ? [{ truckUnit: fleetVehicle.unitNumber }] : []),
+  ];
+  const load = await TmsLoadModel.findOne({ $or: activeLoadFilters, isActive: true })
     .sort({ updatedAt: -1 })
     .lean();
 
   if (!load) {
-    throw new HttpError(`No active load found for linked truck ${fleetVehicle.openroadTruckId}`, 404);
+    throw new HttpError(`No active load found for linked truck ${fleetVehicle.unitNumber || identifier}`, 404);
   }
 
   return buildTripContextForLoad(String(load._id));

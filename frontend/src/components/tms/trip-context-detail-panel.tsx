@@ -110,12 +110,6 @@ export function TripWorkspaceHeader({
           )}
         </div>
 
-        {primaryIssue ? (
-          <p className="mt-2.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] leading-snug text-amber-800">
-            {primaryIssue.title}. {primaryIssue.action}
-          </p>
-        ) : null}
-
         {load.destinations.length > 0 ? (
           <div className="mt-3 border-t border-border pt-3">
             <TripStopTimeline trip={trip} compact />

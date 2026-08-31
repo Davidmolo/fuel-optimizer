@@ -6,6 +6,7 @@ import Spinner from "@/components/common/spinner";
 import { TripWorkspaceHeader } from "@/components/tms/trip-context-detail-panel";
 import TripRecommendationPanel from "@/components/tms/trip-recommendation-panel";
 import { formatPricePerGallon } from "@/lib/station-utils";
+import { getTripLinkageIssues } from "@/lib/trip-linkage-status";
 import type { InspectedMapStation } from "@/lib/trip-route-map-markers";
 import type { Recommendation } from "@/types/recommendation";
 import type { TripContext } from "@/types/tms";
@@ -81,6 +82,8 @@ export default function TmsTripSidePanel({
 }: TmsTripSidePanelProps) {
   const recommendedId = recommendation?.fuelPlan?.now?.relayLocationId;
   const showInspected = Boolean(inspectedStation && inspectedStation.relayLocationId !== recommendedId);
+  const primaryIssue = trip ? getTripLinkageIssues(trip)[0] : undefined;
+  const notReadyMessage = primaryIssue ? `${primaryIssue.title}. ${primaryIssue.action}` : undefined;
 
   return (
     <Card className="flex min-h-0 flex-col overflow-hidden p-0 lg:h-full">
@@ -111,6 +114,7 @@ export default function TmsTripSidePanel({
             error={null}
             demoMode={demoMode}
             embedded
+            notReadyMessage={notReadyMessage}
           />
         )}
       </div>

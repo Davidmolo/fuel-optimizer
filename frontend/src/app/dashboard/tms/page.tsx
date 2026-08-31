@@ -149,7 +149,7 @@ export default function TmsPage() {
     setRecommendationError(null);
 
     try {
-      const identifier = options.demo ? trip.load.id : trip.load.truckUnit!;
+      const identifier = trip.load.id;
       const query = options.demo
         ? `?demo=true&fuelPercent=${encodeURIComponent(String(options.fuelPercent))}`
         : "";
