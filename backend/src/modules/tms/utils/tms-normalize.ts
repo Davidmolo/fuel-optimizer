@@ -11,6 +11,20 @@ export function isOpenRoadDriverActive(status?: string) {
   return normalized === "active" || normalized === "available";
 }
 
+export function normalizeDriverName(name?: string) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+export function isDemoDriver(driver: { displayName?: string; employeeNr?: string }) {
+  const name = normalizeDriverName(driver.displayName);
+  const employeeNr = normalizeDriverName(driver.employeeNr);
+
+  return name === "accounting example" || employeeNr === "accounting";
+}
+
 export function parseOpenRoadCoordinate(value?: string | null) {
   if (!value) {
     return undefined;

@@ -1,6 +1,7 @@
 import { HttpError } from "../../utils/http-error";
 import { getSamsaraRuntimeConfig } from "./samsara.config";
 import type {
+  SamsaraDriverVehicleAssignment,
   SamsaraPaginatedResponse,
   SamsaraVehicle,
   SamsaraVehicleStats,
@@ -81,4 +82,45 @@ export async function getSamsaraVehicleStats(types = "gps,fuelPercents") {
       },
     }),
   );
+}
+
+export async function getSamsaraDriverVehicleAssignments() {
+  const assignments: SamsaraDriverVehicleAssignment[] = [];
+
+  for (const assignmentType of ["HOS", "static"] as const) {
+    const typeAssignments = await fetchAllPages<SamsaraDriverVehicleAssignment>((after) =>
+      samsaraRequest<SamsaraPaginatedResponse<SamsaraDriverVehicleAssignment>>({
+        path: "/fleet/driver-vehicle-assignments",
+        query: {
+          filterBy: "drivers",
+          assignmentType,
+          after,
+        },
+      }),
+    );
+
+    assignments.push(...typeAssignments);
+  }
+
+  const currentByDriver = new Map<string, SamsaraDriverVehicleAssignment>();
+
+  for (const assignment of assignments) {
+    const driverId = assignment.driver?.id;
+    const vehicleId = assignment.vehicle?.id;
+
+    if (!driverId || !vehicleId || (assignment.endTime && new Date(assignment.endTime).getTime() <= Date.now())) {
+      continue;
+    }
+
+    const previous = currentByDriver.get(driverId);
+    if (
+      !previous ||
+      (assignment.assignmentType === "HOS" && previous.assignmentType !== "HOS") ||
+      new Date(assignment.startTime).getTime() > new Date(previous.startTime).getTime()
+    ) {
+      currentByDriver.set(driverId, assignment);
+    }
+  }
+
+  return [...currentByDriver.values()];
 }

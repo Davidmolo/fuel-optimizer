@@ -12,7 +12,7 @@ import {
   type TripContextView,
   type TmsDriverView,
 } from "../mappers/trip-context.mapper";
-import { normalizeVin } from "../utils/tms-normalize";
+import { isDemoDriver, normalizeVin } from "../utils/tms-normalize";
 
 type ListActiveLoadsOptions = {
   truckUnit?: string;
@@ -81,12 +81,17 @@ async function findFleetVehicle(identifier: string) {
   }).lean();
 }
 
-async function findFleetVehicleForLoad(load: { openroadTruckId?: number }) {
-  if (!load.openroadTruckId) {
+async function findFleetVehicleForLoad(load: { openroadTruckId?: number; samsaraVehicleId?: string }) {
+  if (!load.openroadTruckId && !load.samsaraVehicleId) {
     return null;
   }
 
-  return FleetVehicleModel.findOne({ openroadTruckId: load.openroadTruckId }).lean();
+  return FleetVehicleModel.findOne({
+    $or: [
+      ...(load.openroadTruckId ? [{ openroadTruckId: load.openroadTruckId }] : []),
+      ...(load.samsaraVehicleId ? [{ samsaraId: load.samsaraVehicleId }] : []),
+    ],
+  }).lean();
 }
 
 function toDriverView(driver: {
@@ -199,8 +204,15 @@ export async function listTripContexts() {
 
   const driverIds = loads.map((load) => load.primaryDriverId).filter((id): id is number => Boolean(id));
   const truckIds = loads.map((load) => load.openroadTruckId).filter((id): id is number => Boolean(id));
+  const samsaraVehicleIds = loads
+    .map((load) => load.samsaraVehicleId)
+    .filter((id): id is string => Boolean(id));
 
-  const fleetVehicleFilter = truckIds.length > 0 ? { openroadTruckId: { $in: truckIds } } : null;
+  const fleetVehicleOrFilter = [
+    ...(truckIds.length > 0 ? [{ openroadTruckId: { $in: truckIds } }] : []),
+    ...(samsaraVehicleIds.length > 0 ? [{ samsaraId: { $in: samsaraVehicleIds } }] : []),
+  ];
+  const fleetVehicleFilter = fleetVehicleOrFilter.length > 0 ? { $or: fleetVehicleOrFilter } : null;
 
   const [drivers, fleetVehicles] = await Promise.all([
     TmsDriverModel.find({ openroadDriverId: { $in: driverIds } }).lean(),
@@ -213,11 +225,25 @@ export async function listTripContexts() {
       .filter((vehicle) => vehicle.openroadTruckId)
       .map((vehicle) => [vehicle.openroadTruckId as number, vehicle]),
   );
+  const vehiclesBySamsaraId = new Map(
+    fleetVehicles
+      .filter((vehicle) => vehicle.samsaraId)
+      .map((vehicle) => [vehicle.samsaraId as string, vehicle]),
+  );
 
-  const items: TripContextView[] = loads.map((load) => {
+  const eligibleLoads = loads.filter((load) => {
+    const driverDoc = load.primaryDriverId ? driversById.get(load.primaryDriverId) : undefined;
+    return !driverDoc || (driverDoc.isActive && !isDemoDriver(driverDoc));
+  });
+
+  const items: TripContextView[] = eligibleLoads.map((load) => {
     const loadView = toTmsLoadView(load);
     const driverDoc = load.primaryDriverId ? driversById.get(load.primaryDriverId) : undefined;
-    const fleetVehicle = load.openroadTruckId ? vehiclesByOpenRoadId.get(load.openroadTruckId) : undefined;
+    const fleetVehicle = load.openroadTruckId
+      ? vehiclesByOpenRoadId.get(load.openroadTruckId)
+      : load.samsaraVehicleId
+        ? vehiclesBySamsaraId.get(load.samsaraVehicleId)
+        : undefined;
     const fleetView = fleetVehicle ? toFleetVehicleView(fleetVehicle, staleThresholdMs) : undefined;
 
     const vehicle = fleetView

@@ -50,3 +50,20 @@ export type SamsaraVehicleStats = {
   gps?: SamsaraGpsStat;
   fuelPercent?: SamsaraFuelPercentStat;
 };
+
+export type SamsaraDriverVehicleAssignment = {
+  startTime: string;
+  endTime?: string;
+  isPassenger?: boolean;
+  assignedAtTime?: string;
+  assignmentType: string;
+  driver?: {
+    id: string;
+    name: string;
+  };
+  vehicle?: {
+    id: string;
+    name: string;
+    externalIds?: Record<string, string>;
+  };
+};

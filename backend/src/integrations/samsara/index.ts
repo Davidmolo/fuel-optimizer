@@ -1,6 +1,11 @@
 export { getSamsaraTelemetryStaleMs, isSamsaraConfigured } from "./samsara.config";
-export { getSamsaraVehicleStats, listSamsaraVehicles } from "./samsara.client";
+export {
+  getSamsaraDriverVehicleAssignments,
+  getSamsaraVehicleStats,
+  listSamsaraVehicles,
+} from "./samsara.client";
 export type {
+  SamsaraDriverVehicleAssignment,
   SamsaraFuelPercentStat,
   SamsaraGpsStat,
   SamsaraVehicle,

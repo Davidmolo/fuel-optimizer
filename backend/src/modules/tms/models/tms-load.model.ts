@@ -37,6 +37,7 @@ export type TmsLoadDocument = {
   primaryDriverId?: number;
   truckUnit?: string;
   openroadTruckId?: number;
+  samsaraVehicleId?: string;
   originCity?: string;
   originStateCode?: string;
   destinationCity?: string;
@@ -87,6 +88,7 @@ const tmsLoadSchema = new Schema<TmsLoadDocument>(
     primaryDriverId: { type: Number, index: true },
     truckUnit: { type: String, trim: true, index: true },
     openroadTruckId: { type: Number, index: true },
+    samsaraVehicleId: { type: String, trim: true, index: true },
     originCity: { type: String, trim: true },
     originStateCode: { type: String, trim: true },
     destinationCity: { type: String, trim: true },
