@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import AuthShell from "@/components/auth/auth-shell";
 import { ForgotPasswordEmailForm, ForgotPasswordResetForm } from "@/components/auth/forgot-password-form";
+import { apiUrl } from "@/lib/api";
 import Alert from "@/components/common/alert";
 
 type AuthMessageResponse = {
@@ -12,7 +13,6 @@ type AuthMessageResponse = {
 };
 
 export default function ForgotPasswordPage() {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
     setIsError(false);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/v1/auth/forgot-password`, {
+      const response = await fetch(apiUrl("/api/v1/auth/forgot-password"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -61,7 +61,7 @@ export default function ForgotPasswordPage() {
     setIsError(false);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/v1/auth/reset-password`, {
+      const response = await fetch(apiUrl("/api/v1/auth/reset-password"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

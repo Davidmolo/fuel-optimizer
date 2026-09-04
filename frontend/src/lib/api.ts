@@ -1,6 +1,37 @@
 import { getAuthSession } from "@/lib/auth-session";
 
-export const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+export function getApiBaseUrl() {
+  const configured = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").trim().replace(/\/$/, "");
+
+  if (typeof window === "undefined") {
+    return configured;
+  }
+
+  if (!configured) {
+    return "";
+  }
+
+  try {
+    const url = new URL(configured, window.location.origin);
+    if (url.hostname === window.location.hostname) {
+      return "";
+    }
+
+    if (window.location.protocol === "https:" && url.protocol === "http:") {
+      url.protocol = "https:";
+      return url.origin;
+    }
+
+    return url.origin;
+  } catch {
+    return configured;
+  }
+}
+
+export function apiUrl(path: string) {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${getApiBaseUrl()}${normalized}`;
+}
 
 export type ApiResponse<T> = {
   success: boolean;
@@ -17,7 +48,7 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
   }
 
   try {
-    const response = await fetch(`${apiBaseUrl}${path}`, {
+    const response = await fetch(apiUrl(path), {
       ...options,
       headers,
     });

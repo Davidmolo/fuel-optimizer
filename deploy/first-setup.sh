@@ -68,7 +68,7 @@ sudo systemctl reload nginx
 echo
 echo "Next:"
 echo "  1. Edit $APP_DIR/backend/.env.prod (Mongo, API keys, SMTP, PORT=5000)."
-echo "  2. Keep $APP_DIR/frontend/.env.prod NEXT_PUBLIC_API_BASE_URL=https://fueloptimiser.azfsllc.com"
+echo "  2. Keep $APP_DIR/frontend/.env.prod NEXT_PUBLIC_API_BASE_URL empty (same-origin HTTPS)."
 echo "  3. Add the GitHub Actions SSH public key to ~/.ssh/authorized_keys."
 echo "  4. Add GitHub secrets STAGING_HOST and STAGING_SSH_KEY."
 echo "  5. Push to $BRANCH or run the Deploy staging workflow."

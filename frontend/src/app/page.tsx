@@ -7,6 +7,7 @@ import LoginForm from "@/components/auth/login-form";
 import VerifyOtpForm from "@/components/auth/verify-otp-form";
 import Alert from "@/components/common/alert";
 import { saveAuthSession } from "@/lib/auth-session";
+import { apiUrl } from "@/lib/api";
 import { usePersistedJson } from "@/lib/use-persisted-state";
 
 type LoginResponse = {
@@ -48,7 +49,6 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   const normalizedOtp = otp.replace(/\D/g, "");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -58,7 +58,7 @@ export default function Home() {
     setIsError(false);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/v1/auth/login`, {
+      const response = await fetch(apiUrl("/api/v1/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -89,7 +89,7 @@ export default function Home() {
     setIsError(false);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/v1/auth/verify-otp`, {
+      const response = await fetch(apiUrl("/api/v1/auth/verify-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp: normalizedOtp }),
@@ -122,7 +122,7 @@ export default function Home() {
     setIsError(false);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/v1/auth/resend-otp`, {
+      const response = await fetch(apiUrl("/api/v1/auth/resend-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
