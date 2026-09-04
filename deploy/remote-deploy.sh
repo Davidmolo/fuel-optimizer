@@ -41,10 +41,39 @@ else
   echo "Skipping nginx refresh (passwordless sudo not available). Run deploy/first-setup.sh once if the site is not wired yet."
 fi
 
+wait_http() {
+  local url="$1"
+  local name="$2"
+  local attempts="${3:-45}"
+  local i=1
+
+  while (( i <= attempts )); do
+    if curl -fsS --max-time 5 "$url" >/tmp/fuel-health.out; then
+      echo "$name is up"
+      cat /tmp/fuel-health.out
+      echo
+      return 0
+    fi
+    echo "Waiting for $name ($i/$attempts)..."
+    sleep 2
+    i=$((i + 1))
+  done
+
+  echo "$name did not become ready at $url" >&2
+  echo "==> PM2 status" >&2
+  pm2 list >&2 || true
+  echo "==> API logs" >&2
+  pm2 logs fuel-optimizer-api --lines 80 --nostream >&2 || true
+  echo "==> Worker logs" >&2
+  pm2 logs fuel-optimizer-worker --lines 40 --nostream >&2 || true
+  echo "==> Web logs" >&2
+  pm2 logs fuel-optimizer-web --lines 40 --nostream >&2 || true
+  return 1
+}
+
 echo "==> Health checks"
-curl -fsS "http://127.0.0.1:5000/api/v1/health"
-echo
-curl -fsS -o /dev/null -w "frontend %{http_code}\n" "http://127.0.0.1:3020/"
+wait_http "http://127.0.0.1:5000/api/v1/health" "API" 45
+wait_http "http://127.0.0.1:3020/" "frontend" 20
 
 echo "==> Deploy complete"
 pm2 list

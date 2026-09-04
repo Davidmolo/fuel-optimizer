@@ -75,7 +75,6 @@ jobs:
           key: ${{ secrets.STAGING_SSH_KEY }}
           port: 22
           command_timeout: 30m
-          script_stop: true
           script: |
             set -euo pipefail
             cd /var/www/fuel-optimizer
