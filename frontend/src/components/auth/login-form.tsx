@@ -74,6 +74,9 @@ export default function LoginForm({
       <Button type="submit" disabled={loading} fullWidth className="mt-1 h-11">
         {loading ? "Signing in..." : "Sign in"}
       </Button>
+      <p className="text-center text-sm text-muted">
+        Accounts are invitation only. Ask a teammate if you need access.
+      </p>
     </form>
   );
 }

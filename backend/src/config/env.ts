@@ -33,6 +33,7 @@ const envSchema = z.object({
   MAIL_USERNAME: z.string().trim().min(1).optional(),
   MAIL_PASSWORD: z.string().min(1).optional(),
   MAIL_FROM_NAME: z.string().trim().min(1).optional(),
+  FRONTEND_BASE_URL: z.string().trim().url().optional(),
   API_AUTH_REQUIRED: z
     .enum(["true", "false"])
     .default("false")

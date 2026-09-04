@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getHealth } from "../controllers/health.controller";
+import accountRouter from "../modules/account/routes/account.route";
 import authRouter from "../modules/auth/routes/auth.route";
 import contractRouter from "../modules/contract/routes/contract.route";
 import fleetRouter from "../modules/fleet/routes/fleet.route";
@@ -16,6 +17,7 @@ import tmsRouter from "../modules/tms/routes/tms.route";
 const apiRouter = Router();
 
 apiRouter.get("/health", getHealth);
+apiRouter.use("/accounts", accountRouter);
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/contracts", contractRouter);
 apiRouter.use("/fleet", fleetRouter);

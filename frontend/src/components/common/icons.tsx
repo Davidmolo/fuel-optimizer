@@ -161,6 +161,26 @@ export function IconX({ className }: IconProps) {
   );
 }
 
+export function IconUserPlus({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={cn("h-4 w-4", className)}>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3 19c.6-3 2.6-4.5 6-4.5S17.4 16 18 19" />
+      <path d="M19 8v6M16 11h6" />
+    </svg>
+  );
+}
+
+export function IconTrash({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={cn("h-4 w-4", className)}>
+      <path d="M4 7h16" />
+      <path d="M9 7V5h6v2" />
+      <path d="M7 7l1 13h8l1-13" />
+    </svg>
+  );
+}
+
 export function IconFilter({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={cn("h-4 w-4", className)}>

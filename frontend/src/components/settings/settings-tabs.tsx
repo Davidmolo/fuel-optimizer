@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const settingsTabs = [
   { href: "/dashboard/settings/fuel-recommendations", label: "Fuel recommendations" },
   { href: "/dashboard/settings/data-sync", label: "Data sync" },
+  { href: "/dashboard/settings/accounts", label: "Accounts" },
 ];
 
 export default function SettingsTabs() {

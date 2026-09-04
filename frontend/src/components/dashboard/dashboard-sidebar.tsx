@@ -16,6 +16,7 @@ import { useSidebar } from "./sidebar-context";
 
 type DashboardSidebarProps = {
   userEmail: string;
+  userRole?: string | null;
   onLogout: () => void;
 };
 
@@ -82,7 +83,7 @@ function emailInitial(email: string) {
   return email.trim().charAt(0).toUpperCase() || "?";
 }
 
-export default function DashboardSidebar({ userEmail, onLogout }: DashboardSidebarProps) {
+export default function DashboardSidebar({ userEmail, userRole, onLogout }: DashboardSidebarProps) {
   const pathname = usePathname();
   const { collapsed, setCollapsed } = useSidebar();
   const [hovering, setHovering] = useState(false);
@@ -237,7 +238,9 @@ export default function DashboardSidebar({ userEmail, onLogout }: DashboardSideb
                 <p className="truncate text-sm font-medium text-sidebar-foreground" title={userEmail}>
                   {userEmail}
                 </p>
-                <p className="text-[0.6875rem] text-sidebar-muted">Signed in</p>
+                <p className="text-[0.6875rem] capitalize text-sidebar-muted">
+                  {userRole === "admin" ? "Admin" : userRole === "user" ? "User" : "Signed in"}
+                </p>
               </div>
             </div>
           ) : null}

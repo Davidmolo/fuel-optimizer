@@ -22,6 +22,10 @@ function readAuthEmail() {
   return getAuthSession()?.email ?? "";
 }
 
+function readAuthRole() {
+  return getAuthSession()?.role ?? "";
+}
+
 function emailInitial(email: string) {
   return email.trim().charAt(0).toUpperCase() || "?";
 }
@@ -122,6 +126,7 @@ export default function DashboardShell({ children, title, subtitle, fill = false
   const pathname = usePathname();
   const mounted = useClientMounted();
   const userEmail = useSyncExternalStore(subscribeAuthSession, readAuthEmail, () => "");
+  const userRole = useSyncExternalStore(subscribeAuthSession, readAuthRole, () => "");
   const { collapsed, toggle } = useSidebar();
 
   useEffect(() => {
@@ -149,7 +154,7 @@ export default function DashboardShell({ children, title, subtitle, fill = false
 
   return (
     <div className="app-shell flex h-dvh w-full gap-3 overflow-hidden p-2.5 sm:p-3">
-      <DashboardSidebar userEmail={userEmail} onLogout={handleLogout} />
+      <DashboardSidebar userEmail={userEmail} userRole={userRole} onLogout={handleLogout} />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-[0_8px_24px_rgba(15,23,42,0.05)]">
         <header className="dashboard-chrome-header">

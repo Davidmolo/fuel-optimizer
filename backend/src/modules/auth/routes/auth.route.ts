@@ -1,6 +1,14 @@
 import { Router } from "express";
 import { validateRequest } from "../../../middlewares/validate-request";
 import {
+  acceptInvitationController,
+  getInvitationController,
+} from "../../account/controllers/account.controller";
+import {
+  acceptInvitationSchema,
+  invitationTokenParamsSchema,
+} from "../../account/validators/account.validator";
+import {
   forgotPasswordController,
   loginController,
   resendOtpController,
@@ -22,5 +30,7 @@ authRouter.post("/verify-otp", validateRequest(verifyOtpSchema), verifyOtpContro
 authRouter.post("/resend-otp", validateRequest(resendOtpSchema), resendOtpController);
 authRouter.post("/forgot-password", validateRequest(forgotPasswordSchema), forgotPasswordController);
 authRouter.post("/reset-password", validateRequest(resetPasswordWithOtpSchema), resetPasswordController);
+authRouter.get("/invitations/:token", validateRequest(invitationTokenParamsSchema), getInvitationController);
+authRouter.post("/invitations/:token/accept", validateRequest(acceptInvitationSchema), acceptInvitationController);
 
 export default authRouter;

@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import type { BaseComponentProps } from "@/types/common";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "outline";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "outline" | "danger";
 type ButtonSize = "sm" | "md";
 
 type ButtonProps = BaseComponentProps &
@@ -19,6 +19,8 @@ const variantClasses: Record<ButtonVariant, string> = {
   outline:
     "border border-border bg-surface text-foreground hover:border-primary/30 hover:bg-primary-muted/40 focus-visible:ring-primary/15",
   ghost: "text-muted hover:bg-primary-muted/60 hover:text-primary focus-visible:ring-primary/15",
+  danger:
+    "border border-danger/20 bg-danger-muted text-danger hover:bg-danger/10 focus-visible:ring-danger/20 disabled:bg-danger-muted",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
