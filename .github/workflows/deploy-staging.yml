@@ -1,0 +1,83 @@
+name: Deploy staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Typecheck backend
+        working-directory: backend
+        run: |
+          npm ci
+          npm run typecheck
+
+  deploy:
+    needs: verify
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      STAGING_APP_DIR: /var/www/fuel-optimizer
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
+
+      - name: Trust staging host
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -H "${{ secrets.STAGING_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync source to staging
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          STAGING_USER: ${{ secrets.STAGING_USER }}
+        run: |
+          set -euo pipefail
+          USER_NAME="${STAGING_USER:-ubuntu}"
+          ssh "$USER_NAME@$STAGING_HOST" "sudo mkdir -p '$STAGING_APP_DIR' && sudo chown ubuntu:ubuntu '$STAGING_APP_DIR'"
+          rsync -az --delete \
+            --exclude '.git/' \
+            --exclude 'node_modules/' \
+            --exclude 'frontend/node_modules/' \
+            --exclude 'backend/node_modules/' \
+            --exclude 'frontend/.next/' \
+            --exclude 'backend/dist/' \
+            --exclude 'backend/.env.local' \
+            --exclude 'backend/.env.prod' \
+            --exclude 'frontend/.env.local' \
+            --exclude 'frontend/.env.prod' \
+            ./ "$USER_NAME@$STAGING_HOST:$STAGING_APP_DIR/"
+
+      - name: Build and reload on staging
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ubuntu
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          port: 22
+          command_timeout: 30m
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd /var/www/fuel-optimizer
+            chmod +x deploy/remote-deploy.sh
+            bash deploy/remote-deploy.sh

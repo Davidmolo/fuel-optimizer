@@ -11,6 +11,7 @@
     "start": "npm run start:local",
     "start:local": "cross-env APP_ENV=local node dist/server.js",
     "start:prod": "cross-env APP_ENV=prod node dist/server.js",
+    "start:worker": "cross-env APP_ENV=prod node dist/worker.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/**/*.test.ts",
