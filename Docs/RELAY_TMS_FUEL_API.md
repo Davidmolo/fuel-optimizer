@@ -338,7 +338,7 @@ Format: `{timestamp}|{hmac_hex}`
 | Driver sync with TMS | `POST/GET /drivers/` | `integration_id` maps to TMS card # |
 | Policy control per trip | Policy assignments | Enable/disable when load active |
 
-Relay covers **stations the customer has historically used** (~subset of all US stops). Broader corridor pricing may require OPIS or other sources (see requirements doc).
+Relay covers **stations our owner operators have historically used** (~subset of all US stops). Broader corridor pricing may require OPIS or other sources (see requirements doc).
 
 ```mermaid
 flowchart LR

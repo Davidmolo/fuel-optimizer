@@ -27,6 +27,10 @@ const envSchema = z.object({
     .string()
     .url()
     .default("https://pcmiler.alk.com/apis/rest/v1.0/Service.svc"),
+  TRIMBLE_TRIP_MANAGEMENT_API_BASE_URL: z
+    .string()
+    .url()
+    .default("https://tripmanagement.trimblemaps.com/api"),
   TRIMBLE_API_KEY: z.string().min(1).optional(),
   MAIL_SERVICE: z.string().trim().min(1).optional(),
   MAIL_HOST: z.string().trim().min(1).optional(),

@@ -1,8 +1,10 @@
 # Fuel Optimizer — Business & Functional Requirements
 
 **Status:** Active — supersedes sections of `Fuel_Optimizer_Requirements.docx` where this document is newer.  
-**Last updated:** July 2026  
-**Pilot customer:** Paul's Assets (Samsara + Open Road TMS + Relay)
+**Last updated:** September 2026  
+**Pilot fleet:** Paul's Assets (Samsara + Open Road TMS + Relay)
+
+**Wording:** Fuel discounts are shared only with Blue Stallion's own owner operators; Blue Stallion does not sell them. Prefer “our owner operators,” “share,” and “contracted fuel stop” — not “customers,” “sell,” or treating discounts as a product for outside buyers.
 
 ---
 
@@ -28,7 +30,7 @@ The Fuel Optimizer must automate this decision: combine live truck telemetry, ac
 3. **Support partial fills** when necessary: buy only enough fuel now to reach a cheaper station ahead.
 4. **Never recommend stations off the trip path** — only stations along the route corridor.
 5. **Remove manual price comparison** from drivers and dispatchers for contracted merchants.
-6. **Pilot on Paul's Assets** (Samsara + Open Road TMS + Relay) before multi-customer rollout.
+6. **Pilot on Paul's Assets** (Samsara + Open Road TMS + Relay) before expanding beyond the pilot fleet.
 
 ---
 
@@ -41,7 +43,7 @@ The optimizer combines four data domains:
 | **Samsara (ELD)** | Live truck GPS, fuel % | Route, destination, station prices |
 | **Open Road TMS** | Active load, ordered stops, stop lat/lng, load miles (billing) | Live truck GPS, road polyline, directions, map tiles |
 | **Relay / OPIS** | Station locations, retail/discounted prices | Route geometry, truck position |
-| **Contract engine (this app)** | Per-customer effective price per merchant/station | External data |
+| **Contract engine (this app)** | Per-fleet effective price per merchant/station (discounts shared with our owner operators) | External data |
 
 ### 3.1 Open Road TMS — routing expectations (resolved)
 
@@ -82,7 +84,7 @@ Reference: [Docs/OPEN_ROAD_TMS_API_V2.md](./Docs/OPEN_ROAD_TMS_API_V2.md) (legac
 
 ### 4.1 ELD / Telematics Integration (Samsara)
 
-- Per-customer/fleet ELD configuration.
+- Per-fleet ELD configuration.
 - **Required per truck:**
   - Current GPS location (latitude, longitude)
   - Current fuel level (`fuelPercents`)
@@ -108,8 +110,8 @@ TMS answers **where the truck is going**. Samsara answers **where it is now**.
 
 ### 4.4 Contract Pricing Engine
 
-- Per-customer merchant rules (rate adjustment, covered locations, effective dates).
-- Given station + customer → **effective price** or **not available**.
+- Per-fleet merchant rules (rate adjustment, covered locations, effective dates) — rates shared with our owner operators at contracted fuel stops.
+- Given station + fleet → **effective price** or **not available**.
 - Exclude non-contracted stations from the candidate set entirely.
 
 ### 4.5 Recommendation Engine
@@ -237,7 +239,7 @@ Recommendations are **not static**. Recompute when:
 
 ### 4.6 Module Configuration / Settings
 
-Per-customer settings:
+Per-fleet settings:
 
 - ELD connection (Samsara for pilot)
 - TMS connection (Open Road for pilot)
@@ -297,7 +299,7 @@ Architecture must anticipate multiple ELD/TMS providers; pilot is Samsara + Open
 ## 8. Out of Scope (Pilot)
 
 - Additional ELD providers (e.g. Project44)
-- Customers beyond Paul's Assets
+- Fleets / owner operators beyond Paul's Assets
 - Final visual design
 - Recommending non-contracted stations
 - Turn-by-turn navigation app replacement

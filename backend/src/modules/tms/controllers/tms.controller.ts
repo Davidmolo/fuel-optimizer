@@ -8,6 +8,7 @@ import {
   listTripContexts,
 } from "../services/tms-query.service";
 import { getTripDrivingRoute } from "../services/trip-route.service";
+import { getTrimbleTripForLoad, planTrimbleTripForLoad } from "../services/trimble-trip.service";
 
 export async function syncTmsController(_req: Request, res: Response) {
   const tms = await runManualJob("openroad.full");
@@ -76,6 +77,31 @@ export async function getActiveLoadController(req: Request, res: Response) {
   return res.status(200).json({
     success: true,
     message: "Active load fetched successfully",
+    data,
+  });
+}
+
+export async function planTrimbleTripController(req: Request, res: Response) {
+  const loadId = String(req.params.loadId);
+  const force = req.body?.force === true || req.query.force === "true";
+  const data = await planTrimbleTripForLoad(loadId, { force });
+
+  return res.status(200).json({
+    success: true,
+    message: data.reusedExisting
+      ? "Existing Fuel Optimizer Trimble trip reused (Planned, no tablet notified)"
+      : "Trimble trip planned (Planned, no tablet notified)",
+    data,
+  });
+}
+
+export async function getTrimbleTripController(req: Request, res: Response) {
+  const loadId = String(req.params.loadId);
+  const data = await getTrimbleTripForLoad(loadId);
+
+  return res.status(200).json({
+    success: true,
+    message: "Trimble trip fetched successfully",
     data,
   });
 }

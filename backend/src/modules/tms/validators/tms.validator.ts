@@ -17,6 +17,24 @@ export const loadIdParamSchema = z.object({
   }),
 });
 
+export const planTrimbleTripSchema = z.object({
+  body: z
+    .object({
+      force: z.boolean().optional(),
+    })
+    .optional()
+    .default({}),
+  query: z
+    .object({
+      force: z.string().optional(),
+    })
+    .optional()
+    .default({}),
+  params: z.object({
+    loadId: z.string().trim().min(1),
+  }),
+});
+
 export const tripContextParamSchema = z.object({
   body: z.object({}).optional().default({}),
   query: z.object({}).optional().default({}),
@@ -27,4 +45,5 @@ export const tripContextParamSchema = z.object({
 
 export const validateListActiveLoads = validateRequest(listActiveLoadsQuerySchema);
 export const validateGetActiveLoad = validateRequest(loadIdParamSchema);
+export const validatePlanTrimbleTrip = validateRequest(planTrimbleTripSchema);
 export const validateGetTripContext = validateRequest(tripContextParamSchema);

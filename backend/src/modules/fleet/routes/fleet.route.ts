@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getFleetVehicleController,
   listFleetVehiclesController,
+  syncCopilotAssetsController,
   syncFleetController,
   syncFleetRegistryController,
   syncFleetTelemetryController,
@@ -13,6 +14,7 @@ const fleetRouter = Router();
 fleetRouter.post("/sync", syncFleetController);
 fleetRouter.post("/sync/registry", syncFleetRegistryController);
 fleetRouter.post("/sync/telemetry", syncFleetTelemetryController);
+fleetRouter.post("/copilot-assets/sync", syncCopilotAssetsController);
 fleetRouter.get("/vehicles", validateListFleetVehicles, listFleetVehiclesController);
 fleetRouter.get("/vehicles/:identifier", validateGetFleetVehicle, getFleetVehicleController);
 

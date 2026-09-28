@@ -4,9 +4,9 @@ Phased plan to build the Fuel Optimizer in this repo, based on **[FUEL_OPTIMIZER
 
 ## What we are building
 
-A system that combines **truck position + fuel level** (Samsara ELD), **active trip context** (Open Road TMS stops + miles), **station prices** (Relay / OPIS), applies **per-customer contract rates**, and returns a **corridor-based fuel plan** — what to buy now (if needed) and where to fill strategically ahead on the trip — using only **contracted stations on the route path**.
+A system that combines **truck position + fuel level** (Samsara ELD), **active trip context** (Open Road TMS stops + miles), **station prices** (Relay / OPIS), applies **per-fleet contract rates** (shared with our owner operators at contracted fuel stops), and returns a **corridor-based fuel plan** — what to buy now (if needed) and where to fill strategically ahead on the trip — using only **contracted stations on the route path**.
 
-**Pilot scope:** Paul's Assets fleet — Samsara + Open Road TMS, with Relay fuel pricing for contracted merchants.
+**Pilot scope:** Paul's Assets fleet — Samsara + Open Road TMS, with Relay fuel pricing for contracted merchants. Fuel discounts are shared only with Blue Stallion's own owner operators; Blue Stallion does not sell them.
 
 **Build approach:** Greenfield optimizer modules on top of the existing auth/dashboard shell. No reuse of a prior Fuel Optimizer codebase. The existing `fuel-log` module stays as-is (manual entries) unless repurposed for reporting later.
 
@@ -92,12 +92,12 @@ A system that combines **truck position + fuel level** (Samsara ELD), **active t
 
 **Goal:** Core domain models and thin API clients — no UI yet.
 
-1. **Customer / fleet model**
-   - Pilot fleet: Paul's Assets.
-   - Link users to customer/fleet (extend existing roles).
+1. **Fleet model**
+   - Pilot fleet: Paul's Assets (our owner operators).
+   - Link users to fleet (extend existing roles).
 
 2. **Integration settings**
-   - Store API credentials per customer (env for single-tenant pilot; DB when multi-tenant).
+   - Store API credentials per fleet (env for single-tenant pilot; DB when multi-tenant).
    - HTTP clients for each provider with correct auth headers.
    - **Relay:** only the TMS Fuel API (`relayPaymentId` / `iak_...` key) — transactions, drivers, fuel codes, policies. Fee/billing fields from other apps are not part of this project.
 
@@ -165,7 +165,7 @@ Relay-only is acceptable for the pilot if OPIS is delayed.
 
 ## Phase 5 — Contract pricing engine
 
-**Goal:** Customer-specific effective price at each station.
+**Goal:** Fleet-specific effective price at each contracted fuel stop (rates shared with our owner operators).
 
 1. Apply merchant contract rules to base price from Relay (and OPIS if available).
 2. Exclude stations with no contract (matches current Relay app behavior).
@@ -173,7 +173,7 @@ Relay-only is acceptable for the pilot if OPIS is delayed.
 
 Contract adjustments are configured in **this app** — not imported from external Relay company records.
 
-**Exit criteria:** Given a station + customer, return effective price or "not available."
+**Exit criteria:** Given a station + fleet, return effective price or "not available."
 
 ---
 
@@ -230,7 +230,7 @@ Reuse existing dashboard theme and auth shell.
 3. Fix mapping issues (truck IDs, stale GPS/fuel, range math).
 4. Logging and monitoring for integration failures (Open Road 500 on wrong auth header, stale Samsara pings, etc.).
 
-**Out of scope:** additional customers, other ELD providers, final visual design.
+**Out of scope:** additional fleets, other ELD providers, final visual design.
 
 **Exit criteria:** Paul's Assets pilot runs reliably on real trucks and loads.
 
@@ -279,6 +279,6 @@ Phases 2 and 3 can overlap after Phase 1. Phase 4 can start once Relay transacti
 ## Out of scope (pilot)
 
 - Additional ELD providers (e.g. Project44).
-- Customers beyond Paul's Assets.
+- Fleets / owner operators beyond Paul's Assets.
 - Final UI/visual design (reference screenshots are directional only).
 - Reuse of any prior Fuel Optimizer implementation.

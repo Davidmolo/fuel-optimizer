@@ -31,6 +31,11 @@ export type FleetVehicleDocument = {
   openroadStatus?: string;
   mappingStatus: FleetMappingStatus;
   isActive: boolean;
+  /** Trimble Account Manager Vehicle ID / AssetId. Used later as tspDriverId. Phase 1 stores only. */
+  trimbleAssetId?: string;
+  tripManagementEnabled?: boolean;
+  copilotStatus?: string;
+  dispatcherName?: string;
   gps?: FleetGpsTelemetry;
   fuel?: FleetFuelTelemetry;
   registrySyncedAt?: Date;
@@ -80,6 +85,10 @@ const fleetVehicleSchema = new Schema<FleetVehicleDocument>(
       index: true,
     },
     isActive: { type: Boolean, default: true, index: true },
+    trimbleAssetId: { type: String, trim: true, sparse: true, unique: true, index: true },
+    tripManagementEnabled: { type: Boolean, default: false, index: true },
+    copilotStatus: { type: String, trim: true },
+    dispatcherName: { type: String, trim: true, index: true },
     gps: { type: gpsTelemetrySchema },
     fuel: { type: fuelTelemetrySchema },
     registrySyncedAt: { type: Date },

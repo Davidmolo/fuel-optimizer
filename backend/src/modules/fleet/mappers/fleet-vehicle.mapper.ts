@@ -17,6 +17,10 @@ export type FleetVehicleView = {
   openroadStatus?: string;
   mappingStatus: FleetMappingStatus;
   isActive: boolean;
+  trimbleAssetId?: string;
+  tripManagementEnabled?: boolean;
+  copilotStatus?: string;
+  dispatcherName?: string;
   gps?: FleetGpsTelemetry & { freshness: TelemetryFreshness };
   fuel?: FleetFuelTelemetry & { freshness: TelemetryFreshness; isLow: boolean };
   registrySyncedAt?: string;
@@ -48,6 +52,10 @@ export function toFleetVehicleView(
   openroadStatus?: string;
   mappingStatus: FleetMappingStatus;
   isActive: boolean;
+  trimbleAssetId?: string;
+  tripManagementEnabled?: boolean;
+  copilotStatus?: string;
+  dispatcherName?: string;
   gps?: FleetGpsTelemetry;
   fuel?: FleetFuelTelemetry;
   registrySyncedAt?: Date;
@@ -76,6 +84,10 @@ export function toFleetVehicleView(
     openroadStatus: vehicle.openroadStatus,
     mappingStatus: vehicle.mappingStatus,
     isActive: vehicle.isActive,
+    trimbleAssetId: vehicle.trimbleAssetId,
+    tripManagementEnabled: vehicle.tripManagementEnabled,
+    copilotStatus: vehicle.copilotStatus,
+    dispatcherName: vehicle.dispatcherName,
     gps: vehicle.gps
       ? {
           ...vehicle.gps,

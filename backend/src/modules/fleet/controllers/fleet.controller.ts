@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { runManualJob } from "../../jobs/jobs.service";
 import { getFleetVehicle, listFleetVehicles } from "../services/fleet-query.service";
+import { syncCopilotAssetsFromExport } from "../services/copilot-assets-sync.service";
 
 export async function syncFleetController(_req: Request, res: Response) {
   const result = await runManualJob("samsara.full");
@@ -29,6 +30,17 @@ export async function syncFleetTelemetryController(_req: Request, res: Response)
     success: true,
     message: "Fleet telemetry synced from Samsara",
     data: result,
+  });
+}
+
+export async function syncCopilotAssetsController(_req: Request, res: Response) {
+  const data = await syncCopilotAssetsFromExport();
+
+  return res.status(200).json({
+    success: true,
+    message:
+      "CoPilot asset mapping updated on matching fleet vehicles. No trips were planned or dispatched.",
+    data,
   });
 }
 

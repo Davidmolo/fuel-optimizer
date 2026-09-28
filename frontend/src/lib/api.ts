@@ -13,7 +13,9 @@ export function getApiBaseUrl() {
 
   try {
     const url = new URL(configured, window.location.origin);
-    if (url.hostname === window.location.hostname) {
+    // Only use relative /api paths when host AND port match (e.g. prod reverse proxy).
+    // localhost:3000 vs localhost:5000 must keep the configured origin.
+    if (url.origin === window.location.origin) {
       return "";
     }
 

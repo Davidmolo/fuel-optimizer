@@ -208,7 +208,7 @@ Defaults referenced below (configurable unless noted):
 
 | | |
 |---|---|
-| **Scenario** | Final stop is a yard that sells fuel, or customer allows fueling on-site. |
+| **Scenario** | Final stop is a yard that sells fuel, or the fleet allows fueling on-site. |
 | **Expected behavior** | **Open:** treat as eligible strategic stop only if it appears in contracted station catalog and is on corridor; don’t assume every delivery location sells fuel. |
 | **Status** | **Open** |
 

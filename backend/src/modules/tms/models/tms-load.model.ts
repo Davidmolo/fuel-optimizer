@@ -22,6 +22,18 @@ export type TmsLoadDestinationDocument = {
   driverId?: number;
 };
 
+export type TmsLoadTrimbleTripDocument = {
+  alkTripId: string;
+  tmsTripId: string;
+  tripStatus?: string;
+  tspDriverId?: string | null;
+  tripDistanceMiles?: number;
+  tripDurationMinutes?: number;
+  tripUrl?: string;
+  plannedAt?: Date;
+  refreshedAt?: Date;
+};
+
 export type TmsLoadDocument = {
   _id: unknown;
   openroadLoadId: number;
@@ -43,6 +55,8 @@ export type TmsLoadDocument = {
   destinationCity?: string;
   destinationStateCode?: string;
   isActive: boolean;
+  /** Fuel Optimizer–owned Trip Management trip. Never used to overwrite OpenRoad/CoPilot business trips. */
+  trimbleTrip?: TmsLoadTrimbleTripDocument;
   syncedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -73,6 +87,21 @@ const loadDestinationSchema = new Schema<TmsLoadDestinationDocument>(
   { _id: false },
 );
 
+const trimbleTripSchema = new Schema<TmsLoadTrimbleTripDocument>(
+  {
+    alkTripId: { type: String, required: true, trim: true, index: true },
+    tmsTripId: { type: String, required: true, trim: true, index: true },
+    tripStatus: { type: String, trim: true },
+    tspDriverId: { type: String, trim: true, default: null },
+    tripDistanceMiles: { type: Number },
+    tripDurationMinutes: { type: Number },
+    tripUrl: { type: String, trim: true },
+    plannedAt: { type: Date },
+    refreshedAt: { type: Date },
+  },
+  { _id: false },
+);
+
 const tmsLoadSchema = new Schema<TmsLoadDocument>(
   {
     openroadLoadId: { type: Number, required: true, unique: true, index: true },
@@ -94,6 +123,7 @@ const tmsLoadSchema = new Schema<TmsLoadDocument>(
     destinationCity: { type: String, trim: true },
     destinationStateCode: { type: String, trim: true },
     isActive: { type: Boolean, default: true, index: true },
+    trimbleTrip: { type: trimbleTripSchema },
     syncedAt: { type: Date },
   },
   { timestamps: true },
