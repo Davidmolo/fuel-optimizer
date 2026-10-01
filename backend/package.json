@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/**/*.test.ts",
     "test:recommendations": "node scripts/test-recommendations.mjs",
-    "test:plan-trip": "node scripts/test-plan-trip.mjs"
+    "test:plan-trip": "node scripts/test-plan-trip.mjs",
+    "test:dispatch-trip": "node scripts/test-dispatch-trip.mjs"
   },
   "keywords": [],
   "author": "",

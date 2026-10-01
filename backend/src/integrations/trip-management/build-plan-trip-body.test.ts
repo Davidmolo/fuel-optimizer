@@ -48,6 +48,28 @@ describe("buildPlanTripBody", () => {
       /At least two geocoded stops/,
     );
   });
+
+  it("includes optional Trimble identity fields when provided", () => {
+    const body = buildPlanTripBody({
+      tmsTripId: "fo-999",
+      stops: [
+        { stopType: "Origin", lat: 32.9126, lon: -96.6389 },
+        { stopType: "Destination", lat: 29.7604, lon: -95.3698 },
+      ],
+      assignTablet: true,
+      tspDriverId: "999",
+      tspId: "copilot-provider",
+      tmsCustomerId: "BXTQPL",
+      tmsId: 0,
+      tmsUserId: "fuel-optimizer",
+    });
+
+    assert.equal(body.tspDriverId, "999");
+    assert.equal(body.tspId, "copilot-provider");
+    assert.equal(body.tmsCustomerId, "BXTQPL");
+    assert.equal(body.tmsId, 0);
+    assert.equal(body.tmsUserId, "fuel-optimizer");
+  });
 });
 
 describe("fuel optimizer tms trip ids", () => {

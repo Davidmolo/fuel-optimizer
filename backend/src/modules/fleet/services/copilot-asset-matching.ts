@@ -17,7 +17,17 @@ export type CopilotAssetMatch = {
   skipReason?: string;
 };
 
+/**
+ * Excluded from normal fleet / production dispatch matching.
+ * Mantas approved tablet 999 for engineering Phase 2–3 tests (tspDriverId "999") —
+ * that path is intentional and separate from this production dispatchable list.
+ * See TRIMBLE_TRIP_DISPATCH_REQUIREMENTS.md §1.1 and Phase 2.
+ */
 const TEST_ASSET_IDS = new Set(["999"]);
+
+export function isTestCopilotAssetId(assetId: string | null | undefined) {
+  return Boolean(assetId && TEST_ASSET_IDS.has(String(assetId).trim()));
+}
 
 /**
  * Pulls the truck unit from Account Manager ExternalName values like:

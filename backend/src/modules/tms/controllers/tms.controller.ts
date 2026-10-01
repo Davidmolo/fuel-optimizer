@@ -8,7 +8,7 @@ import {
   listTripContexts,
 } from "../services/tms-query.service";
 import { getTripDrivingRoute } from "../services/trip-route.service";
-import { getTrimbleTripForLoad, planTrimbleTripForLoad } from "../services/trimble-trip.service";
+import { getTrimbleTripForLoad, planTrimbleTripForLoad, dispatchTrimbleTripForLoad } from "../services/trimble-trip.service";
 
 export async function syncTmsController(_req: Request, res: Response) {
   const tms = await runManualJob("openroad.full");
@@ -102,6 +102,21 @@ export async function getTrimbleTripController(req: Request, res: Response) {
   return res.status(200).json({
     success: true,
     message: "Trimble trip fetched successfully",
+    data,
+  });
+}
+
+export async function dispatchTrimbleTripController(req: Request, res: Response) {
+  const loadId = String(req.params.loadId);
+  const tspDriverId = typeof req.body?.tspDriverId === "string" ? req.body.tspDriverId : undefined;
+  const allowTestTablet = req.body?.allowTestTablet === true;
+  const data = await dispatchTrimbleTripForLoad(loadId, { tspDriverId, allowTestTablet });
+
+  return res.status(200).json({
+    success: true,
+    message: data.reusedExisting
+      ? `Trip already dispatched to ${data.tspDriverId}`
+      : `Trimble trip dispatched to tablet ${data.tspDriverId}`,
     data,
   });
 }

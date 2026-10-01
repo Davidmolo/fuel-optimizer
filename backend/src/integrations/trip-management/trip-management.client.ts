@@ -1,7 +1,8 @@
 import { HttpError } from "../../utils/http-error";
-import { buildPlanTripBody } from "./build-plan-trip-body";
-import { getTripManagementRuntimeConfig } from "./trip-management.config";
+import { applyTripManagementIdentity, buildPlanTripBody } from "./build-plan-trip-body";
+import { getTripManagementIdentity, getTripManagementRuntimeConfig } from "./trip-management.config";
 import type {
+  TripManagementModifyTripRequest,
   TripManagementPlanTripRequest,
   TripManagementRoutePathResponse,
   TripManagementTripResponse,
@@ -33,12 +34,21 @@ async function tripManagementFetch<T>(path: string, init?: RequestInit): Promise
   }
 
   if (!response.ok) {
-    const detail =
-      typeof body === "object" && body && "message" in body
-        ? String((body as { message?: unknown }).message)
-        : typeof body === "string"
-          ? body.slice(0, 240)
-          : `HTTP ${response.status}`;
+    let detail = `HTTP ${response.status}`;
+    if (typeof body === "string" && body.trim()) {
+      detail = body.slice(0, 240);
+    } else if (typeof body === "object" && body) {
+      const record = body as Record<string, unknown>;
+      if (record.message != null) {
+        detail = String(record.message);
+      } else if (record.title != null) {
+        detail = String(record.title);
+      } else if (record.error != null) {
+        detail = typeof record.error === "string" ? record.error : JSON.stringify(record.error).slice(0, 240);
+      } else {
+        detail = JSON.stringify(body).slice(0, 240);
+      }
+    }
 
     throw new HttpError(
       `Trimble Trip Management request failed (${response.status}): ${detail}`,
@@ -54,9 +64,20 @@ async function tripManagementFetch<T>(path: string, init?: RequestInit): Promise
 }
 
 export async function planTrip(input: TripManagementPlanTripRequest): Promise<TripManagementTripResponse> {
-  const body = buildPlanTripBody(input);
+  const identity = getTripManagementIdentity();
+  const body = buildPlanTripBody({
+    ...input,
+    tspId: input.tspId ?? identity.tspId,
+    tmsCustomerId: input.tmsCustomerId ?? identity.tmsCustomerId,
+    tmsId: input.tmsId ?? identity.tmsId,
+    tmsUserId: input.tmsUserId ?? identity.tmsUserId,
+  });
+  const assigningTablet =
+    Boolean(input.assignTablet) &&
+    typeof body.tspDriverId === "string" &&
+    body.tspDriverId.trim() !== "";
 
-  if ("tspDriverId" in body && body.tspDriverId != null && body.tspDriverId !== "") {
+  if ("tspDriverId" in body && body.tspDriverId != null && body.tspDriverId !== "" && !assigningTablet) {
     throw new HttpError(
       "Refusing to plan a trip with tspDriverId. Phase 1 creates Planned trips only and must not notify tablets.",
       500,
@@ -65,6 +86,44 @@ export async function planTrip(input: TripManagementPlanTripRequest): Promise<Tr
 
   return tripManagementFetch<TripManagementTripResponse>("/trip", {
     method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function modifyTrip(input: TripManagementModifyTripRequest): Promise<TripManagementTripResponse> {
+  if (!input.alkTripId) {
+    throw new HttpError("modifyTrip requires alkTripId", 400);
+  }
+
+  const identity = getTripManagementIdentity();
+
+  // Trimble Modify Trip identifies the trip as `tripId` (value = alkTripId from Plan Trip).
+  const body: Record<string, unknown> = { tripId: input.alkTripId };
+
+  if (input.tspDriverId != null && input.tspDriverId !== "") {
+    body.tspDriverId = input.tspDriverId;
+  }
+
+  if (input.stops && input.stops.length > 0) {
+    body.stops = input.stops.map((stop) => ({
+      stopType: stop.stopType,
+      location: {
+        coords: { lat: stop.lat.toFixed(6), lon: stop.lon.toFixed(6) },
+        ...(stop.label ? { label: stop.label } : {}),
+      },
+    }));
+    body.routingProfile = { routingType: input.routingType ?? 0 };
+  }
+
+  applyTripManagementIdentity(body, {
+    tspId: input.tspId ?? identity.tspId,
+    tmsCustomerId: input.tmsCustomerId ?? identity.tmsCustomerId,
+    tmsId: input.tmsId ?? identity.tmsId,
+    tmsUserId: input.tmsUserId ?? identity.tmsUserId,
+  });
+
+  return tripManagementFetch<TripManagementTripResponse>("/trip/modify", {
+    method: "PUT",
     body: JSON.stringify(body),
   });
 }
@@ -114,6 +173,12 @@ export function normalizeTripStatus(status: string | number | null | undefined) 
         return "Completed";
       case 4:
         return "Canceled";
+      case 5:
+        return "Declined";
+      case 6:
+        return "Deleted";
+      case 7:
+        return "ReceivedByClient";
       default:
         return String(status);
     }

@@ -35,6 +35,20 @@ export const planTrimbleTripSchema = z.object({
   }),
 });
 
+export const dispatchTrimbleTripSchema = z.object({
+  body: z
+    .object({
+      tspDriverId: z.string().trim().min(1).optional(),
+      allowTestTablet: z.boolean().optional(),
+    })
+    .optional()
+    .default({}),
+  query: z.object({}).optional().default({}),
+  params: z.object({
+    loadId: z.string().trim().min(1),
+  }),
+});
+
 export const tripContextParamSchema = z.object({
   body: z.object({}).optional().default({}),
   query: z.object({}).optional().default({}),
@@ -46,4 +60,5 @@ export const tripContextParamSchema = z.object({
 export const validateListActiveLoads = validateRequest(listActiveLoadsQuerySchema);
 export const validateGetActiveLoad = validateRequest(loadIdParamSchema);
 export const validatePlanTrimbleTrip = validateRequest(planTrimbleTripSchema);
+export const validateDispatchTrimbleTrip = validateRequest(dispatchTrimbleTripSchema);
 export const validateGetTripContext = validateRequest(tripContextParamSchema);

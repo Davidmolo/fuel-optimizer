@@ -1,8 +1,8 @@
 # Trimble Trip Dispatch — Requirements and Strategy
 
-**Status:** Ready to build. Account access, API key, and the vehicle list are confirmed. No Trip Management code is in the app yet.  
-**Last updated:** September 23, 2026  
-**Sources:** Finn Martel (Trimble Maps), September 9, 2026; Mantas / David thread, September 9–10, 2026; Account Manager session for XXII Century (company id `BXTQPL`), September 23, 2026; read-only Trip Management search the same day; [Plan Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/plan-trip/), [Modify Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/modify-trip/), [Get Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/get-trip/), [Get Route Path](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/get-route-path/), [Trip Search](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/trip-query/)
+**Status:** Phase 1–2 done (live proof on tablet `999`, October 1, 2026). Phase 3–4 remaining.  
+**Last updated:** October 1, 2026  
+**Sources:** Finn Martel (Trimble Maps), September 9, 2026 and October 1, 2026 (account settings + delete leftover trips before retest); Mantas / David thread, September 9–10, 2026; Mantas on testing tablet `999`, September–October 2026; Account Manager session for XXII Century (company id `BXTQPL`), September 23, 2026; read-only Trip Management search the same day; [Plan Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/plan-trip/), [Modify Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/modify-trip/), [Get Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/get-trip/), [Get Route Path](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/get-route-path/), [Trip Search](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/trip-query/), [Delete Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/delete-trip/)
 
 ---
 
@@ -36,7 +36,7 @@ Because those trips are not the same object, Fuel Optimizer cannot tell CoPilot 
 **Who can receive a trip today**
 
 - **48 trucks** are Activated, have the Trip Management add-on, and are real fleet tablets.
-- **`999`** is Activated with Trip Management, but it is a test tablet. Do not use it for a real load.
+- **`999`** is Activated with Trip Management. It is the **engineering / Phase 2–3 test tablet**. Mantas confirmed we can use Tablet `999` for testing because it is connected to OpenRoad and has a CoPilot license. Use `tspDriverId: "999"` while building and proving dispatch. **Do not use `999` for a real freight load** or production Send-to-CoPilot. Fleet sync / production dispatch matching should keep excluding `999` from the normal driver fleet list.
 - **3 assets** have Trip Management but status **Assigned** (license reserved, tablet not activated): `1020` Joseph Wimmer #187, `648` Ronnie Sieg #263, `NR2128` (external name `244 (Eric)`). A dispatch to these will not reach a device until they activate.
 - **Do not dispatch:** `GOXXII_066` Cheryl Day #623 (CoPilot, no Trip Management add-on), and the three unassigned assets with no product: `965`, `967`, `992`.
 
@@ -114,15 +114,15 @@ Doing this **before** dispatch matches David’s request: the tablet receives a 
 
 ### Step 3 — Dispatch to one tablet
 
-`PUT /trip/modify` again, setting only:
+`PUT /trip/modify` again, setting:
 
 ```json
-{ "tspDriverId": "1000" }
+{ "tripId": "<alkTripId>", "tspDriverId": "999", "stops": [ /* full current stop list */ ] }
 ```
 
 `tspDriverId` is the Account Manager **Vehicle ID** (`AssetId`). On this account that is confirmed by the settings “Identify Assets By: Vehicle ID”. It is not the OpenRoad driver id and not the Samsara id. Sending `"1000"` targets the tablet logged in as vehicle 1000 (Deandre Meighan, unit 243). Sending it moves the trip to **Dispatched** (`tripStatus = 1`). The driver must accept it before navigation starts.
 
-The public Modify Trip schema marks `stops` as required, while Finn said a dispatch modify sends only `tspDriverId`. The spike must confirm which body the account accepts. If stops are required, resend the current stop list unchanged and set `tspDriverId`.
+**Modify-dispatch spike (Phase 2, confirmed):** Modify body field is `tripId` (value = Plan Trip’s `alkTripId`), not `alkTripId`. `tspDriverId`-only modify returns **HTTP 400** on this account. Dispatch must send the **full current stop list unchanged** plus `tspDriverId` (public schema marks `stops` as required).
 
 ### Step 4 — Update an active trip when the recommendation changes
 
@@ -189,12 +189,12 @@ Build the smallest path that puts one real load on one real tablet with the opti
 
 One developer, phases in order. Loads, trucks, and the fuel recommendation already exist, so this is the CoPilot handoff on top of them. About **2 to 2.5 weeks**. Phases 1–3 are what the driver feels, about **1.5 weeks**. Phase 2 slips if no tablet is free to accept the test trip.
 
-| Phase | Visible result | Time |
-|---|---|---|
-| 1. Plan a trip | A real load gets a Trimble trip id. No tablet is notified. | 2–3 days |
-| 2. One tablet | One Activated truck receives that trip and can accept it in CoPilot. | 1–2 days |
-| 3. Fuel stop | The optimizer’s station is on the trip before it is sent, and can be updated while the driver is moving. | 3–4 days |
-| 4. Dispatcher screen | Each dispatcher sees only their trucks and has a Send to CoPilot action. | 3–4 days |
+| Phase | Visible result | Time | Status |
+|---|---|---|---|
+| 1. Plan a trip | A real load gets a Trimble trip id. No tablet is notified. | 2–3 days | **Done** |
+| 2. One tablet | One Activated truck receives that trip and can accept it in CoPilot. | 1–2 days | **Done** (proven on `999`, Oct 1, 2026) |
+| 3. Fuel stop | The optimizer’s station is on the trip before it is sent, and can be updated while the driver is moving. | 3–4 days | Next |
+| 4. Dispatcher screen | Each dispatcher sees only their trucks and has a Send to CoPilot action. | 3–4 days | Remaining |
 
 ### Phase 1 — Prove one planned trip
 
@@ -209,21 +209,29 @@ Still to do:
 
 1. ~~Store the export on fleet vehicles (`AssetId` ↔ unit number, Trip Management flag, dispatcher).~~ **Done in code** (`POST /api/v1/fleet/copilot-assets/sync`).
 2. ~~Plan one trip from a real load’s stop coordinates, with `tspDriverId` empty. Save `alkTripId`. Fetch the trip and the route path.~~ **Done in code** (`POST/GET /api/v1/tms/loads/:loadId/trimble-trip`). Live proof: `npm run test:plan-trip -- <openroadLoadId>` against a running backend. Creates **Planned** trips only (`tmsTripId` `fo-*`); never sets `tspDriverId`, so no tablet is notified.
-3. Confirm whether modify-to-dispatch accepts `tspDriverId` alone. **Deferred to Phase 2** (setting `tspDriverId` is what notifies a tablet).
+3. Confirm whether modify-to-dispatch accepts `tspDriverId` alone. **Done in code** (`POST /api/v1/tms/loads/:loadId/trimble-trip/dispatch`). Tries `tspDriverId` alone first, retries with full stop list if Trimble requires stops. Live confirmation: `npm run test:dispatch-trip -- <openroadLoadId>`.
 
 **Safety for live business:** Phase 1 never dispatches, never cancels OpenRoad/CoPilot trips, and only owns trips whose `tmsTripId` starts with `fo-`. OpenRoad load sync continues unchanged and does not clear `trimbleTrip`.
 
 Exit: a Planned trip exists in Trimble for one of our loads, and we can read it back. The account already has other Planned trips (the search on September 23 returned one). Those are not ours until we create them.
 
-### Phase 2 — One tablet
+### Phase 2 — One tablet — **Done (October 1, 2026)**
 
-**Estimate:** 1–2 days, if a driver is available to accept the trip on the tablet.
+**Estimate:** 1–2 days, if someone can accept the trip on the test tablet.
 
-1. Modify that trip to set `tspDriverId` to a known Vehicle ID.
-2. Confirm the popup on that vehicle’s CoPilot tablet and that accepting it starts navigation.
-3. Record status transitions: Planned → Dispatched → InProgress.
+**Test device:** Use tablet **`999`** (`tspDriverId: "999"`) for Phase 2 development and live proof. We are not planning real fleet trips yet; Mantas approved `999` for this testing. Keep production / dispatcher Send flows from targeting `999`.
 
-Exit: Fuel Optimizer can send a trip to a specific tablet without OpenRoad.
+1. ~~Modify that Planned trip to set `tspDriverId` to **`999`** (or later a known Activated Vehicle ID for a real pilot).~~ **Done in code** (`POST /api/v1/tms/loads/:loadId/trimble-trip/dispatch` with `{ "tspDriverId": "999", "allowTestTablet": true }`). Production path resolves `tspDriverId` from `FleetVehicle.trimbleAssetId` and rejects `999` unless `allowTestTablet` is set. Live proof: `npm run test:dispatch-trip -- <openroadLoadId>`.
+2. ~~Confirm the popup on that CoPilot tablet and that accepting it starts navigation.~~ **Done live with Mantas on tablet `999` (October 1, 2026).** Fresh FO trip `alkTripId` `329872092` (`tmsTripId` `fo-2311438-1790869450674`, Garland TX → Loveland CO) was accepted; Get Trip returned **`InProgress`**. Earlier attempts stayed Planned until Finn applied CoPilot / Trip Management account settings; leftover Planned test trips must be deleted ([Delete Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/delete-trip/)) before retesting so the tablet queue is not clogged. Optional env identity fields (`TRIMBLE_TSP_ID`, `TRIMBLE_TMS_CUSTOMER_ID`, `TRIMBLE_TMS_ID`, `TRIMBLE_TMS_USER_ID`) are wired into Plan/Modify for when Finn provides them.
+3. ~~Record status transitions: Planned → Dispatched → InProgress.~~ **Done.** Live proof: FO dispatch to `999` → CoPilot popup → accept → **`InProgress`**.
+
+**Also learned on Phase 2 testing (not exit blockers):**
+
+- Tablet `999` is also used for **OpenRoad ↔ CoPilot** tests. Old OpenRoad trips (e.g. Casa Grande → Wisconsin Rapids, Strasburg IL) can keep popping up on the same tablet and are not FO trips. Confirm FO trips by route / “Fuel Optimizer…” name / `fo-*` `tmsTripId`.
+- Clearing a trip on CoPilot does not delete it in Trip Management; delete by `alkTripId` or the popup can return.
+- CoPilot may still prompt **Vehicle Routing Profiles** / **Use Profile** even when company profile **“XXII Century”** is the only default on activated accounts. Plan Trip today sends `routingType: Practical` with an empty profile `name`. Follow-up: send matching company profile name (or confirm with Finn) so the prompt is skipped. Not required to call Phase 2 done.
+
+Exit: ~~Fuel Optimizer can send a trip to a specific tablet without OpenRoad (proven on `999` first).~~ **Met October 1, 2026.**
 
 ### Phase 3 — Automatic fuel stop
 
@@ -271,9 +279,12 @@ These do not block Phase 1. They should be answered before calling the workflow 
 | API key | **Closed.** Existing `TRIMBLE_API_KEY` works on Trip Management. |
 | Host | **Closed.** Use `https://tripmanagement.trimblemaps.com/api`. |
 | Vehicle ID source | **Closed.** Account Manager `AssetId`, matched to the truck unit in `ExternalName`. |
-| Which tablets can be dispatched | **Closed.** Activated assets with the Trip Management add-on. See §1.1. Exclude `999`. |
+| Which tablets can be dispatched | **Closed, with test exception.** Production / real loads: Activated + Trip Management only; **exclude `999`**. Engineering / Phase 2–3 testing: **use `999`** (Mantas). See §1.1. |
 | Extra Trip Management cost | **Open.** Mantas asked; Finn has not answered. The add-on is already on 52 seats, so build can proceed. Confirm billing before calling the rollout final. |
-| Modify body for dispatch | **Open.** Public docs require `stops`; Finn said send only `tspDriverId`. Check on the first real modify. If stops are required, resend the current stop list unchanged and set `tspDriverId`. |
+| Modify body for dispatch | **Closed.** Live account rejects `tspDriverId`-only modify (HTTP 400). Dispatch sends full stop list + `tspDriverId`. |
+| CoPilot receives FO dispatch | **Closed (Phase 2).** After Finn’s October 1 account settings, FO trips to `999` show New Trip; accept → `InProgress`. Delete leftover FO Planned trips before retest. |
+| OpenRoad noise on test tablet `999` | **Closed / known.** `999` also receives OpenRoad CoPilot test trips. Isolate FO tests by clearing OpenRoad leftovers first; identify FO by Garland/Loveland-style FO route or `fo-*`. |
+| Auto-select company routing profile | **Open (UX).** Mantas: CoPilot still asks to Use Profile (**XXII Century**) after accept. Default is already assigned on activated accounts; FO should send that profile name on Plan Trip (or Finn confirms another setting). Does not block Phase 2. |
 | Who presses Send | **Open, assumed.** David rejected dispatcher-chosen stations. He did not say dispatch itself is automatic. Mantas expects a person to send the route. v1: dispatcher presses Send, station selection stays automatic. |
 | Route options | **Open, assumed.** v1 is Practical only, until David asks for fastest / shortest / practical plus tolls. |
 
@@ -281,10 +292,10 @@ These do not block Phase 1. They should be answered before calling the workflow 
 
 ## 7. Acceptance
 
-1. Planning a load creates a Trimble trip and stores `alkTripId`. The tablet does not notify the driver yet.
-2. The recommended station is inserted as `FuelStop` with coordinates, at a specific index, without a dispatcher choosing it.
-3. Setting `tspDriverId` delivers that trip to one CoPilot tablet. A different vehicle does not receive it.
-4. The driver can accept the trip and be navigated to the fuel stop in order.
-5. Changing the recommendation on an in-progress trip updates the open stops, and a next-stop insert notifies the driver.
-6. A dispatcher login lists only that dispatcher’s drivers.
-7. Assets without a Trip Management license are not dispatched.
+1. ~~Planning a load creates a Trimble trip and stores `alkTripId`. The tablet does not notify the driver yet.~~ **Met (Phase 1).**
+2. The recommended station is inserted as `FuelStop` with coordinates, at a specific index, without a dispatcher choosing it. **Phase 3.**
+3. ~~Setting `tspDriverId` delivers that trip to one CoPilot tablet. A different vehicle does not receive it.~~ **Met (Phase 2 on `999`, October 1, 2026).** Production Send must not dispatch real loads to `999`.
+4. The driver can accept the trip and be navigated to the fuel stop in order. **Accept + navigation on FO load stops met in Phase 2; fuel stop on that route is Phase 3.**
+5. Changing the recommendation on an in-progress trip updates the open stops, and a next-stop insert notifies the driver. **Phase 3.**
+6. A dispatcher login lists only that dispatcher’s drivers. **Phase 4.**
+7. Assets without a Trip Management license are not dispatched. **Enforced in matching / dispatch code; keep for production Send.**

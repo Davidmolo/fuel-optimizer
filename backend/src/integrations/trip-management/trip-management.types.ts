@@ -20,6 +20,31 @@ export type TripManagementPlanTripRequest = {
   name?: string;
   stops: TripManagementStopInput[];
   routingType?: 0 | 1 | 2;
+  /**
+   * When true, Plan Trip may include tspDriverId so Trimble can create a Dispatched trip.
+   * Phase 1 planning must leave this false/undefined.
+   */
+  assignTablet?: boolean;
+  tspDriverId?: string;
+  /** Optional Trimble identity fields. Filled from env by the client. */
+  tspId?: string;
+  tmsCustomerId?: string;
+  tmsId?: 0 | 1 | 2;
+  tmsUserId?: string;
+};
+
+export type TripManagementModifyTripRequest = {
+  alkTripId: string;
+  tspDriverId?: string;
+  /** Full stop list. Trimble's public schema marks stops as required on modify;
+   * the spike in Phase 2 confirms whether a dispatch-only modify can omit them. */
+  stops?: TripManagementStopInput[];
+  routingType?: 0 | 1 | 2;
+  /** Optional Trimble identity fields. Filled from env by the client. */
+  tspId?: string;
+  tmsCustomerId?: string;
+  tmsId?: 0 | 1 | 2;
+  tmsUserId?: string;
 };
 
 export type TripManagementStopResponse = {

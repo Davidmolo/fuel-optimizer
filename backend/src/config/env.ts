@@ -32,6 +32,16 @@ const envSchema = z.object({
     .url()
     .default("https://tripmanagement.trimblemaps.com/api"),
   TRIMBLE_API_KEY: z.string().min(1).optional(),
+  // Optional Trimble Trip Management identity fields. Trimble usually resolves
+  // these from the API key, but they can be supplied explicitly when Trimble
+  // support provides them (e.g. when dispatch to CoPilot does not flip status).
+  TRIMBLE_TSP_ID: z.string().trim().min(1).optional(),
+  TRIMBLE_TMS_CUSTOMER_ID: z.string().trim().min(1).optional(),
+  TRIMBLE_TMS_ID: z
+    .enum(["0", "1", "2"])
+    .optional()
+    .transform((value) => (value == null ? undefined : Number(value))),
+  TRIMBLE_TMS_USER_ID: z.string().trim().min(1).optional(),
   MAIL_SERVICE: z.string().trim().min(1).optional(),
   MAIL_HOST: z.string().trim().min(1).optional(),
   MAIL_USERNAME: z.string().trim().min(1).optional(),
