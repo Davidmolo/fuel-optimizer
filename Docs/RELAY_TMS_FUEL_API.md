@@ -392,8 +392,9 @@ flowchart LR
 | OpenAPI spec (source of truth) | [tmsfuel.yaml](./tmsfuel.yaml) |
 | Relay Payments site | https://www.relaypayments.com/ |
 | Partner integrations | https://www.relaypayments.com/partners-directory/ |
+| Docs index | [README.md](./README.md) |
 | Open Road TMS API | [OPEN_ROAD_TMS_API_V2.md](./OPEN_ROAD_TMS_API_V2.md) |
-| Fuel Optimizer phases | [../FUEL_OPTIMIZER_PHASES.md](../FUEL_OPTIMIZER_PHASES.md) |
+| Trimble / CoPilot dispatch | [TRIMBLE_TRIP_DISPATCH.md](./TRIMBLE_TRIP_DISPATCH.md) |
 
 ---
 

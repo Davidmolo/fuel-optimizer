@@ -2,8 +2,8 @@
 
 **Purpose:** Practical edge cases for product/engineering review.  
 **Audience:** Reviewers deciding expected behavior before or during implementation.  
-**Related:** [FUEL_OPTIMIZER_REQUIREMENTS.md](./FUEL_OPTIMIZER_REQUIREMENTS.md) §4.5  
-**Last updated:** July 2026
+**Related:** [TRIMBLE_TRIP_DISPATCH.md](./TRIMBLE_TRIP_DISPATCH.md) (CoPilot handoff); corridor defaults live in recommendation settings  
+**Last updated:** July 2026 (scenarios); docs layout Oct 2026
 
 ---
 

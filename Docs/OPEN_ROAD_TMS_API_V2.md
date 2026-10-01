@@ -275,8 +275,9 @@ curl -s "https://{OPENROAD_HOST}/api/v2/fuel_card_transactions?date_from=2026-01
 | Open Road help portal | https://help.openroadtms.com/ |
 | Samsara ↔ Open Road integration | https://help.openroadtms.com/support/solutions/articles/151000057611-samsara |
 | Open Road settings / integrations | https://help.openroadtms.com/support/solutions/articles/151000055889-step-1-configuring-openroad-tms-settings |
-| Fuel Optimizer phases | [../FUEL_OPTIMIZER_PHASES.md](../FUEL_OPTIMIZER_PHASES.md) |
-| Fuel Optimizer requirements | [../FUEL_OPTIMIZER_REQUIREMENTS.md](../FUEL_OPTIMIZER_REQUIREMENTS.md) |
+| Docs index | [README.md](./README.md) |
+| Trimble / CoPilot dispatch | [TRIMBLE_TRIP_DISPATCH.md](./TRIMBLE_TRIP_DISPATCH.md) |
+| Edge cases | [EDGE_CASES.md](./EDGE_CASES.md) |
 | Samsara Fleet API | [SAMSARA_API.md](./SAMSARA_API.md) |
 | Relay TMS Fuel API | [RELAY_TMS_FUEL_API.md](./RELAY_TMS_FUEL_API.md) |
 
@@ -286,7 +287,7 @@ curl -s "https://{OPENROAD_HOST}/api/v2/fuel_card_transactions?date_from=2026-01
 
 - [ ] Save `swagger.json` from `/api-docs/v2/swagger.json` into `Docs/` for full response schemas
 - [x] Confirm `{OPENROAD_HOST}` for Paul's Assets — `app.openroadtms.com` (production)
-- [x] Document which fields on load objects contain origin, destination, and route/polyline — **stops have lat/lng; no route polyline** (see [FUEL_OPTIMIZER_REQUIREMENTS.md](../FUEL_OPTIMIZER_REQUIREMENTS.md) §3.1)
+- [x] Document which fields on load objects contain origin, destination, and route/polyline — **stops have lat/lng; no route polyline** (corridor is truck GPS + ordered TMS stops)
 - [ ] Confirm token provisioning and required scopes per endpoint
 - [ ] Migrate to **External API v1** (`/api/ext/v1`, Basic Auth) — see OpenRoad `/llms-full.txt`
 

@@ -193,9 +193,10 @@ sequenceDiagram
 
 | System | Doc |
 |--------|-----|
+| Docs index | [README.md](./README.md) |
 | Open Road TMS API | [OPEN_ROAD_TMS_API_V2.md](./OPEN_ROAD_TMS_API_V2.md) |
 | Relay TMS Fuel API | [RELAY_TMS_FUEL_API.md](./RELAY_TMS_FUEL_API.md) |
-| Implementation phases | [FUEL_OPTIMIZER_PHASES.md](../FUEL_OPTIMIZER_PHASES.md) |
+| Trimble / CoPilot dispatch | [TRIMBLE_TRIP_DISPATCH.md](./TRIMBLE_TRIP_DISPATCH.md) |
 
 ---
 
