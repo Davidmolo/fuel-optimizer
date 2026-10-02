@@ -20,6 +20,8 @@ export type TripManagementPlanTripRequest = {
   name?: string;
   stops: TripManagementStopInput[];
   routingType?: 0 | 1 | 2;
+  /** Account Manager Vehicle Routing Profile name (e.g. "XXII Century"). */
+  routingProfileName?: string;
   /**
    * When true, Plan Trip may include tspDriverId so Trimble can create a Dispatched trip.
    * Phase 1 planning must leave this false/undefined.
@@ -40,6 +42,8 @@ export type TripManagementModifyTripRequest = {
    * the spike in Phase 2 confirms whether a dispatch-only modify can omit them. */
   stops?: TripManagementStopInput[];
   routingType?: 0 | 1 | 2;
+  /** Account Manager Vehicle Routing Profile name (e.g. "XXII Century"). */
+  routingProfileName?: string;
   /** Optional Trimble identity fields. Filled from env by the client. */
   tspId?: string;
   tmsCustomerId?: string;

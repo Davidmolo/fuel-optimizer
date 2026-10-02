@@ -1,6 +1,14 @@
 import { HttpError } from "../../utils/http-error";
-import { applyTripManagementIdentity, buildPlanTripBody } from "./build-plan-trip-body";
-import { getTripManagementIdentity, getTripManagementRuntimeConfig } from "./trip-management.config";
+import {
+  applyTripManagementIdentity,
+  buildPlanTripBody,
+  buildRoutingProfile,
+} from "./build-plan-trip-body";
+import {
+  getRoutingProfileName,
+  getTripManagementIdentity,
+  getTripManagementRuntimeConfig,
+} from "./trip-management.config";
 import type {
   TripManagementModifyTripRequest,
   TripManagementPlanTripRequest,
@@ -67,6 +75,7 @@ export async function planTrip(input: TripManagementPlanTripRequest): Promise<Tr
   const identity = getTripManagementIdentity();
   const body = buildPlanTripBody({
     ...input,
+    routingProfileName: input.routingProfileName ?? getRoutingProfileName(),
     tspId: input.tspId ?? identity.tspId,
     tmsCustomerId: input.tmsCustomerId ?? identity.tmsCustomerId,
     tmsId: input.tmsId ?? identity.tmsId,
@@ -112,7 +121,10 @@ export async function modifyTrip(input: TripManagementModifyTripRequest): Promis
         ...(stop.label ? { label: stop.label } : {}),
       },
     }));
-    body.routingProfile = { routingType: input.routingType ?? 0 };
+    body.routingProfile = buildRoutingProfile({
+      routingType: input.routingType,
+      routingProfileName: input.routingProfileName ?? getRoutingProfileName(),
+    });
   }
 
   applyTripManagementIdentity(body, {

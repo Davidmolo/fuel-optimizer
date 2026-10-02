@@ -3,8 +3,20 @@ import { HttpError } from "../../utils/http-error";
 
 export const DEFAULT_TRIP_MANAGEMENT_API_BASE_URL = "https://tripmanagement.trimblemaps.com/api";
 
+/** Account Manager company routing profile name sent on Plan/Modify Trip. */
+export const DEFAULT_ROUTING_PROFILE_NAME = "XXII Century";
+
 export function isTripManagementConfigured() {
   return Boolean(env.TRIMBLE_API_KEY?.trim());
+}
+
+/**
+ * Company Vehicle Routing Profile name for CoPilot.
+ * Sending this on Plan/Modify lets CoPilot auto-select the profile and skip the
+ * on-tablet "Use Profile" prompt (Phase 2 learning).
+ */
+export function getRoutingProfileName() {
+  return env.TRIMBLE_ROUTING_PROFILE_NAME.trim() || DEFAULT_ROUTING_PROFILE_NAME;
 }
 
 export function getTripManagementRuntimeConfig() {
@@ -26,6 +38,7 @@ export function getTripManagementRuntimeConfig() {
     tmsCustomerId: env.TRIMBLE_TMS_CUSTOMER_ID?.trim() || undefined,
     tmsId: env.TRIMBLE_TMS_ID,
     tmsUserId: env.TRIMBLE_TMS_USER_ID?.trim() || undefined,
+    routingProfileName: getRoutingProfileName(),
   };
 }
 

@@ -1,7 +1,24 @@
+import { DEFAULT_ROUTING_PROFILE_NAME } from "./trip-management.config";
 import type { TripManagementPlanTripRequest } from "./trip-management.types";
 
 function formatCoordinate(value: number) {
   return value.toFixed(6);
+}
+
+/**
+ * Builds the routingProfile object for Plan/Modify Trip.
+ * Always includes the company profile `name` so CoPilot can auto-select it
+ * and skip the on-tablet "Use Profile" prompt.
+ */
+export function buildRoutingProfile(input?: {
+  routingType?: 0 | 1 | 2;
+  routingProfileName?: string;
+}) {
+  const name = input?.routingProfileName?.trim() || DEFAULT_ROUTING_PROFILE_NAME;
+  return {
+    name,
+    routingType: input?.routingType ?? 0,
+  };
 }
 
 /**
@@ -47,9 +64,10 @@ export function buildPlanTripBody(input: TripManagementPlanTripRequest) {
         ...(stop.label ? { label: stop.label } : {}),
       },
     })),
-    routingProfile: {
-      routingType: input.routingType ?? 0,
-    },
+    routingProfile: buildRoutingProfile({
+      routingType: input.routingType,
+      routingProfileName: input.routingProfileName,
+    }),
   };
 
   if (input.tmsTripId) {

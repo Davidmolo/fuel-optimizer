@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   buildFuelOptimizerTmsTripId,
   buildPlanTripBody,
+  buildRoutingProfile,
   isFuelOptimizerTmsTripId,
 } from "./build-plan-trip-body";
 
@@ -19,7 +20,7 @@ describe("buildPlanTripBody", () => {
 
     assert.equal(body.storeTrip, true);
     assert.equal(body.tmsTripId, "fo-12345");
-    assert.equal((body.routingProfile as { routingType: number }).routingType, 0);
+    assert.deepEqual(body.routingProfile, { name: "XXII Century", routingType: 0 });
     assert.equal("tspDriverId" in body, false);
     assert.deepEqual(body.stops, [
       {
@@ -69,6 +70,31 @@ describe("buildPlanTripBody", () => {
     assert.equal(body.tmsCustomerId, "BXTQPL");
     assert.equal(body.tmsId, 0);
     assert.equal(body.tmsUserId, "fuel-optimizer");
+  });
+
+  it("sends company routing profile name so CoPilot can skip Use Profile", () => {
+    const body = buildPlanTripBody({
+      stops: [
+        { stopType: "Origin", lat: 32.9126, lon: -96.6389 },
+        { stopType: "Destination", lat: 40.3978, lon: -105.075 },
+      ],
+      routingProfileName: "XXII Century",
+    });
+
+    assert.deepEqual(body.routingProfile, { name: "XXII Century", routingType: 0 });
+  });
+});
+
+describe("buildRoutingProfile", () => {
+  it("defaults to XXII Century Practical", () => {
+    assert.deepEqual(buildRoutingProfile(), { name: "XXII Century", routingType: 0 });
+  });
+
+  it("allows override name and routing type", () => {
+    assert.deepEqual(buildRoutingProfile({ routingProfileName: "Custom", routingType: 2 }), {
+      name: "Custom",
+      routingType: 2,
+    });
   });
 });
 

@@ -1,7 +1,7 @@
 # Trimble Trip Dispatch — Requirements and Strategy
 
 **Status:** Phase 1–2 done (live proof on tablet `999`, October 1, 2026). Phase 3–4 remaining.  
-**Last updated:** October 1, 2026  
+**Last updated:** October 2, 2026  
 **Sources:** Finn Martel (Trimble Maps), September 9, 2026 and October 1, 2026 (account settings + delete leftover trips before retest); Mantas / David thread, September 9–10, 2026; Mantas on testing tablet `999`, September–October 2026; Account Manager session for XXII Century (company id `BXTQPL`), September 23, 2026; read-only Trip Management search the same day; [Plan Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/plan-trip/), [Modify Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/modify-trip/), [Get Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/get-trip/), [Get Route Path](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/get-route-path/), [Trip Search](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/trip-query/), [Delete Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/delete-trip/)
 
 ---
@@ -93,6 +93,7 @@ Send the load’s ordered stops as latitude/longitude. Trimble assumes we pass c
 - `tmsTripId`: our load id, so the trip can be found from the TMS load.
 - Leave `tspDriverId` **empty**. An empty driver id creates a **Planned** trip (`tripStatus = 0`) and does not push it to a tablet.
 - Each stop has `stopType` (`Origin`, `Work` / `Pickup` / `Delivery`, `Destination`) and `location.coords` (`lat`, `lon` as strings, at least 4 decimal places, 6 preferred) plus a `label`.
+- `routingProfile.name`: company Vehicle Routing Profile from Account Manager (default `"XXII Century"`, env `TRIMBLE_ROUTING_PROFILE_NAME`). Sending the name lets CoPilot auto-select the profile and skip the on-tablet **Use Profile** prompt.
 - `routingProfile.routingType`: `0` (Practical). That is Trimble’s truck default: legal, avoids small roads and city centers, balances time and distance. Shortest is `1`, Fastest is `2`.
 
 Plan returns distance, duration, tolls, and per-stop ETAs. We persist `alkTripId` on the load.
@@ -229,7 +230,7 @@ Exit: a Planned trip exists in Trimble for one of our loads, and we can read it 
 
 - Tablet `999` is also used for **OpenRoad ↔ CoPilot** tests. Old OpenRoad trips (e.g. Casa Grande → Wisconsin Rapids, Strasburg IL) can keep popping up on the same tablet and are not FO trips. Confirm FO trips by route / “Fuel Optimizer…” name / `fo-*` `tmsTripId`.
 - Clearing a trip on CoPilot does not delete it in Trip Management; delete by `alkTripId` or the popup can return.
-- CoPilot may still prompt **Vehicle Routing Profiles** / **Use Profile** even when company profile **“XXII Century”** is the only default on activated accounts. Plan Trip today sends `routingType: Practical` with an empty profile `name`. Follow-up: send matching company profile name (or confirm with Finn) so the prompt is skipped. Not required to call Phase 2 done.
+- ~~CoPilot may still prompt **Vehicle Routing Profiles** / **Use Profile** even when company profile **“XXII Century”** is the only default on activated accounts.~~ **Closed (October 2, 2026).** Plan/Modify send `routingProfile.name` = `"XXII Century"` (env `TRIMBLE_ROUTING_PROFILE_NAME`). Live proof on tablet `999`: FO trip `330002205` skipped Use Profile and jumped straight to the route / Start navigation.
 
 Exit: ~~Fuel Optimizer can send a trip to a specific tablet without OpenRoad (proven on `999` first).~~ **Met October 1, 2026.**
 
@@ -284,7 +285,7 @@ These do not block Phase 1. They should be answered before calling the workflow 
 | Modify body for dispatch | **Closed.** Live account rejects `tspDriverId`-only modify (HTTP 400). Dispatch sends full stop list + `tspDriverId`. |
 | CoPilot receives FO dispatch | **Closed (Phase 2).** After Finn’s October 1 account settings, FO trips to `999` show New Trip; accept → `InProgress`. Delete leftover FO Planned trips before retest. |
 | OpenRoad noise on test tablet `999` | **Closed / known.** `999` also receives OpenRoad CoPilot test trips. Isolate FO tests by clearing OpenRoad leftovers first; identify FO by Garland/Loveland-style FO route or `fo-*`. |
-| Auto-select company routing profile | **Open (UX).** Mantas: CoPilot still asks to Use Profile (**XXII Century**) after accept. Default is already assigned on activated accounts; FO should send that profile name on Plan Trip (or Finn confirms another setting). Does not block Phase 2. |
+| Auto-select company routing profile | **Closed (October 2, 2026).** Plan/Modify send `routingProfile.name` = `"XXII Century"`. Live on `999`: trip `330002205` skipped Use Profile and went straight to Start route. |
 | Who presses Send | **Open, assumed.** David rejected dispatcher-chosen stations. He did not say dispatch itself is automatic. Mantas expects a person to send the route. v1: dispatcher presses Send, station selection stays automatic. |
 | Route options | **Open, assumed.** v1 is Practical only, until David asks for fastest / shortest / practical plus tolls. |
 

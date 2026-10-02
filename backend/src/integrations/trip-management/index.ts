@@ -2,6 +2,7 @@ export {
   applyTripManagementIdentity,
   buildFuelOptimizerTmsTripId,
   buildPlanTripBody,
+  buildRoutingProfile,
   isFuelOptimizerTmsTripId,
 } from "./build-plan-trip-body";
 export {
@@ -15,7 +16,9 @@ export {
   planTrip,
 } from "./trip-management.client";
 export {
+  DEFAULT_ROUTING_PROFILE_NAME,
   DEFAULT_TRIP_MANAGEMENT_API_BASE_URL,
+  getRoutingProfileName,
   getTripManagementIdentity,
   getTripManagementRuntimeConfig,
   isTripManagementConfigured,

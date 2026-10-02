@@ -42,6 +42,9 @@ const envSchema = z.object({
     .optional()
     .transform((value) => (value == null ? undefined : Number(value))),
   TRIMBLE_TMS_USER_ID: z.string().trim().min(1).optional(),
+  // Company Vehicle Routing Profile name in Account Manager (CoPilot "Use Profile" prompt).
+  // Default matches XXII Century's only/default profile.
+  TRIMBLE_ROUTING_PROFILE_NAME: z.string().trim().min(1).default("XXII Century"),
   MAIL_SERVICE: z.string().trim().min(1).optional(),
   MAIL_HOST: z.string().trim().min(1).optional(),
   MAIL_USERNAME: z.string().trim().min(1).optional(),
