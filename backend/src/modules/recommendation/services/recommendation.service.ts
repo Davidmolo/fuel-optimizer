@@ -1,7 +1,12 @@
 import { HttpError } from "../../../utils/http-error";
 import { env } from "../../../config/env";
-import { buildPolylineBoundingBox } from "../../../utils/geo";
+import { buildPolylineBoundingBox, polylineLengthMiles, type GeoPoint } from "../../../utils/geo";
 import type { RelayAccount } from "../../../integrations/relay";
+import {
+  extractRoutePathPolyline,
+  getTripRoutePath,
+  isTripManagementConfigured,
+} from "../../../integrations/trip-management";
 import { PAULS_ASSETS_SLUG } from "../../contract/constants";
 import {
   getCustomerBySlug,
@@ -9,6 +14,7 @@ import {
 } from "../../contract/services/contract-pricing.service";
 import { resolveContractPricing } from "../../contract/services/contract-pricing.engine";
 import { FuelStationModel } from "../../station/models/fuel-station.model";
+import { TmsLoadModel } from "../../tms/models/tms-load.model";
 import { getTripContext } from "../../tms/services/tms-query.service";
 import { getRecommendationConfig } from "../../recommendation-config/services/recommendation-config.service";
 import { buildRecommendationView } from "../mappers/recommendation.mapper";
@@ -37,11 +43,13 @@ import {
 } from "./recommendation-demo.service";
 import { shortlistStationsForRouting } from "./station-shortlist";
 
-type GetRecommendationOptions = {
+export type GetRecommendationOptions = {
   customerSlug?: string;
   relayAccount?: RelayAccount;
   demo?: boolean;
   demoFuelPercent?: number;
+  /** When set, score stations along this polyline instead of PC*Miler/OSRM. */
+  routePolylineOverride?: GeoPoint[];
 };
 
 export function isRecommendationDemoAllowed() {
@@ -154,20 +162,29 @@ export async function getRecommendationForTruck(identifier: string, options: Get
 
   let routePolyline: Awaited<ReturnType<typeof buildDrivingRoutePolyline>>;
 
-  try {
-    routePolyline = await buildDrivingRoutePolyline(routeWaypoints);
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? `Unable to compute driving route: ${error.message}`
-        : "Unable to compute driving route from truck position and load stops.";
+  const override = options.routePolylineOverride;
+  if (override && override.length >= 2) {
+    routePolyline = {
+      polyline: override,
+      routeLengthMiles: polylineLengthMiles(override),
+      durationMinutes: 0,
+    };
+  } else {
+    try {
+      routePolyline = await buildDrivingRoutePolyline(routeWaypoints);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? `Unable to compute driving route: ${error.message}`
+          : "Unable to compute driving route from truck position and load stops.";
 
-    return buildRecommendationView({
-      tripContext: activeTripContext,
-      status: "not_ready",
-      message,
-      isDemo,
-    });
+      return buildRecommendationView({
+        tripContext: activeTripContext,
+        status: "not_ready",
+        message,
+        isDemo,
+      });
+    }
   }
 
   const useEstimatedDistances = !isRecommendationUsingGoogleRouting();
@@ -463,4 +480,42 @@ export async function getRecommendationByQuery(options: {
   }
 
   return getRecommendationForTruck(options.truckId, options);
+}
+
+/**
+ * Scores fuel stops along the Trimble Trip Management route path for a planned load.
+ * Falls back to the normal PC*Miler/OSRM path when the trip has no usable route path.
+ */
+export async function getRecommendationForLoadAlongTrimbleRoute(
+  loadId: string,
+  options: Omit<GetRecommendationOptions, "routePolylineOverride"> = {},
+) {
+  if (!isTripManagementConfigured()) {
+    throw new HttpError("Trimble Trip Management is not configured. Set TRIMBLE_API_KEY.", 503);
+  }
+
+  const numericId = Number(loadId);
+  const load = Number.isFinite(numericId)
+    ? await TmsLoadModel.findOne({ openroadLoadId: numericId })
+    : await TmsLoadModel.findById(loadId);
+
+  if (!load) {
+    throw new HttpError("Load not found", 404);
+  }
+
+  const alkTripId = load.trimbleTrip?.alkTripId;
+  let routePolylineOverride: GeoPoint[] | undefined;
+
+  if (alkTripId) {
+    const routePath = await getTripRoutePath(alkTripId);
+    const polyline = extractRoutePathPolyline(routePath);
+    if (polyline.length >= 2) {
+      routePolylineOverride = polyline;
+    }
+  }
+
+  return getRecommendationForTruck(String(load.openroadLoadId), {
+    ...options,
+    routePolylineOverride,
+  });
 }

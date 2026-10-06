@@ -1,7 +1,10 @@
 import { Router } from "express";
 import {
+  attachFuelStopController,
+  dispatchWithFuelStopController,
   getActiveLoadController,
   getTrimbleTripController,
+  getTrimbleTripRoutePathController,
   getTripContextController,
   getTripRouteController,
   listActiveLoadsController,
@@ -12,13 +15,17 @@ import {
   syncTmsController,
   syncTmsFleetController,
   syncTmsLoadsController,
+  updateInProgressFuelStopController,
 } from "../controllers/tms.controller";
 import {
+  validateAttachFuelStop,
+  validateDispatchTrimbleTrip,
+  validateDispatchWithFuelStop,
   validateGetActiveLoad,
   validateGetTripContext,
   validateListActiveLoads,
   validatePlanTrimbleTrip,
-  validateDispatchTrimbleTrip,
+  validateUpdateInProgressFuelStop,
 } from "../validators/tms.validator";
 
 const tmsRouter = Router();
@@ -34,6 +41,26 @@ tmsRouter.post(
   "/loads/:loadId/trimble-trip/dispatch",
   validateDispatchTrimbleTrip,
   dispatchTrimbleTripController,
+);
+tmsRouter.post(
+  "/loads/:loadId/trimble-trip/fuel-stop",
+  validateAttachFuelStop,
+  attachFuelStopController,
+);
+tmsRouter.put(
+  "/loads/:loadId/trimble-trip/fuel-stop",
+  validateUpdateInProgressFuelStop,
+  updateInProgressFuelStopController,
+);
+tmsRouter.post(
+  "/loads/:loadId/trimble-trip/dispatch-with-fuel",
+  validateDispatchWithFuelStop,
+  dispatchWithFuelStopController,
+);
+tmsRouter.get(
+  "/loads/:loadId/trimble-trip/route-path",
+  validateGetActiveLoad,
+  getTrimbleTripRoutePathController,
 );
 tmsRouter.get("/trip-context", listTripContextsController);
 tmsRouter.get("/trip-context/:identifier/route", validateGetTripContext, getTripRouteController);

@@ -1,4 +1,5 @@
 import { HttpError } from "../../utils/http-error";
+import type { GeoPoint } from "../../utils/geo";
 import {
   applyTripManagementIdentity,
   buildPlanTripBody,
@@ -166,6 +167,29 @@ export function countRoutePathCoordinates(path: TripManagementRoutePathResponse 
     count += line.length;
   }
   return count;
+}
+
+/**
+ * Flattens Trimble MultiLineString coordinates ([lon, lat] pairs) into GeoPoint[].
+ */
+export function extractRoutePathPolyline(path: TripManagementRoutePathResponse | null | undefined): GeoPoint[] {
+  const coordinates = path?.geometry?.coordinates;
+  if (!coordinates?.length) {
+    return [];
+  }
+
+  const points: GeoPoint[] = [];
+  for (const line of coordinates) {
+    if (!Array.isArray(line)) continue;
+    for (const pair of line) {
+      if (!Array.isArray(pair) || pair.length < 2) continue;
+      const lon = Number(pair[0]);
+      const lat = Number(pair[1]);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+      points.push({ lat, lng: lon });
+    }
+  }
+  return points;
 }
 
 export function normalizeTripStatus(status: string | number | null | undefined) {

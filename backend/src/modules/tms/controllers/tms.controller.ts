@@ -8,7 +8,15 @@ import {
   listTripContexts,
 } from "../services/tms-query.service";
 import { getTripDrivingRoute } from "../services/trip-route.service";
-import { getTrimbleTripForLoad, planTrimbleTripForLoad, dispatchTrimbleTripForLoad } from "../services/trimble-trip.service";
+import {
+  attachFuelStopToTrimbleTripForLoad,
+  dispatchTrimbleTripForLoad,
+  dispatchTrimbleTripWithFuelStopForLoad,
+  getTrimbleTripForLoad,
+  getTrimbleTripRoutePathForLoad,
+  planTrimbleTripForLoad,
+  updateFuelStopOnInProgressTripForLoad,
+} from "../services/trimble-trip.service";
 
 export async function syncTmsController(_req: Request, res: Response) {
   const tms = await runManualJob("openroad.full");
@@ -117,6 +125,78 @@ export async function dispatchTrimbleTripController(req: Request, res: Response)
     message: data.reusedExisting
       ? `Trip already dispatched to ${data.tspDriverId}`
       : `Trimble trip dispatched to tablet ${data.tspDriverId}`,
+    data,
+  });
+}
+
+export async function attachFuelStopController(req: Request, res: Response) {
+  const loadId = String(req.params.loadId);
+  const customerSlug = typeof req.body?.customerSlug === "string" ? req.body.customerSlug : undefined;
+  const relayAccount = typeof req.body?.relayAccount === "string" ? req.body.relayAccount : undefined;
+  const data = await attachFuelStopToTrimbleTripForLoad(loadId, {
+    customerSlug,
+    relayAccount: relayAccount as "blue_stallion" | "azfs" | undefined,
+  });
+
+  const hasFuel = Boolean(data.fuelStop);
+  return res.status(200).json({
+    success: true,
+    message: hasFuel
+      ? "Fuel stop attached to Planned Trimble trip"
+      : `Trip updated without a fuel stop (${data.recommendation.status})`,
+    data,
+  });
+}
+
+export async function dispatchWithFuelStopController(req: Request, res: Response) {
+  const loadId = String(req.params.loadId);
+  const tspDriverId = typeof req.body?.tspDriverId === "string" ? req.body.tspDriverId : undefined;
+  const allowTestTablet = req.body?.allowTestTablet === true;
+  const useReplanDispatch = req.body?.useReplanDispatch === true;
+  const customerSlug = typeof req.body?.customerSlug === "string" ? req.body.customerSlug : undefined;
+  const relayAccount = typeof req.body?.relayAccount === "string" ? req.body.relayAccount : undefined;
+  const data = await dispatchTrimbleTripWithFuelStopForLoad(loadId, {
+    tspDriverId,
+    allowTestTablet,
+    useReplanDispatch,
+    customerSlug,
+    relayAccount: relayAccount as "blue_stallion" | "azfs" | undefined,
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: data.reusedExisting
+      ? `Trip already dispatched to ${data.tspDriverId}`
+      : `Trimble trip with fuel stop dispatched to tablet ${data.tspDriverId}`,
+    data,
+  });
+}
+
+export async function updateInProgressFuelStopController(req: Request, res: Response) {
+  const loadId = String(req.params.loadId);
+  const customerSlug = typeof req.body?.customerSlug === "string" ? req.body.customerSlug : undefined;
+  const relayAccount = typeof req.body?.relayAccount === "string" ? req.body.relayAccount : undefined;
+  const data = await updateFuelStopOnInProgressTripForLoad(loadId, {
+    customerSlug,
+    relayAccount: relayAccount as "blue_stallion" | "azfs" | undefined,
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: data.fuelStop
+      ? "In-progress trip fuel stop updated"
+      : `In-progress trip updated without a fuel stop (${data.recommendation.status})`,
+    data,
+  });
+}
+
+export async function getTrimbleTripRoutePathController(req: Request, res: Response) {
+  const loadId = String(req.params.loadId);
+  const data = await getTrimbleTripRoutePathForLoad(loadId);
+
+  return res.status(200).json({
+    success: true,
+    message: "Trimble trip route path fetched successfully",
     data,
   });
 }

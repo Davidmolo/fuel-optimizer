@@ -1,7 +1,7 @@
 # Trimble Trip Dispatch — Requirements and Strategy
 
-**Status:** Phase 1–2 done (live proof on tablet `999`, October 1, 2026). Phase 3–4 remaining.  
-**Last updated:** October 2, 2026  
+**Status:** Phase 1–3 done (live-proven on tablet `999`; Phase 3 fuel stop confirmed October 5, 2026). Phase 4 remaining.  
+**Last updated:** October 5, 2026  
 **Sources:** Finn Martel (Trimble Maps), September 9, 2026 and October 1, 2026 (account settings + delete leftover trips before retest); Mantas / David thread, September 9–10, 2026; Mantas on testing tablet `999`, September–October 2026; Account Manager session for XXII Century (company id `BXTQPL`), September 23, 2026; read-only Trip Management search the same day; [Plan Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/plan-trip/), [Modify Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/modify-trip/), [Get Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/get-trip/), [Get Route Path](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/get-route-path/), [Trip Search](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/trip-query/), [Delete Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/delete-trip/)
 
 ---
@@ -194,7 +194,7 @@ One developer, phases in order. Loads, trucks, and the fuel recommendation alrea
 |---|---|---|---|
 | 1. Plan a trip | A real load gets a Trimble trip id. No tablet is notified. | 2–3 days | **Done** |
 | 2. One tablet | One Activated truck receives that trip and can accept it in CoPilot. | 1–2 days | **Done** (proven on `999`, Oct 1, 2026) |
-| 3. Fuel stop | The optimizer’s station is on the trip before it is sent, and can be updated while the driver is moving. | 3–4 days | Next |
+| 3. Fuel stop | The optimizer’s station is on the trip before it is sent, and can be updated while the driver is moving. | 3–4 days | **Done** (proven on `999`, Oct 5, 2026 — Circle K Amarillo TX) |
 | 4. Dispatcher screen | Each dispatcher sees only their trucks and has a Send to CoPilot action. | 3–4 days | Remaining |
 
 ### Phase 1 — Prove one planned trip
@@ -234,17 +234,19 @@ Exit: a Planned trip exists in Trimble for one of our loads, and we can read it 
 
 Exit: ~~Fuel Optimizer can send a trip to a specific tablet without OpenRoad (proven on `999` first).~~ **Met October 1, 2026.**
 
-### Phase 3 — Automatic fuel stop
+### Phase 3 — Automatic fuel stop — **Done (October 5, 2026)**
 
 **Estimate:** 3–4 days.
 
-1. Run the existing recommendation against the Trip Management route path (not a separately drawn PC\*Miler line).
-2. Insert the chosen station as `FuelStop` **before** dispatch, at the index the corridor math already produces.
-3. On a later recommendation change for an in-progress trip, modify only the open stops and insert at the next index or a later index using the rule in §3 step 4.
+1. ~~Run the existing recommendation against the Trip Management route path (not a separately drawn PC\*Miler line).~~ **Done.** `getRecommendationForTruck` accepts `routePolylineOverride`; attach/dispatch-with-fuel score along `GET /trip/{alkTripId}/routePath`. PC\*Miler remains fallback when no trip path exists.
+2. ~~Insert the chosen station as `FuelStop` **before** dispatch, at the index the corridor math already produces.~~ **Done.** `POST /api/v1/tms/loads/:loadId/trimble-trip/fuel-stop` and `POST .../dispatch-with-fuel`. Stops + `fuelStop` persisted on `load.trimbleTrip`. Live proof: load `2311438` → FO trip `alkTripId` `330217597` (`tmsTripId` `fo-2311438-1791220131340`) dispatched to tablet `999` with **Circle K #2709243, Amarillo TX** as `FuelStop`. Mantas confirmed the fuel stop on CoPilot (October 5, 2026).
+3. ~~On a later recommendation change for an in-progress trip, modify only the open stops and insert at the next index or a later index using the rule in §3 step 4.~~ **Done in code.** `PUT /api/v1/tms/loads/:loadId/trimble-trip/fuel-stop` for Dispatched/InProgress trips (API ready; optional follow-up live proof when a trip is already InProgress).
 
-The dispatcher never picks the station. If the engine has no contracted station on the corridor, send the trip without a fuel stop and show that reason. Do not invent a station.
+The dispatcher never picks the station. If the engine has no contracted station on the corridor, send the trip without a fuel stop and show that reason (`lastRecommendationStatus` / `lastRecommendationMessage`). Do not invent a station.
 
-Exit: the tablet route contains the station the optimizer selected.
+Also: `GET /api/v1/tms/loads/:loadId/trimble-trip/route-path` returns the Trimble polyline. Trip context / load views expose `trimbleTrip` summary including `fuelStop`.
+
+Exit: ~~the tablet route contains the station the optimizer selected.~~ **Met October 5, 2026** (Mantas on tablet `999`: Circle K Amarillo TX).
 
 ### Phase 4 — Dispatcher workflow
 
@@ -294,9 +296,10 @@ These do not block Phase 1. They should be answered before calling the workflow 
 ## 7. Acceptance
 
 1. ~~Planning a load creates a Trimble trip and stores `alkTripId`. The tablet does not notify the driver yet.~~ **Met (Phase 1).**
-2. The recommended station is inserted as `FuelStop` with coordinates, at a specific index, without a dispatcher choosing it. **Phase 3.**
+2. ~~The recommended station is inserted as `FuelStop` with coordinates, at a specific index, without a dispatcher choosing it.~~ **Met (Phase 3 on `999`, October 5, 2026 — Circle K Amarillo TX).**
 3. ~~Setting `tspDriverId` delivers that trip to one CoPilot tablet. A different vehicle does not receive it.~~ **Met (Phase 2 on `999`, October 1, 2026).** Production Send must not dispatch real loads to `999`.
-4. The driver can accept the trip and be navigated to the fuel stop in order. **Accept + navigation on FO load stops met in Phase 2; fuel stop on that route is Phase 3.**
-5. Changing the recommendation on an in-progress trip updates the open stops, and a next-stop insert notifies the driver. **Phase 3.**
+4. ~~The driver can accept the trip and be navigated to the fuel stop in order.~~ **Met (Phase 2 accept + Phase 3 FuelStop on tablet `999`, October 5, 2026).**
+5. ~~Changing the recommendation on an in-progress trip updates the open stops, and a next-stop insert notifies the driver.~~ **Met in code (Phase 3 `PUT .../fuel-stop`).** Optional live proof when a trip is already InProgress.
+
 6. A dispatcher login lists only that dispatcher’s drivers. **Phase 4.**
 7. Assets without a Trip Management license are not dispatched. **Enforced in matching / dispatch code; keep for production Send.**

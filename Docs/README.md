@@ -4,7 +4,7 @@ Single place for product and integration documentation.
 
 | Doc | What it is |
 |-----|------------|
-| [TRIMBLE_TRIP_DISPATCH.md](./TRIMBLE_TRIP_DISPATCH.md) | CoPilot / Trip Management handoff (Phase 1–2 done; Phase 3–4 next) |
+| [TRIMBLE_TRIP_DISPATCH.md](./TRIMBLE_TRIP_DISPATCH.md) | CoPilot / Trip Management handoff (Phase 1–3 live-proven; Phase 4 next) |
 | [EDGE_CASES.md](./EDGE_CASES.md) | Recommendation / corridor edge cases |
 | [OPEN_ROAD_TMS_API_V2.md](./OPEN_ROAD_TMS_API_V2.md) | Open Road TMS API notes |
 | [SAMSARA_API.md](./SAMSARA_API.md) | Samsara ELD API notes |

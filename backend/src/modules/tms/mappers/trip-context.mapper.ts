@@ -1,6 +1,6 @@
 import type { FleetFuelTelemetry, FleetGpsTelemetry, FleetMappingStatus } from "../../fleet/models/fleet-vehicle.model";
 import type { TelemetryFreshness } from "../../fleet/mappers/fleet-vehicle.mapper";
-import type { TmsLoadDocument } from "../models/tms-load.model";
+import type { TmsLoadDocument, TrimbleTripFuelStopRecord } from "../models/tms-load.model";
 
 export type TmsLoadDestinationView = {
   position: number;
@@ -12,6 +12,31 @@ export type TmsLoadDestinationView = {
   lng?: number;
   appointmentDate?: string;
   completed: boolean;
+};
+
+export type TrimbleTripFuelStopView = {
+  relayAccount: string;
+  relayLocationId: string;
+  merchantName?: string;
+  name?: string;
+  city?: string;
+  state?: string;
+  latitude: number;
+  longitude: number;
+  effectivePricePerGallon?: number;
+  stopIndex: number;
+  insertedAt: string;
+  reason?: string;
+};
+
+export type TrimbleTripSummaryView = {
+  alkTripId: string;
+  tmsTripId: string;
+  tripStatus?: string;
+  tspDriverId?: string | null;
+  fuelStop?: TrimbleTripFuelStopView | null;
+  lastRecommendationStatus?: "ready" | "not_ready" | "no_candidates";
+  lastRecommendationMessage?: string;
 };
 
 export type TmsLoadView = {
@@ -33,6 +58,7 @@ export type TmsLoadView = {
   truckUnit?: string;
   openroadTruckId?: number;
   destinations: TmsLoadDestinationView[];
+  trimbleTrip?: TrimbleTripSummaryView;
   syncedAt?: string;
   updatedAt: string;
 };
@@ -69,7 +95,27 @@ export type TripContextView = {
   };
 };
 
-export function buildRouteLabel(load: Pick<TmsLoadDocument, "originCity" | "originStateCode" | "destinationCity" | "destinationStateCode">) {
+function toFuelStopView(fuelStop: TrimbleTripFuelStopRecord): TrimbleTripFuelStopView {
+  return {
+    relayAccount: fuelStop.relayAccount,
+    relayLocationId: fuelStop.relayLocationId,
+    merchantName: fuelStop.merchantName,
+    name: fuelStop.name,
+    city: fuelStop.city,
+    state: fuelStop.state,
+    latitude: fuelStop.latitude,
+    longitude: fuelStop.longitude,
+    effectivePricePerGallon: fuelStop.effectivePricePerGallon,
+    stopIndex: fuelStop.stopIndex,
+    insertedAt:
+      fuelStop.insertedAt instanceof Date ? fuelStop.insertedAt.toISOString() : String(fuelStop.insertedAt),
+    reason: fuelStop.reason,
+  };
+}
+
+export function buildRouteLabel(
+  load: Pick<TmsLoadDocument, "originCity" | "originStateCode" | "destinationCity" | "destinationStateCode">,
+) {
   const origin = [load.originCity, load.originStateCode].filter(Boolean).join(", ");
   const destination = [load.destinationCity, load.destinationStateCode].filter(Boolean).join(", ");
 
@@ -81,6 +127,8 @@ export function buildRouteLabel(load: Pick<TmsLoadDocument, "originCity" | "orig
 }
 
 export function toTmsLoadView(load: TmsLoadDocument): TmsLoadView {
+  const trimble = load.trimbleTrip;
+
   return {
     id: String(load._id),
     openroadLoadId: load.openroadLoadId,
@@ -110,6 +158,17 @@ export function toTmsLoadView(load: TmsLoadDocument): TmsLoadView {
       appointmentDate: destination.appointmentDate,
       completed: destination.completed,
     })),
+    trimbleTrip: trimble
+      ? {
+          alkTripId: trimble.alkTripId,
+          tmsTripId: trimble.tmsTripId,
+          tripStatus: trimble.tripStatus,
+          tspDriverId: trimble.tspDriverId ?? null,
+          fuelStop: trimble.fuelStop ? toFuelStopView(trimble.fuelStop) : null,
+          lastRecommendationStatus: trimble.lastRecommendationStatus,
+          lastRecommendationMessage: trimble.lastRecommendationMessage,
+        }
+      : undefined,
     syncedAt: load.syncedAt?.toISOString(),
     updatedAt: load.updatedAt.toISOString(),
   };

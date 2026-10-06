@@ -53,6 +53,9 @@ export type TripManagementModifyTripRequest = {
 
 export type TripManagementStopResponse = {
   stopType?: string;
+  stopStatus?: string | number | boolean | null;
+  arrived?: boolean;
+  completed?: boolean;
   location?: {
     label?: string;
     coords?: {

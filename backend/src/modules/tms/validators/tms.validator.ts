@@ -49,6 +49,53 @@ export const dispatchTrimbleTripSchema = z.object({
   }),
 });
 
+const relayAccountSchema = z.enum(["blue_stallion", "azfs"]).optional();
+
+export const attachFuelStopSchema = z.object({
+  body: z
+    .object({
+      customerSlug: z.string().trim().min(1).optional(),
+      relayAccount: relayAccountSchema,
+    })
+    .optional()
+    .default({}),
+  query: z.object({}).optional().default({}),
+  params: z.object({
+    loadId: z.string().trim().min(1),
+  }),
+});
+
+export const dispatchWithFuelStopSchema = z.object({
+  body: z
+    .object({
+      tspDriverId: z.string().trim().min(1).optional(),
+      allowTestTablet: z.boolean().optional(),
+      useReplanDispatch: z.boolean().optional(),
+      customerSlug: z.string().trim().min(1).optional(),
+      relayAccount: relayAccountSchema,
+    })
+    .optional()
+    .default({}),
+  query: z.object({}).optional().default({}),
+  params: z.object({
+    loadId: z.string().trim().min(1),
+  }),
+});
+
+export const updateInProgressFuelStopSchema = z.object({
+  body: z
+    .object({
+      customerSlug: z.string().trim().min(1).optional(),
+      relayAccount: relayAccountSchema,
+    })
+    .optional()
+    .default({}),
+  query: z.object({}).optional().default({}),
+  params: z.object({
+    loadId: z.string().trim().min(1),
+  }),
+});
+
 export const tripContextParamSchema = z.object({
   body: z.object({}).optional().default({}),
   query: z.object({}).optional().default({}),
@@ -61,4 +108,7 @@ export const validateListActiveLoads = validateRequest(listActiveLoadsQuerySchem
 export const validateGetActiveLoad = validateRequest(loadIdParamSchema);
 export const validatePlanTrimbleTrip = validateRequest(planTrimbleTripSchema);
 export const validateDispatchTrimbleTrip = validateRequest(dispatchTrimbleTripSchema);
+export const validateAttachFuelStop = validateRequest(attachFuelStopSchema);
+export const validateDispatchWithFuelStop = validateRequest(dispatchWithFuelStopSchema);
+export const validateUpdateInProgressFuelStop = validateRequest(updateInProgressFuelStopSchema);
 export const validateGetTripContext = validateRequest(tripContextParamSchema);

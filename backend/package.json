@@ -17,7 +17,8 @@
     "test": "tsx --test src/**/*.test.ts",
     "test:recommendations": "node scripts/test-recommendations.mjs",
     "test:plan-trip": "node scripts/test-plan-trip.mjs",
-    "test:dispatch-trip": "node scripts/test-dispatch-trip.mjs"
+    "test:dispatch-trip": "node scripts/test-dispatch-trip.mjs",
+    "test:fuel-stop-trip": "node scripts/test-fuel-stop-trip.mjs"
   },
   "keywords": [],
   "author": "",

@@ -7,6 +7,7 @@ export {
 } from "./build-plan-trip-body";
 export {
   countRoutePathCoordinates,
+  extractRoutePathPolyline,
   getTripByAlkTripId,
   getTripByTmsTripId,
   getTripRoutePath,

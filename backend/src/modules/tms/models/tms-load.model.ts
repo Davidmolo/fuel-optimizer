@@ -22,6 +22,28 @@ export type TmsLoadDestinationDocument = {
   driverId?: number;
 };
 
+export type TrimbleTripStopRecord = {
+  stopType: "Origin" | "Work" | "FuelStop" | "Destination" | "Pickup" | "Delivery" | "Waypoint";
+  lat: number;
+  lon: number;
+  label?: string;
+};
+
+export type TrimbleTripFuelStopRecord = {
+  relayAccount: string;
+  relayLocationId: string;
+  merchantName?: string;
+  name?: string;
+  city?: string;
+  state?: string;
+  latitude: number;
+  longitude: number;
+  effectivePricePerGallon?: number;
+  stopIndex: number;
+  insertedAt: Date;
+  reason?: string;
+};
+
 export type TmsLoadTrimbleTripDocument = {
   alkTripId: string;
   tmsTripId: string;
@@ -32,6 +54,12 @@ export type TmsLoadTrimbleTripDocument = {
   tripUrl?: string;
   plannedAt?: Date;
   refreshedAt?: Date;
+  /** Full stop list last sent to Trimble (including any FuelStop). */
+  stops?: TrimbleTripStopRecord[];
+  /** Chosen contracted station inserted as FuelStop, or null when none. */
+  fuelStop?: TrimbleTripFuelStopRecord | null;
+  lastRecommendationStatus?: "ready" | "not_ready" | "no_candidates";
+  lastRecommendationMessage?: string;
 };
 
 export type TmsLoadDocument = {
@@ -87,6 +115,34 @@ const loadDestinationSchema = new Schema<TmsLoadDestinationDocument>(
   { _id: false },
 );
 
+const trimbleTripStopSchema = new Schema<TrimbleTripStopRecord>(
+  {
+    stopType: { type: String, required: true, trim: true },
+    lat: { type: Number, required: true },
+    lon: { type: Number, required: true },
+    label: { type: String, trim: true },
+  },
+  { _id: false },
+);
+
+const trimbleTripFuelStopSchema = new Schema<TrimbleTripFuelStopRecord>(
+  {
+    relayAccount: { type: String, required: true, trim: true },
+    relayLocationId: { type: String, required: true, trim: true },
+    merchantName: { type: String, trim: true },
+    name: { type: String, trim: true },
+    city: { type: String, trim: true },
+    state: { type: String, trim: true },
+    latitude: { type: Number, required: true },
+    longitude: { type: Number, required: true },
+    effectivePricePerGallon: { type: Number },
+    stopIndex: { type: Number, required: true },
+    insertedAt: { type: Date, required: true },
+    reason: { type: String, trim: true },
+  },
+  { _id: false },
+);
+
 const trimbleTripSchema = new Schema<TmsLoadTrimbleTripDocument>(
   {
     alkTripId: { type: String, required: true, trim: true, index: true },
@@ -98,6 +154,10 @@ const trimbleTripSchema = new Schema<TmsLoadTrimbleTripDocument>(
     tripUrl: { type: String, trim: true },
     plannedAt: { type: Date },
     refreshedAt: { type: Date },
+    stops: { type: [trimbleTripStopSchema], default: undefined },
+    fuelStop: { type: trimbleTripFuelStopSchema, default: null },
+    lastRecommendationStatus: { type: String, trim: true },
+    lastRecommendationMessage: { type: String, trim: true },
   },
   { _id: false },
 );
