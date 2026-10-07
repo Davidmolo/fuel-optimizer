@@ -1,6 +1,11 @@
 import { HttpError } from "../../../utils/http-error";
 import { env } from "../../../config/env";
-import { buildPolylineBoundingBox, polylineLengthMiles, type GeoPoint } from "../../../utils/geo";
+import {
+  buildPolylineBoundingBox,
+  distanceAlongPolylineMiles,
+  polylineLengthMiles,
+  type GeoPoint,
+} from "../../../utils/geo";
 import type { RelayAccount } from "../../../integrations/relay";
 import {
   extractRoutePathPolyline,
@@ -32,10 +37,14 @@ import {
   isRecommendationUsingTrimbleRouting,
 } from "./route-planning.service";
 import {
-  buildFuelPlan,
   listCorridorStationCandidates,
   listRadialStationCandidates,
 } from "./fuel-plan.service";
+import {
+  buildFuelPlanFromChain,
+  buildFuelStopChain,
+  corridorStationsToChainCandidates,
+} from "./fuel-stop-chain";
 import {
   buildDemoTripContext,
   getDemoNotReadyMessage,
@@ -370,19 +379,29 @@ export async function getRecommendationForTruck(identifier: string, options: Get
     shortlistedForRouting: shortlist.stats.shortlistedForRouting,
   };
 
-  const cheapestOnRoute = corridorStations[0];
+  const truckAlongRouteMiles = distanceAlongPolylineMiles(
+    { lat: truckLatitude, lng: truckLongitude },
+    routePolyline.polyline,
+  );
+  const chainCandidates = corridorStationsToChainCandidates(corridorStations, truckAlongRouteMiles);
+  const fuelChain = buildFuelStopChain({
+    currentAlongRouteMiles: truckAlongRouteMiles,
+    destinationAlongRouteMiles: routePolyline.routeLengthMiles,
+    fuelPercent,
+    fuelRange,
+    config: recommendationConfig,
+    candidates: chainCandidates,
+  });
   const fuelPlan =
-    cheapestOnRoute
-      ? buildFuelPlan({
+    corridorStations.length > 0 || fuelChain.stops.length > 0
+      ? buildFuelPlanFromChain({
           fuelPercent,
-          fuelRange,
           config: recommendationConfig,
-          cheapestOnRoute,
-          primaryWithinRange: ranked.primary,
+          chain: fuelChain,
         })
       : undefined;
 
-  if (!ranked.primary && !cheapestOnRoute) {
+  if (!ranked.primary && corridorStations.length === 0 && fuelChain.stops.length === 0) {
     return buildRecommendationView({
       tripContext: activeTripContext,
       status: "no_candidates",
@@ -403,21 +422,26 @@ export async function getRecommendationForTruck(identifier: string, options: Get
     });
   }
 
-  const primary = ranked.primary ?? (cheapestOnRoute ? {
-    relayAccount: cheapestOnRoute.relayAccount,
-    relayLocationId: cheapestOnRoute.relayLocationId,
-    merchantName: cheapestOnRoute.merchantName,
-    name: cheapestOnRoute.name,
-    city: cheapestOnRoute.city,
-    state: cheapestOnRoute.state,
-    latitude: cheapestOnRoute.latitude,
-    longitude: cheapestOnRoute.longitude,
-    effectivePricePerGallon: cheapestOnRoute.effectivePricePerGallon,
-    distanceMiles: cheapestOnRoute.distanceAlongRouteMiles,
+  const chainPrimaryStop = fuelPlan?.stops?.[0] ?? fuelPlan?.now;
+  const primaryStation =
+    (chainPrimaryStop
+      ? corridorStations.find((station) => station.relayLocationId === chainPrimaryStop.relayLocationId)
+      : undefined) ?? corridorStations[0];
+  const primary = ranked.primary ?? (primaryStation ? {
+    relayAccount: primaryStation.relayAccount,
+    relayLocationId: primaryStation.relayLocationId,
+    merchantName: primaryStation.merchantName,
+    name: primaryStation.name,
+    city: primaryStation.city,
+    state: primaryStation.state,
+    latitude: primaryStation.latitude,
+    longitude: primaryStation.longitude,
+    effectivePricePerGallon: primaryStation.effectivePricePerGallon,
+    distanceMiles: primaryStation.distanceAlongRouteMiles,
     drivingDurationMinutes: 0,
-    distanceAlongRouteMiles: cheapestOnRoute.distanceAlongRouteMiles,
+    distanceAlongRouteMiles: primaryStation.distanceAlongRouteMiles,
     corridorDistanceMiles: 0,
-    pricing: pricingByLocationId.get(cheapestOnRoute.relayLocationId)! as Extract<
+    pricing: pricingByLocationId.get(primaryStation.relayLocationId)! as Extract<
       Awaited<ReturnType<typeof resolveContractPricing>>,
       { available: true }
     >,
@@ -444,17 +468,23 @@ export async function getRecommendationForTruck(identifier: string, options: Get
 
   const demoPrefix = isDemo ? "[Demo] " : "";
   const atDestinationPrefix = useRadialSearch ? "At/near destination — " : "";
+  const requiredStopCount = fuelPlan?.stops?.length ?? 0;
+  const readyMessage =
+    requiredStopCount > 1
+      ? `Plan ${requiredStopCount} fuel stops along the route to reach destination.`
+      : requiredStopCount === 1
+        ? `Plan one fuel stop: ${fuelPlan?.stops?.[0]?.merchantDisplayName ?? primary.merchantName ?? primary.pricing.merchantDisplayName}.`
+        : fuelPlan?.canReachCheapestDirectly
+          ? `Cheapest contracted stop on route: ${primary.merchantName ?? primary.pricing.merchantDisplayName} at $${primary.effectivePricePerGallon.toFixed(3)}/gal.`
+          : fuelPlan?.now
+            ? `Add fuel now, then continue toward destination.`
+            : "Fuel stop recommendation generated successfully.";
+  const gapSuffix = fuelPlan?.blockedReason ? ` ${fuelPlan.blockedReason}` : "";
 
   return buildRecommendationView({
     tripContext: activeTripContext,
     status: "ready",
-    message: `${demoPrefix}${atDestinationPrefix}${
-      fuelPlan?.canReachCheapestDirectly
-        ? `Cheapest contracted stop on route: ${primary.merchantName ?? primary.pricing.merchantDisplayName} at $${primary.effectivePricePerGallon.toFixed(3)}/gal.`
-        : fuelPlan?.now
-          ? `Add fuel now, then fill at the cheapest stop ${fuelPlan.then?.distanceAlongRouteMiles ?? fuelPlan.cheapestOnRoute.distanceAlongRouteMiles} mi ahead.`
-          : "Fuel stop recommendation generated successfully."
-    }`,
+    message: `${demoPrefix}${atDestinationPrefix}${readyMessage}${gapSuffix}`,
     fuelRange,
     corridor: {
       bufferMiles: corridor.bufferMiles,

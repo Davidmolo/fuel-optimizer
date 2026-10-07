@@ -15,7 +15,7 @@ import {
 } from "../../../integrations/trip-management";
 import type { RelayAccount } from "../../../integrations/relay";
 import { HttpError } from "../../../utils/http-error";
-import { distanceAlongPolylineMiles, type GeoPoint } from "../../../utils/geo";
+import type { GeoPoint } from "../../../utils/geo";
 import { FleetVehicleModel } from "../../fleet/models/fleet-vehicle.model";
 import { isTestCopilotAssetId } from "../../fleet/services/copilot-asset-matching";
 import {
@@ -23,6 +23,7 @@ import {
   evaluateCopilotSendReadiness,
   type FleetScopeActor,
 } from "../../fleet/services/dispatcher-fleet-scope";
+import type { FuelPlanStopView } from "../../recommendation/services/fuel-plan.service";
 import { getRecommendationForTruck } from "../../recommendation/services/recommendation.service";
 import {
   TmsLoadModel,
@@ -31,9 +32,11 @@ import {
   type TrimbleTripStopRecord,
 } from "../models/tms-load.model";
 import {
-  buildTripStopsWithFuelStop,
+  buildTripStopsWithFuelStops,
+  replaceOpenFuelStops,
   recordsToTripManagementStops,
   toTrimbleTripStopRecord,
+  type FuelStopStationInput,
 } from "./fuel-stop-builder";
 import { mapLoadDestinationsToTripStops } from "./map-load-to-trip-stops";
 
@@ -52,6 +55,7 @@ export type TrimbleTripView = {
   reusedExisting: boolean;
   stops?: TrimbleTripStopRecord[];
   fuelStop?: TrimbleTripFuelStopRecord | null;
+  fuelStops?: TrimbleTripFuelStopRecord[];
   lastRecommendationStatus?: "ready" | "not_ready" | "no_candidates";
   lastRecommendationMessage?: string;
   safety: {
@@ -60,6 +64,75 @@ export type TrimbleTripView = {
     ownsTrip: boolean;
   };
 };
+
+function resolvePlannedFuelStations(
+  fuelPlanStops: FuelPlanStopView[] | undefined,
+): Array<FuelStopStationInput & {
+  relayAccount: string;
+  relayLocationId: string;
+  effectivePricePerGallon?: number;
+  reason?: string;
+}> {
+  if (!fuelPlanStops?.length) {
+    return [];
+  }
+
+  return fuelPlanStops.flatMap((stop) => {
+    if (
+      typeof stop.latitude !== "number" ||
+      typeof stop.longitude !== "number" ||
+      !Number.isFinite(stop.latitude) ||
+      !Number.isFinite(stop.longitude)
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        relayAccount: stop.relayAccount ?? "unknown",
+        relayLocationId: stop.relayLocationId,
+        merchantName: stop.merchantName ?? stop.merchantDisplayName,
+        name: stop.name,
+        city: stop.city,
+        state: stop.state,
+        latitude: stop.latitude,
+        longitude: stop.longitude,
+        effectivePricePerGallon: stop.effectivePricePerGallon,
+        suggestedGallons: stop.suggestedGallons,
+        reason: stop.reason,
+      },
+    ];
+  });
+}
+
+function buildFuelStopRecords(
+  stations: ReturnType<typeof resolvePlannedFuelStations>,
+  fuelStopIndexes: Array<{ stationIndex: number; stopIndex: number }>,
+): TrimbleTripFuelStopRecord[] {
+  const insertedAt = new Date();
+  return fuelStopIndexes.flatMap((entry) => {
+    const station = stations[entry.stationIndex];
+    if (!station) {
+      return [];
+    }
+    return [
+      {
+        relayAccount: station.relayAccount,
+        relayLocationId: station.relayLocationId,
+        merchantName: station.merchantName,
+        name: station.name,
+        city: station.city,
+        state: station.state,
+        latitude: station.latitude,
+        longitude: station.longitude,
+        effectivePricePerGallon: station.effectivePricePerGallon,
+        stopIndex: entry.stopIndex,
+        insertedAt,
+        reason: station.reason,
+      },
+    ];
+  });
+}
 
 export type TrimbleTripWithFuelView = TrimbleTripView & {
   recommendation: {
@@ -125,7 +198,10 @@ function toTrimbleTripView(
     refreshedAt: load.trimbleTrip?.refreshedAt?.toISOString(),
     reusedExisting: options.reusedExisting,
     stops: load.trimbleTrip?.stops,
-    fuelStop: load.trimbleTrip?.fuelStop ?? null,
+    fuelStop: load.trimbleTrip?.fuelStop ?? load.trimbleTrip?.fuelStops?.[0] ?? null,
+    fuelStops:
+      load.trimbleTrip?.fuelStops ??
+      (load.trimbleTrip?.fuelStop ? [load.trimbleTrip.fuelStop] : undefined),
     lastRecommendationStatus: load.trimbleTrip?.lastRecommendationStatus,
     lastRecommendationMessage: load.trimbleTrip?.lastRecommendationMessage,
     safety: {
@@ -225,12 +301,28 @@ function assignTrimbleTripFields(
     refreshedAt?: Date;
     stops?: TrimbleTripStopRecord[];
     fuelStop?: TrimbleTripFuelStopRecord | null;
+    fuelStops?: TrimbleTripFuelStopRecord[];
     lastRecommendationStatus?: "ready" | "not_ready" | "no_candidates";
     lastRecommendationMessage?: string;
     clearFuelStop?: boolean;
   },
 ) {
   const previous = load.trimbleTrip;
+  const nextFuelStops = fields.clearFuelStop
+    ? []
+    : fields.fuelStops !== undefined
+      ? fields.fuelStops
+      : fields.fuelStop !== undefined
+        ? fields.fuelStop
+          ? [fields.fuelStop]
+          : []
+        : (previous?.fuelStops ?? (previous?.fuelStop ? [previous.fuelStop] : undefined));
+  const nextFuelStop = fields.clearFuelStop
+    ? null
+    : fields.fuelStop !== undefined
+      ? fields.fuelStop
+      : (nextFuelStops?.[0] ?? previous?.fuelStop ?? null);
+
   load.trimbleTrip = {
     alkTripId: fields.alkTripId,
     tmsTripId: fields.tmsTripId,
@@ -242,11 +334,8 @@ function assignTrimbleTripFields(
     plannedAt: fields.plannedAt ?? previous?.plannedAt ?? new Date(),
     refreshedAt: fields.refreshedAt ?? new Date(),
     stops: fields.stops ?? previous?.stops,
-    fuelStop: fields.clearFuelStop
-      ? null
-      : fields.fuelStop !== undefined
-        ? fields.fuelStop
-        : (previous?.fuelStop ?? null),
+    fuelStop: nextFuelStop,
+    fuelStops: nextFuelStops,
     lastRecommendationStatus: fields.lastRecommendationStatus ?? previous?.lastRecommendationStatus,
     lastRecommendationMessage: fields.lastRecommendationMessage ?? previous?.lastRecommendationMessage,
   };
@@ -276,6 +365,7 @@ function persistTripStopsSnapshot(
   options: {
     stops: TripManagementStopInput[];
     fuelStop?: TrimbleTripFuelStopRecord | null;
+    fuelStops?: TrimbleTripFuelStopRecord[];
     clearFuelStop?: boolean;
     recommendationStatus?: "ready" | "not_ready" | "no_candidates";
     recommendationMessage?: string;
@@ -297,6 +387,7 @@ function persistTripStopsSnapshot(
     refreshedAt: new Date(),
     stops: options.stops.map(toTrimbleTripStopRecord),
     fuelStop: options.fuelStop,
+    fuelStops: options.fuelStops,
     clearFuelStop: options.clearFuelStop,
     lastRecommendationStatus: options.recommendationStatus,
     lastRecommendationMessage: options.recommendationMessage,
@@ -724,7 +815,14 @@ export async function modifyTrimbleTripForLoad(
 
 export async function attachFuelStopToTrimbleTripForLoad(
   loadId: string,
-  options: { customerSlug?: string; relayAccount?: RelayAccount; forceNewTrip?: boolean } = {},
+  options: {
+    customerSlug?: string;
+    relayAccount?: RelayAccount;
+    forceNewTrip?: boolean;
+    /** Engineering proofs only: force recommendation fuel % for multi-stop chain tests. */
+    demo?: boolean;
+    demoFuelPercent?: number;
+  } = {},
 ): Promise<TrimbleTripWithFuelView> {
   if (!isTripManagementConfigured()) {
     throw new HttpError("Trimble Trip Management is not configured. Set TRIMBLE_API_KEY.", 503);
@@ -769,30 +867,19 @@ export async function attachFuelStopToTrimbleTripForLoad(
     customerSlug: options.customerSlug,
     relayAccount: options.relayAccount,
     routePolylineOverride: routePolyline.length >= 2 ? routePolyline : undefined,
+    demo: options.demo,
+    demoFuelPercent: options.demoFuelPercent,
   });
 
+  const plannedStations = resolvePlannedFuelStations(recommendation.fuelPlan?.stops);
   let stops: TripManagementStopInput[];
-  let fuelStopRecord: TrimbleTripFuelStopRecord | null = null;
+  let fuelStopRecords: TrimbleTripFuelStopRecord[] = [];
   let clearFuelStop = false;
 
-  if (recommendation.status === "ready" && recommendation.primary) {
-    const built = buildTripStopsWithFuelStop(load.destinations, recommendation.primary, routePolyline);
+  if (recommendation.status === "ready" && plannedStations.length > 0) {
+    const built = buildTripStopsWithFuelStops(load.destinations, plannedStations, routePolyline);
     stops = built.stops;
-    if (built.fuelStopIndex >= 0) {
-      fuelStopRecord = {
-        relayAccount: recommendation.primary.relayAccount,
-        relayLocationId: recommendation.primary.relayLocationId,
-        merchantName: recommendation.primary.merchantName,
-        name: recommendation.primary.name,
-        city: recommendation.primary.city,
-        state: recommendation.primary.state,
-        latitude: recommendation.primary.latitude,
-        longitude: recommendation.primary.longitude,
-        effectivePricePerGallon: recommendation.primary.effectivePricePerGallon,
-        stopIndex: built.fuelStopIndex,
-        insertedAt: new Date(),
-      };
-    }
+    fuelStopRecords = buildFuelStopRecords(plannedStations, built.fuelStopIndexes);
   } else {
     stops = mapLoadDestinationsToTripStops(load.destinations);
     clearFuelStop = true;
@@ -809,12 +896,16 @@ export async function attachFuelStopToTrimbleTripForLoad(
   });
 
   const snapshot = await refreshTripSnapshot(alkTripId);
+  const recommendationMessage = recommendation.fuelPlan?.blockedReason
+    ? `${recommendation.message} ${recommendation.fuelPlan.blockedReason}`
+    : recommendation.message;
   persistTripStopsSnapshot(load, snapshot, {
     stops,
-    fuelStop: fuelStopRecord,
+    fuelStop: fuelStopRecords[0] ?? null,
+    fuelStops: fuelStopRecords,
     clearFuelStop,
     recommendationStatus: recommendation.status,
-    recommendationMessage: recommendation.message,
+    recommendationMessage,
     tspDriverId: snapshot.tspDriverId,
   });
   await load.save();
@@ -833,7 +924,7 @@ export async function attachFuelStopToTrimbleTripForLoad(
     ...view,
     recommendation: {
       status: recommendation.status,
-      message: recommendation.message,
+      message: recommendationMessage,
     },
   };
 }
@@ -848,6 +939,8 @@ export async function dispatchTrimbleTripWithFuelStopForLoad(
     /** Fall back to Phase 2 re-plan dispatch if modify+tspDriverId fails. */
     useReplanDispatch?: boolean;
     actor?: FleetScopeActor | null;
+    demo?: boolean;
+    demoFuelPercent?: number;
   } = {},
 ): Promise<TrimbleTripWithFuelView> {
   const loadForScope = await findLoadByIdentifier(loadId);
@@ -858,6 +951,8 @@ export async function dispatchTrimbleTripWithFuelStopForLoad(
 
   const attached = await attachFuelStopToTrimbleTripForLoad(loadId, {
     customerSlug: options.customerSlug,
+    demo: options.demo,
+    demoFuelPercent: options.demoFuelPercent,
     relayAccount: options.relayAccount,
   });
 
@@ -1049,88 +1144,17 @@ export async function updateFuelStopOnInProgressTripForLoad(
     throw new HttpError("No open stops remain on this trip to update.", 409);
   }
 
+  const plannedStations = resolvePlannedFuelStations(recommendation.fuelPlan?.stops);
   let stops: TripManagementStopInput[];
-  let fuelStopRecord: TrimbleTripFuelStopRecord | null = null;
+  let fuelStopRecords: TrimbleTripFuelStopRecord[] = [];
   let clearFuelStop = false;
 
-  if (recommendation.status === "ready" && recommendation.primary) {
-    const primary = recommendation.primary;
-    const fuelPoint: GeoPoint = { lat: primary.latitude, lng: primary.longitude };
-
-    const truckLat = recommendation.tripContext.vehicle?.gps?.latitude;
-    const truckLng = recommendation.tripContext.vehicle?.gps?.longitude;
-    let insertIndex: number;
-
-    if (Number.isFinite(truckLat) && Number.isFinite(truckLng) && routePolyline.length >= 2) {
-      const truckAlong = distanceAlongPolylineMiles(
-        { lat: Number(truckLat), lng: Number(truckLng) },
-        routePolyline,
-      );
-      const stationAlong = distanceAlongPolylineMiles(fuelPoint, routePolyline);
-      const stationIsNext =
-        stationAlong >= truckAlong &&
-        !baseStops.some((stop) => {
-          const stopAlong = distanceAlongPolylineMiles({ lat: stop.lat, lng: stop.lon }, routePolyline);
-          return stopAlong > truckAlong && stopAlong < stationAlong;
-        });
-
-      if (stationIsNext) {
-        const hasOrigin = baseStops[0]?.stopType === "Origin";
-        insertIndex = hasOrigin ? 1 : 0;
-      } else {
-        insertIndex = baseStops.length;
-        for (let i = 0; i < baseStops.length; i += 1) {
-          const stop = baseStops[i];
-          if (!stop) continue;
-          const stopAlong = distanceAlongPolylineMiles({ lat: stop.lat, lng: stop.lon }, routePolyline);
-          if (stopAlong > stationAlong) {
-            insertIndex = i;
-            break;
-          }
-        }
-        if (baseStops[0]?.stopType === "Origin" && insertIndex === 0) {
-          insertIndex = 1;
-        }
-        if (
-          baseStops[baseStops.length - 1]?.stopType === "Destination" &&
-          insertIndex >= baseStops.length
-        ) {
-          insertIndex = Math.max(1, baseStops.length - 1);
-        }
-      }
-    } else {
-      const hasOrigin = baseStops[0]?.stopType === "Origin";
-      insertIndex = hasOrigin ? 1 : 0;
-    }
-
-    const fuelStop: TripManagementStopInput = {
-      stopType: "FuelStop",
-      lat: primary.latitude,
-      lon: primary.longitude,
-      label:
-        [primary.merchantName, [primary.city, primary.state].filter(Boolean).join(", ")]
-          .filter(Boolean)
-          .join(" — ") ||
-        primary.name ||
-        "Fuel stop",
-    };
-
-    stops = [...baseStops.slice(0, insertIndex), fuelStop, ...baseStops.slice(insertIndex)];
-    fuelStopRecord = {
-      relayAccount: primary.relayAccount,
-      relayLocationId: primary.relayLocationId,
-      merchantName: primary.merchantName,
-      name: primary.name,
-      city: primary.city,
-      state: primary.state,
-      latitude: primary.latitude,
-      longitude: primary.longitude,
-      effectivePricePerGallon: primary.effectivePricePerGallon,
-      stopIndex: insertIndex,
-      insertedAt: new Date(),
-    };
+  if (recommendation.status === "ready" && plannedStations.length > 0) {
+    const built = replaceOpenFuelStops(baseStops, plannedStations, routePolyline);
+    stops = built.stops;
+    fuelStopRecords = buildFuelStopRecords(plannedStations, built.fuelStopIndexes);
   } else {
-    stops = baseStops;
+    stops = baseStops.filter((stop) => stop.stopType !== "FuelStop");
     clearFuelStop = true;
   }
 
@@ -1146,12 +1170,16 @@ export async function updateFuelStopOnInProgressTripForLoad(
   }
 
   const snapshot = await refreshTripSnapshot(alkTripId);
+  const recommendationMessage = recommendation.fuelPlan?.blockedReason
+    ? `${recommendation.message} ${recommendation.fuelPlan.blockedReason}`
+    : recommendation.message;
   persistTripStopsSnapshot(load, snapshot, {
     stops,
-    fuelStop: fuelStopRecord,
+    fuelStop: fuelStopRecords[0] ?? null,
+    fuelStops: fuelStopRecords,
     clearFuelStop,
     recommendationStatus: recommendation.status,
-    recommendationMessage: recommendation.message,
+    recommendationMessage,
     tspDriverId: snapshot.tspDriverId,
   });
   await load.save();
@@ -1168,7 +1196,7 @@ export async function updateFuelStopOnInProgressTripForLoad(
     }),
     recommendation: {
       status: recommendation.status,
-      message: recommendation.message,
+      message: recommendationMessage,
     },
   };
 }

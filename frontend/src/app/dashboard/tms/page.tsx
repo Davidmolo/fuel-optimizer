@@ -185,7 +185,10 @@ export default function TmsPage() {
       ids.add(recommendation.primary.relayLocationId);
     }
 
-    for (const stop of [recommendation.fuelPlan?.now, recommendation.fuelPlan?.then]) {
+    const planStops = recommendation.fuelPlan?.stops?.length
+      ? recommendation.fuelPlan.stops
+      : [recommendation.fuelPlan?.now, recommendation.fuelPlan?.then];
+    for (const stop of planStops) {
       if (stop?.relayLocationId) {
         ids.add(stop.relayLocationId);
       }

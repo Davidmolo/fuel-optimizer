@@ -127,6 +127,9 @@ export default function TripRouteMap({
 
       if (corridor) {
         const cheapestId = corridor[0]?.relayLocationId;
+        const plannedStopIds = plan?.stops?.length
+          ? plan.stops.map((stop) => stop.relayLocationId)
+          : undefined;
         const fillNowId = plan?.now?.relayLocationId;
         const fillThenId = plan?.then?.relayLocationId;
         const selectedId = selectedStationIdRef.current;
@@ -136,8 +139,13 @@ export default function TripRouteMap({
             cheapestId,
             fillNowId,
             fillThenId,
+            plannedStopIds,
           });
-          const badge = getCorridorStationBadge(kind, plan);
+          const plannedIndex = plannedStopIds?.indexOf(station.relayLocationId) ?? -1;
+          const badge =
+            plannedIndex >= 0
+              ? String(plannedIndex + 1)
+              : getCorridorStationBadge(kind, plan);
           const selected = selectedId === station.relayLocationId;
           const marker = L.marker([station.latitude, station.longitude], {
             icon: L.divIcon({

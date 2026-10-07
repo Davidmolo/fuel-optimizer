@@ -119,17 +119,29 @@ function FuelPlanStopCard({
 
 function RecommendedStops({ recommendation }: { recommendation: Recommendation }) {
   const { status, fuelPlan } = recommendation;
-  const twoStep = Boolean(fuelPlan?.now && fuelPlan?.then && !fuelPlan.canReachCheapestDirectly);
 
   if (!fuelPlan || status !== "ready") {
     return null;
   }
 
-  if (twoStep && fuelPlan.now && fuelPlan.then) {
+  const chainStops = fuelPlan.stops?.length
+    ? fuelPlan.stops
+    : [fuelPlan.now, fuelPlan.then].filter(Boolean);
+
+  if (chainStops.length > 1) {
     return (
       <div className="space-y-2">
-        <FuelPlanStopCard label="Fuel now" stop={fuelPlan.now} featured />
-        <FuelPlanStopCard label="Then fill here" stop={fuelPlan.then} />
+        {chainStops.map((stop, index) => (
+          <FuelPlanStopCard
+            key={`${stop!.relayLocationId}-${index}`}
+            label={`Fuel stop ${index + 1}`}
+            stop={stop!}
+            featured={index === 0}
+          />
+        ))}
+        {fuelPlan.blockedReason ? (
+          <p className="text-xs leading-relaxed text-amber-800">{fuelPlan.blockedReason}</p>
+        ) : null}
       </div>
     );
   }
@@ -141,15 +153,22 @@ function RecommendedStops({ recommendation }: { recommendation: Recommendation }
   return null;
 }
 
+function plannedFuelLocationIds(fuelPlan?: Recommendation["fuelPlan"]) {
+  if (fuelPlan?.stops?.length) {
+    return new Set(fuelPlan.stops.map((stop) => stop.relayLocationId));
+  }
+  return new Set(
+    [fuelPlan?.now?.relayLocationId, fuelPlan?.then?.relayLocationId].filter(Boolean) as string[],
+  );
+}
+
 function AlternateStops({ recommendation }: { recommendation: Recommendation }) {
   const { alternates, fuelPlan } = recommendation;
   if (alternates.length === 0) {
     return null;
   }
 
-  const plannedIds = new Set(
-    [fuelPlan?.now?.relayLocationId, fuelPlan?.then?.relayLocationId].filter(Boolean),
-  );
+  const plannedIds = plannedFuelLocationIds(fuelPlan);
   const extras = alternates.filter((stop) => !plannedIds.has(stop.relayLocationId)).slice(0, 3);
 
   if (extras.length === 0) {
@@ -213,14 +232,17 @@ function FuelPlanExtras({
   onOpenCorridorStops?: () => void;
 }) {
   const { status, message, fuelRange, corridor, primary, corridorStations, fuelPlan } = recommendation;
-  const plannedIds = new Set(
-    [fuelPlan?.now?.relayLocationId, fuelPlan?.then?.relayLocationId].filter(Boolean),
-  );
+  const plannedIds = plannedFuelLocationIds(fuelPlan);
   const showPrimary = Boolean(primary && status === "ready" && !plannedIds.has(primary.relayLocationId));
   const copy = displayMessage(message);
-  const hasRecommended = Boolean(fuelPlan?.now && status === "ready");
+  const hasRecommended = Boolean(
+    ((fuelPlan?.stops?.length ?? 0) > 0 || fuelPlan?.now) && status === "ready",
+  );
   const showMessage = status !== "ready" || (!hasRecommended && Boolean(copy));
-  const twoStep = Boolean(fuelPlan?.now && fuelPlan?.then && !fuelPlan.canReachCheapestDirectly);
+  const twoStep = Boolean(
+    ((fuelPlan?.stops?.length ?? 0) > 1) ||
+      (fuelPlan?.now && fuelPlan?.then && !fuelPlan.canReachCheapestDirectly),
+  );
 
   return (
     <>

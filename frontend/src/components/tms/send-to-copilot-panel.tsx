@@ -108,15 +108,32 @@ export default function SendToCopilotPanel({ trip, onSent }: SendToCopilotPanelP
         ) : null}
       </div>
 
-      {trimble?.fuelStop ? (
-        <p className="mt-2 truncate text-xs text-muted">
-          Fuel stop: {[trimble.fuelStop.merchantName || trimble.fuelStop.name, trimble.fuelStop.city, trimble.fuelStop.state]
-            .filter(Boolean)
-            .join(", ")}
-        </p>
-      ) : trimble?.lastRecommendationMessage ? (
-        <p className="mt-2 text-xs text-amber-800">{trimble.lastRecommendationMessage}</p>
-      ) : null}
+      {(() => {
+        const fuelStops =
+          trimble?.fuelStops?.length
+            ? trimble.fuelStops
+            : trimble?.fuelStop
+              ? [trimble.fuelStop]
+              : [];
+        if (fuelStops.length === 0) {
+          return trimble?.lastRecommendationMessage ? (
+            <p className="mt-2 text-xs text-amber-800">{trimble.lastRecommendationMessage}</p>
+          ) : null;
+        }
+        return (
+          <ul className="mt-2 space-y-1">
+            {fuelStops.map((stop, index) => (
+              <li key={`${stop.relayLocationId}-${stop.stopIndex}`} className="truncate text-xs text-muted">
+                Fuel {index + 1}:{" "}
+                {[stop.merchantName || stop.name, stop.city, stop.state].filter(Boolean).join(", ")}
+                {typeof stop.effectivePricePerGallon === "number"
+                  ? ` · $${stop.effectivePricePerGallon.toFixed(3)}/gal`
+                  : ""}
+              </li>
+            ))}
+          </ul>
+        );
+      })()}
 
       {message ? (
         <div className="mt-2">
@@ -138,7 +155,8 @@ export default function SendToCopilotPanel({ trip, onSent }: SendToCopilotPanelP
           {sending ? "Sending…" : alreadySent ? "Resend to CoPilot" : "Send to CoPilot"}
         </Button>
         <p className="mt-1.5 text-[11px] leading-relaxed text-muted">
-          Plans the trip if needed, inserts the recommended fuel stop automatically, then notifies the driver’s tablet.
+          Plans the trip if needed, inserts every required fuel stop along the route automatically, then notifies the
+          driver’s tablet.
         </p>
       </div>
     </div>

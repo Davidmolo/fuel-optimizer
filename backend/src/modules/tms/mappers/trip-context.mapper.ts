@@ -35,6 +35,7 @@ export type TrimbleTripSummaryView = {
   tripStatus?: string;
   tspDriverId?: string | null;
   fuelStop?: TrimbleTripFuelStopView | null;
+  fuelStops?: TrimbleTripFuelStopView[];
   lastRecommendationStatus?: "ready" | "not_ready" | "no_candidates";
   lastRecommendationMessage?: string;
 };
@@ -185,7 +186,17 @@ export function toTmsLoadView(load: TmsLoadDocument): TmsLoadView {
           tmsTripId: trimble.tmsTripId,
           tripStatus: trimble.tripStatus,
           tspDriverId: trimble.tspDriverId ?? null,
-          fuelStop: trimble.fuelStop ? toFuelStopView(trimble.fuelStop) : null,
+          fuelStop: trimble.fuelStop
+            ? toFuelStopView(trimble.fuelStop)
+            : trimble.fuelStops?.[0]
+              ? toFuelStopView(trimble.fuelStops[0])
+              : null,
+          fuelStops: (trimble.fuelStops?.length
+            ? trimble.fuelStops
+            : trimble.fuelStop
+              ? [trimble.fuelStop]
+              : []
+          ).map(toFuelStopView),
           lastRecommendationStatus: trimble.lastRecommendationStatus,
           lastRecommendationMessage: trimble.lastRecommendationMessage,
         }

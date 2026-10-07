@@ -56,8 +56,10 @@ export type TmsLoadTrimbleTripDocument = {
   refreshedAt?: Date;
   /** Full stop list last sent to Trimble (including any FuelStop). */
   stops?: TrimbleTripStopRecord[];
-  /** Chosen contracted station inserted as FuelStop, or null when none. */
+  /** First planned FuelStop (backward compatible). Prefer `fuelStops` for the full chain. */
   fuelStop?: TrimbleTripFuelStopRecord | null;
+  /** Ordered range-based fuel stop chain last sent to Trimble. */
+  fuelStops?: TrimbleTripFuelStopRecord[];
   lastRecommendationStatus?: "ready" | "not_ready" | "no_candidates";
   lastRecommendationMessage?: string;
 };
@@ -156,6 +158,7 @@ const trimbleTripSchema = new Schema<TmsLoadTrimbleTripDocument>(
     refreshedAt: { type: Date },
     stops: { type: [trimbleTripStopSchema], default: undefined },
     fuelStop: { type: trimbleTripFuelStopSchema, default: null },
+    fuelStops: { type: [trimbleTripFuelStopSchema], default: undefined },
     lastRecommendationStatus: { type: String, trim: true },
     lastRecommendationMessage: { type: String, trim: true },
   },

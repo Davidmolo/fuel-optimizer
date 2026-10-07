@@ -10,20 +10,30 @@ export type FuelStopStationInput = {
   name?: string;
   city?: string;
   state?: string;
+  /** When set, shown on the CoPilot FuelStop label so the driver knows how much to take. */
+  suggestedGallons?: number;
 };
 
 export function formatStationLabel(station: FuelStopStationInput) {
   const place = [station.city, station.state].filter(Boolean).join(", ");
+  let base: string;
   if (station.merchantName && place) {
-    return `${station.merchantName} — ${place}`;
+    base = `${station.merchantName} — ${place}`;
+  } else if (station.merchantName) {
+    base = station.merchantName;
+  } else if (station.name && place) {
+    base = `${station.name} — ${place}`;
+  } else {
+    base = station.name || place || "Fuel stop";
   }
-  if (station.merchantName) {
-    return station.merchantName;
+
+  const gallons = station.suggestedGallons;
+  if (typeof gallons === "number" && Number.isFinite(gallons) && gallons > 0) {
+    const rounded = Math.round(gallons * 10) / 10;
+    return `${base} (~${rounded} gal)`;
   }
-  if (station.name && place) {
-    return `${station.name} — ${place}`;
-  }
-  return station.name || place || "Fuel stop";
+
+  return base;
 }
 
 export function buildFuelStopStopInput(station: FuelStopStationInput): TripManagementStopInput {
@@ -68,21 +78,134 @@ export function computeFuelStopInsertionIndex(
   return Math.max(1, maxIndex);
 }
 
+export type BuiltFuelStopIndex = {
+  stationIndex: number;
+  stopIndex: number;
+};
+
+/**
+ * Inserts one or more FuelStops into the load stop list, ordered by along-route miles.
+ * Never replaces Origin or Destination.
+ */
+export function buildTripStopsWithFuelStops(
+  loadDestinations: GeocodedLoadStop[],
+  recommendedStations: FuelStopStationInput[],
+  routePolyline: GeoPoint[],
+): { stops: TripManagementStopInput[]; fuelStopIndexes: BuiltFuelStopIndex[] } {
+  const base = mapLoadDestinationsToTripStops(loadDestinations);
+  if (base.length < 2 || recommendedStations.length === 0) {
+    return { stops: base, fuelStopIndexes: [] };
+  }
+
+  const orderedStations = [...recommendedStations].sort((left, right) => {
+    if (!routePolyline.length) {
+      return 0;
+    }
+    const leftAlong = distanceAlongPolylineMiles(
+      { lat: left.latitude, lng: left.longitude },
+      routePolyline,
+    );
+    const rightAlong = distanceAlongPolylineMiles(
+      { lat: right.latitude, lng: right.longitude },
+      routePolyline,
+    );
+    return leftAlong - rightAlong;
+  });
+
+  let stops = base;
+  const fuelStopIndexes: BuiltFuelStopIndex[] = [];
+
+  for (let stationIndex = 0; stationIndex < orderedStations.length; stationIndex += 1) {
+    const station = orderedStations[stationIndex];
+    if (!station) continue;
+
+    const fuel = buildFuelStopStopInput(station);
+    const insertIndex = computeFuelStopInsertionIndex(
+      stops,
+      { lat: fuel.lat, lng: fuel.lon },
+      routePolyline,
+    );
+    stops = [...stops.slice(0, insertIndex), fuel, ...stops.slice(insertIndex)];
+    fuelStopIndexes.push({ stationIndex, stopIndex: insertIndex });
+  }
+
+  return { stops, fuelStopIndexes };
+}
+
+/** @deprecated Prefer buildTripStopsWithFuelStops for multi-stop chains. */
 export function buildTripStopsWithFuelStop(
   loadDestinations: GeocodedLoadStop[],
   recommendedStation: FuelStopStationInput,
   routePolyline: GeoPoint[],
 ): { stops: TripManagementStopInput[]; fuelStopIndex: number } {
-  const base = mapLoadDestinationsToTripStops(loadDestinations);
-  if (base.length < 2) {
-    return { stops: base, fuelStopIndex: -1 };
+  const built = buildTripStopsWithFuelStops(loadDestinations, [recommendedStation], routePolyline);
+  return {
+    stops: built.stops,
+    fuelStopIndex: built.fuelStopIndexes[0]?.stopIndex ?? -1,
+  };
+}
+
+/**
+ * Replace existing FuelStops in an open stop list with a new planned chain.
+ * Freight stops (non-FuelStop) are preserved in order.
+ */
+export function replaceOpenFuelStops(
+  openStops: TripManagementStopInput[],
+  fuelStations: FuelStopStationInput[],
+  routePolyline: GeoPoint[],
+): { stops: TripManagementStopInput[]; fuelStopIndexes: BuiltFuelStopIndex[] } {
+  const freightStops = openStops.filter((stop) => stop.stopType !== "FuelStop");
+  if (freightStops.length < 1) {
+    return { stops: openStops, fuelStopIndexes: [] };
   }
 
-  const fuel = buildFuelStopStopInput(recommendedStation);
-  const fuelStopIndex = computeFuelStopInsertionIndex(base, { lat: fuel.lat, lng: fuel.lon }, routePolyline);
-  const stops = [...base.slice(0, fuelStopIndex), fuel, ...base.slice(fuelStopIndex)];
+  if (fuelStations.length === 0) {
+    return { stops: freightStops, fuelStopIndexes: [] };
+  }
 
-  return { stops, fuelStopIndex };
+  const orderedStations = [...fuelStations].sort((left, right) => {
+    if (!routePolyline.length) {
+      return 0;
+    }
+    const leftAlong = distanceAlongPolylineMiles(
+      { lat: left.latitude, lng: left.longitude },
+      routePolyline,
+    );
+    const rightAlong = distanceAlongPolylineMiles(
+      { lat: right.latitude, lng: right.longitude },
+      routePolyline,
+    );
+    return leftAlong - rightAlong;
+  });
+
+  let stops = freightStops;
+  const fuelStopIndexes: BuiltFuelStopIndex[] = [];
+
+  for (let stationIndex = 0; stationIndex < orderedStations.length; stationIndex += 1) {
+    const station = orderedStations[stationIndex];
+    if (!station) continue;
+
+    const fuel = buildFuelStopStopInput(station);
+    let insertIndex = computeFuelStopInsertionIndex(
+      stops,
+      { lat: fuel.lat, lng: fuel.lon },
+      routePolyline,
+    );
+
+    // computeFuelStopInsertionIndex assumes Origin/Destination clamping for load lists.
+    // For in-progress lists without Origin, still avoid placing after Destination.
+    if (stops[0]?.stopType !== "Origin" && insertIndex === 0 && stops.length > 1) {
+      insertIndex = 0;
+    }
+    if (stops[stops.length - 1]?.stopType === "Destination" && insertIndex >= stops.length) {
+      insertIndex = Math.max(0, stops.length - 1);
+    }
+
+    stops = [...stops.slice(0, insertIndex), fuel, ...stops.slice(insertIndex)];
+    fuelStopIndexes.push({ stationIndex, stopIndex: insertIndex });
+  }
+
+  return { stops, fuelStopIndexes };
 }
 
 export function toTrimbleTripStopRecord(stop: TripManagementStopInput): TrimbleTripStopRecord {

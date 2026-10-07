@@ -56,6 +56,8 @@ export const attachFuelStopSchema = z.object({
     .object({
       customerSlug: z.string().trim().min(1).optional(),
       relayAccount: relayAccountSchema,
+      demo: z.boolean().optional(),
+      demoFuelPercent: z.number().min(0).max(100).optional(),
     })
     .optional()
     .default({}),
@@ -73,6 +75,8 @@ export const dispatchWithFuelStopSchema = z.object({
       useReplanDispatch: z.boolean().optional(),
       customerSlug: z.string().trim().min(1).optional(),
       relayAccount: relayAccountSchema,
+      demo: z.boolean().optional(),
+      demoFuelPercent: z.number().min(0).max(100).optional(),
     })
     .optional()
     .default({}),

@@ -3,8 +3,10 @@ import { describe, it } from "node:test";
 import {
   buildFuelStopStopInput,
   buildTripStopsWithFuelStop,
+  buildTripStopsWithFuelStops,
   computeFuelStopInsertionIndex,
   formatStationLabel,
+  replaceOpenFuelStops,
   toTrimbleTripStopRecord,
 } from "./fuel-stop-builder";
 
@@ -32,6 +34,20 @@ describe("fuel-stop-builder", () => {
         state: "NE",
       }),
       "Pilot — Lincoln, NE",
+    );
+  });
+
+  it("appends suggested gallons for the CoPilot stop label", () => {
+    assert.equal(
+      formatStationLabel({
+        latitude: 1,
+        longitude: 2,
+        merchantName: "Love's",
+        city: "Quanah",
+        state: "TX",
+        suggestedGallons: 45.2,
+      }),
+      "Love's — Quanah, TX (~45.2 gal)",
     );
   });
 
@@ -139,5 +155,84 @@ describe("fuel-stop-builder", () => {
       label: "X",
     });
     assert.deepEqual(record, { stopType: "FuelStop", lat: 1, lon: 2, label: "X" });
+  });
+
+  const loadStops = [
+    {
+      position: 1,
+      stopType: "pick_up" as const,
+      companyName: "Origin Co",
+      city: "Denver",
+      stateCode: "CO",
+      lat: 39.7392,
+      lng: -104.9903,
+    },
+    {
+      position: 2,
+      stopType: "delivery" as const,
+      companyName: "Dest Co",
+      city: "Chicago",
+      stateCode: "IL",
+      lat: 41.8781,
+      lng: -87.6298,
+    },
+  ];
+
+  it("buildTripStopsWithFuelStops inserts multiple FuelStops in along-route order", () => {
+    const { stops, fuelStopIndexes } = buildTripStopsWithFuelStops(
+      loadStops,
+      [
+        {
+          latitude: 41.6,
+          longitude: -91,
+          merchantName: "Love's",
+          city: "Iowa",
+          state: "IA",
+        },
+        {
+          latitude: 41.2565,
+          longitude: -95.9345,
+          merchantName: "Pilot",
+          city: "Omaha",
+          state: "NE",
+        },
+      ],
+      polyline,
+    );
+
+    assert.equal(stops.length, 4);
+    assert.equal(fuelStopIndexes.length, 2);
+    const fuelLabels = stops.filter((stop) => stop.stopType === "FuelStop").map((stop) => stop.label);
+    assert.match(fuelLabels[0] ?? "", /Pilot/);
+    assert.match(fuelLabels[1] ?? "", /Love/);
+    assert.equal(stops[0]?.stopType, "Origin");
+    assert.equal(stops[stops.length - 1]?.stopType, "Destination");
+  });
+
+  it("replaceOpenFuelStops drops previous FuelStops and inserts the new chain", () => {
+    const openStops = [
+      denver,
+      { stopType: "FuelStop" as const, lat: 40.5, lon: -100, label: "Old" },
+      omaha,
+      chicago,
+    ];
+    const { stops } = replaceOpenFuelStops(
+      openStops,
+      [
+        {
+          latitude: 41.2565,
+          longitude: -95.9345,
+          merchantName: "Pilot",
+          city: "Omaha",
+          state: "NE",
+        },
+      ],
+      polyline,
+    );
+
+    const fuels = stops.filter((stop) => stop.stopType === "FuelStop");
+    assert.equal(fuels.length, 1);
+    assert.match(fuels[0]?.label ?? "", /Pilot/);
+    assert.ok(stops.every((stop) => stop.label !== "Old"));
   });
 });

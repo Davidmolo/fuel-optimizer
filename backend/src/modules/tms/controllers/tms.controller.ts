@@ -142,17 +142,25 @@ export async function attachFuelStopController(req: Request, res: Response) {
   const loadId = String(req.params.loadId);
   const customerSlug = typeof req.body?.customerSlug === "string" ? req.body.customerSlug : undefined;
   const relayAccount = typeof req.body?.relayAccount === "string" ? req.body.relayAccount : undefined;
+  const demo = req.body?.demo === true;
+  const demoFuelPercent =
+    typeof req.body?.demoFuelPercent === "number" ? req.body.demoFuelPercent : undefined;
   const data = await attachFuelStopToTrimbleTripForLoad(loadId, {
     customerSlug,
     relayAccount: relayAccount as "blue_stallion" | "azfs" | undefined,
+    demo: demo || undefined,
+    demoFuelPercent,
   });
 
-  const hasFuel = Boolean(data.fuelStop);
+  const fuelCount = data.fuelStops?.length ?? (data.fuelStop ? 1 : 0);
   return res.status(200).json({
     success: true,
-    message: hasFuel
-      ? "Fuel stop attached to Planned Trimble trip"
-      : `Trip updated without a fuel stop (${data.recommendation.status})`,
+    message:
+      fuelCount > 1
+        ? `${fuelCount} fuel stops attached to Planned Trimble trip`
+        : fuelCount === 1
+          ? "Fuel stop attached to Planned Trimble trip"
+          : `Trip updated without a fuel stop (${data.recommendation.status})`,
     data,
   });
 }
@@ -164,12 +172,17 @@ export async function dispatchWithFuelStopController(req: Request, res: Response
   const useReplanDispatch = req.body?.useReplanDispatch === true;
   const customerSlug = typeof req.body?.customerSlug === "string" ? req.body.customerSlug : undefined;
   const relayAccount = typeof req.body?.relayAccount === "string" ? req.body.relayAccount : undefined;
+  const demo = req.body?.demo === true;
+  const demoFuelPercent =
+    typeof req.body?.demoFuelPercent === "number" ? req.body.demoFuelPercent : undefined;
   const data = await dispatchTrimbleTripWithFuelStopForLoad(loadId, {
     tspDriverId,
     allowTestTablet,
     useReplanDispatch,
     customerSlug,
     relayAccount: relayAccount as "blue_stallion" | "azfs" | undefined,
+    demo: demo || undefined,
+    demoFuelPercent,
     actor: actorFromRequest(req),
   });
 
@@ -219,11 +232,15 @@ export async function updateInProgressFuelStopController(req: Request, res: Resp
     relayAccount: relayAccount as "blue_stallion" | "azfs" | undefined,
   });
 
+  const fuelCount = data.fuelStops?.length ?? (data.fuelStop ? 1 : 0);
   return res.status(200).json({
     success: true,
-    message: data.fuelStop
-      ? "In-progress trip fuel stop updated"
-      : `In-progress trip updated without a fuel stop (${data.recommendation.status})`,
+    message:
+      fuelCount > 1
+        ? `In-progress trip updated with ${fuelCount} fuel stops`
+        : fuelCount === 1
+          ? "In-progress trip fuel stop updated"
+          : `In-progress trip updated without a fuel stop (${data.recommendation.status})`,
     data,
   });
 }

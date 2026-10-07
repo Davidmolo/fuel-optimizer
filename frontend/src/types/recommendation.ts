@@ -38,13 +38,18 @@ export type CorridorStation = {
 
 export type FuelPlanStop = {
   kind: "survival_fill" | "strategic_fill";
+  relayAccount?: string;
   relayLocationId: string;
+  merchantName?: string;
   merchantDisplayName: string;
   name?: string;
   city?: string;
   state?: string;
+  latitude?: number;
+  longitude?: number;
   distanceMiles: number;
   distanceAlongRouteMiles: number;
+  absoluteAlongRouteMiles?: number;
   effectivePricePerGallon: number;
   suggestedGallons?: number;
   reason: string;
@@ -53,7 +58,11 @@ export type FuelPlanStop = {
 export type FuelPlan = {
   isLowFuel: boolean;
   canReachCheapestDirectly: boolean;
-  cheapestOnRoute: FuelPlanStop;
+  canReachDestination?: boolean;
+  blockedReason?: string;
+  /** Required range-chain fuel stops to finish the trip. */
+  stops?: FuelPlanStop[];
+  cheapestOnRoute?: FuelPlanStop;
   now?: FuelPlanStop;
   then?: FuelPlanStop;
 };

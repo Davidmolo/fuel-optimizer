@@ -245,7 +245,9 @@ async function buildTripContextForLoad(loadId: string): Promise<TripContextView>
       fleetVehicle,
       tripStatus: load.trimbleTrip?.tripStatus,
       tspDriverId: load.trimbleTrip?.tspDriverId,
-      fuelStopOnTrip: Boolean(load.trimbleTrip?.fuelStop),
+      fuelStopOnTrip: Boolean(
+        load.trimbleTrip?.fuelStop || (load.trimbleTrip?.fuelStops?.length ?? 0) > 0,
+      ),
     }),
   };
 }
@@ -390,7 +392,9 @@ export async function listTripContexts(actor?: FleetScopeActor | null) {
         fleetVehicle,
         tripStatus: load.trimbleTrip?.tripStatus,
         tspDriverId: load.trimbleTrip?.tspDriverId,
-        fuelStopOnTrip: Boolean(load.trimbleTrip?.fuelStop),
+        fuelStopOnTrip: Boolean(
+        load.trimbleTrip?.fuelStop || (load.trimbleTrip?.fuelStops?.length ?? 0) > 0,
+      ),
       }),
     };
   });

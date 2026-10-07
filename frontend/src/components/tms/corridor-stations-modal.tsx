@@ -24,8 +24,9 @@ export default function CorridorStationsModal({
   fuelPlan,
 }: CorridorStationsModalProps) {
   const [query, setQuery] = useState("");
-  const nowId = fuelPlan?.now?.relayLocationId;
-  const thenId = fuelPlan?.then?.relayLocationId;
+  const plannedIds: string[] = fuelPlan?.stops?.length
+    ? fuelPlan.stops.map((stop) => stop.relayLocationId)
+    : ([fuelPlan?.now?.relayLocationId, fuelPlan?.then?.relayLocationId].filter(Boolean) as string[]);
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -81,8 +82,8 @@ export default function CorridorStationsModal({
           </thead>
           <tbody>
             {visible.map((station, index) => {
-              const isNow = station.relayLocationId === nowId;
-              const isThen = station.relayLocationId === thenId;
+              const plannedIndex = plannedIds.indexOf(station.relayLocationId);
+              const isPlanned = plannedIndex >= 0;
               const isCheapest = stations[0]?.relayLocationId === station.relayLocationId;
 
               return (
@@ -90,8 +91,8 @@ export default function CorridorStationsModal({
                   key={`${station.relayLocationId}-${index}`}
                   className={cn(
                     "border-t border-border",
-                    isNow && "bg-emerald-50",
-                    !isNow && isCheapest && "bg-emerald-50/40",
+                    isPlanned && "bg-emerald-50",
+                    !isPlanned && isCheapest && "bg-emerald-50/40",
                     !station.withinCurrentFuelRange && "text-muted",
                   )}
                 >
@@ -99,7 +100,11 @@ export default function CorridorStationsModal({
                     <p className="font-medium text-foreground">{station.merchantDisplayName}</p>
                     <p className="mt-0.5 text-xs text-muted">
                       {[station.city, station.state].filter(Boolean).join(", ") || "On route"}
-                      {isNow ? " · Recommended" : isThen ? " · Next fill" : isCheapest ? " · Cheapest" : ""}
+                      {isPlanned
+                        ? ` · Fuel stop ${plannedIndex + 1}`
+                        : isCheapest
+                          ? " · Cheapest"
+                          : ""}
                       {!station.withinCurrentFuelRange ? " · Out of range" : ""}
                     </p>
                   </td>

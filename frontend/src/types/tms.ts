@@ -31,6 +31,7 @@ export type TrimbleTripSummary = {
   tripStatus?: string;
   tspDriverId?: string | null;
   fuelStop?: TrimbleTripFuelStop | null;
+  fuelStops?: TrimbleTripFuelStop[];
   lastRecommendationStatus?: "ready" | "not_ready" | "no_candidates";
   lastRecommendationMessage?: string;
 };

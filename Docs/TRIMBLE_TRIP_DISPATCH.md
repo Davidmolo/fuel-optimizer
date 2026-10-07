@@ -1,7 +1,7 @@
 # Trimble Trip Dispatch — Requirements and Strategy
 
-**Status:** Phase 1–3 done (live-proven on tablet `999`; Phase 3 fuel stop confirmed October 5, 2026). Phase 4 dispatcher workflow implemented in code (assign fleets, scoped dashboard, Send to CoPilot, trip/accept status).  
-**Last updated:** October 6, 2026  
+**Status:** Phase 1–3 done (live-proven on tablet `999`; Phase 3 fuel stop confirmed October 5, 2026). Phase 4 dispatcher workflow implemented in code (assign fleets, scoped dashboard, Send to CoPilot, trip/accept status). Range-based multi fuel-stop chain on Send (required stops from tank/MPG to destination).  
+**Last updated:** October 7, 2026  
 **Sources:** Finn Martel (Trimble Maps), September 9, 2026 and October 1, 2026 (account settings + delete leftover trips before retest); Mantas / David thread, September 9–10, 2026; Mantas on testing tablet `999`, September–October 2026; Account Manager session for XXII Century (company id `BXTQPL`), September 23, 2026; read-only Trip Management search the same day; [Plan Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/plan-trip/), [Modify Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/modify-trip/), [Get Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/get-trip/), [Get Route Path](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/get-route-path/), [Trip Search](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/trip-query/), [Delete Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/delete-trip/)
 
 ---
@@ -98,20 +98,21 @@ Send the load’s ordered stops as latitude/longitude. Trimble assumes we pass c
 
 Plan returns distance, duration, tolls, and per-stop ETAs. We persist `alkTripId` on the load.
 
-### Step 2 — Attach the fuel stop before the driver sees the trip
+### Step 2 — Attach the fuel stop chain before the driver sees the trip
 
-The optimizer already selects the station. Insert it with:
+The optimizer builds a **range-based fuel stop chain**: as many contracted `FuelStop`s as tank/MPG require to reach the destination (not only the primary / `now`+`then` pair). Insert them with:
 
 `PUT /trip/modify`
 
 - Identify the trip with `alkTripId`.
-- Send the **full** stop list, with the station inserted at the correct index. Modify replaces the stop list; it is not a one-stop patch.
-- Set that stop’s `stopType` to `FuelStop`.
+- Send the **full** stop list, with every planned station inserted at the correct index along the route. Modify replaces the stop list; it is not a one-stop patch.
+- Each fuel stop’s `stopType` is `FuelStop`.
 - Location is the station coordinate plus the station name as `label`.
+- Persist `trimbleTrip.fuelStops[]` (and keep `fuelStop` as the first entry for older clients).
 
 Trimble recalculates ETAs after the edit. Call Get Trip afterward and store the updated stops.
 
-Doing this **before** dispatch matches David’s request: the tablet receives a route that already contains the station. Finn’s third step (insert while the driver is navigating) stays available for later changes, when fuel level or price changes after the trip is already in progress.
+Doing this **before** dispatch matches David’s request: the tablet receives a route that already contains the stations. Finn’s third step (insert while the driver is navigating) stays available for later changes via replan of the remaining open chain.
 
 ### Step 3 — Dispatch to one tablet
 
@@ -127,13 +128,14 @@ Doing this **before** dispatch matches David’s request: the tablet receives a 
 
 ### Step 4 — Update an active trip when the recommendation changes
 
-Same modify, new stop list, fuel stop inserted at the new index.
+Same modify, new stop list: recompute the range chain from current GPS and replace open `FuelStop`s (freight stops stay).
 
 Rules from Trimble:
 
 - If the trip is **InProgress**, completed stops cannot be changed, and the planned start, vehicle, and routing profile cannot be changed.
 - Completed or canceled trips cannot be modified.
 - Insert as the next open stop when the driver should go there now. Insert later when it belongs further down the route.
+- Continuous background replan while driving is out of scope for v1; replan on Send and on the explicit in-progress fuel-stop update API.
 
 ### Read calls
 
@@ -239,10 +241,10 @@ Exit: ~~Fuel Optimizer can send a trip to a specific tablet without OpenRoad (pr
 **Estimate:** 3–4 days.
 
 1. ~~Run the existing recommendation against the Trip Management route path (not a separately drawn PC\*Miler line).~~ **Done.** `getRecommendationForTruck` accepts `routePolylineOverride`; attach/dispatch-with-fuel score along `GET /trip/{alkTripId}/routePath`. PC\*Miler remains fallback when no trip path exists.
-2. ~~Insert the chosen station as `FuelStop` **before** dispatch, at the index the corridor math already produces.~~ **Done.** `POST /api/v1/tms/loads/:loadId/trimble-trip/fuel-stop` and `POST .../dispatch-with-fuel`. Stops + `fuelStop` persisted on `load.trimbleTrip`. Live proof: load `2311438` → FO trip `alkTripId` `330217597` (`tmsTripId` `fo-2311438-1791220131340`) dispatched to tablet `999` with **Circle K #2709243, Amarillo TX** as `FuelStop`. Mantas confirmed the fuel stop on CoPilot (October 5, 2026).
-3. ~~On a later recommendation change for an in-progress trip, modify only the open stops and insert at the next index or a later index using the rule in §3 step 4.~~ **Done in code.** `PUT /api/v1/tms/loads/:loadId/trimble-trip/fuel-stop` for Dispatched/InProgress trips (API ready; optional follow-up live proof when a trip is already InProgress).
+2. ~~Insert the chosen station as `FuelStop` **before** dispatch, at the index the corridor math already produces.~~ **Done.** Extended to a **range-based chain**: `buildFuelStopChain` plans N contracted FuelStops from usable tank range to destination; `buildTripStopsWithFuelStops` inserts all of them; `fuelStops[]` (+ legacy `fuelStop`) persisted on `load.trimbleTrip`. Live proof of single-stop path: load `2311438` → FO trip `alkTripId` `330217597` with **Circle K Amarillo TX** (October 5, 2026).
+3. ~~On a later recommendation change for an in-progress trip, modify only the open stops and insert at the next index or a later index using the rule in §3 step 4.~~ **Done in code.** `PUT /api/v1/tms/loads/:loadId/trimble-trip/fuel-stop` recomputes the remaining chain and replaces open FuelStops (API ready; optional follow-up live proof when a trip is already InProgress).
 
-The dispatcher never picks the station. If the engine has no contracted station on the corridor, send the trip without a fuel stop and show that reason (`lastRecommendationStatus` / `lastRecommendationMessage`). Do not invent a station.
+The dispatcher never picks the station. If the engine has no contracted station on the corridor, send the trip without a fuel stop and show that reason (`lastRecommendationStatus` / `lastRecommendationMessage`). Do not invent a station. Gaps in the chain surface as `fuelPlan.blockedReason`.
 
 Also: `GET /api/v1/tms/loads/:loadId/trimble-trip/route-path` returns the Trimble polyline. Trip context / load views expose `trimbleTrip` summary including `fuelStop`.
 

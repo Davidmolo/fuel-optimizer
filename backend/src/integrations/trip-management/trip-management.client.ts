@@ -145,6 +145,13 @@ export async function getTripByAlkTripId(alkTripId: number | string): Promise<Tr
   return tripManagementFetch<TripManagementTripResponse>(`/trip/${encodeURIComponent(String(alkTripId))}`);
 }
 
+/** Deletes a Trip Management trip by alkTripId (clears tablet queue leftovers for FO tests). */
+export async function deleteTrip(alkTripId: number | string): Promise<void> {
+  await tripManagementFetch<unknown>(`/trip/${encodeURIComponent(String(alkTripId))}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getTripByTmsTripId(tmsTripId: string): Promise<TripManagementTripResponse> {
   const query = new URLSearchParams({ tripId: tmsTripId });
   return tripManagementFetch<TripManagementTripResponse>(`/trip?${query.toString()}`);

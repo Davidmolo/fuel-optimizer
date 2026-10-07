@@ -32,14 +32,27 @@ export function resolveCorridorStationMarkerKind(
     cheapestId?: string;
     fillNowId?: string;
     fillThenId?: string;
+    /** Ordered planned fuel-chain location ids (preferred over now/then when present). */
+    plannedStopIds?: string[];
   },
 ): CorridorStationMarkerKind {
-  if (options.fillNowId && station.relayLocationId === options.fillNowId) {
-    return "fill-now";
-  }
+  const planned = options.plannedStopIds ?? [];
+  if (planned.length > 0) {
+    const index = planned.indexOf(station.relayLocationId);
+    if (index === 0) {
+      return "fill-now";
+    }
+    if (index > 0) {
+      return "fill-then";
+    }
+  } else {
+    if (options.fillNowId && station.relayLocationId === options.fillNowId) {
+      return "fill-now";
+    }
 
-  if (options.fillThenId && station.relayLocationId === options.fillThenId) {
-    return "fill-then";
+    if (options.fillThenId && station.relayLocationId === options.fillThenId) {
+      return "fill-then";
+    }
   }
 
   if (options.cheapestId && station.relayLocationId === options.cheapestId) {
