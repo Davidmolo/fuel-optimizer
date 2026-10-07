@@ -409,6 +409,14 @@ export default function TmsPage() {
 
         {error ? <Alert variant="error">{error}</Alert> : null}
 
+        {data?.fleetScope?.mode === "dispatcher" && data.fleetScope.dispatcherName ? (
+          <Alert variant="info">Showing loads for dispatcher fleet “{data.fleetScope.dispatcherName}” only.</Alert>
+        ) : null}
+
+        {data?.fleetScope?.mode === "none" && data.fleetScope.reason ? (
+          <Alert variant="info">{data.fleetScope.reason}</Alert>
+        ) : null}
+
         {loading ? (
           <div className="flex min-h-[240px] items-center justify-center">
             <Spinner label="Loading active loads..." />
@@ -461,6 +469,7 @@ export default function TmsPage() {
               demoMode={demoMode}
               inspectedStation={inspectedStation}
               onClearInspectedStation={() => setInspectedStation(null)}
+              onCopilotSent={loadTripContexts}
             />
           </div>
         )}

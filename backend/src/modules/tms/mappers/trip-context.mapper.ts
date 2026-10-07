@@ -78,8 +78,28 @@ export type TripContextVehicleView = {
   unitNumber?: string;
   mappingStatus?: FleetMappingStatus;
   fuelTankCapacityGallons?: number;
+  trimbleAssetId?: string;
+  tripManagementEnabled?: boolean;
+  copilotStatus?: string;
+  dispatcherName?: string;
   gps?: FleetGpsTelemetry & { freshness: TelemetryFreshness };
   fuel?: FleetFuelTelemetry & { freshness: TelemetryFreshness; isLow: boolean };
+};
+
+export type CopilotSendView = {
+  canSend: boolean;
+  blockedReason?: string;
+  driverAcceptStatus:
+    | "not_sent"
+    | "waiting"
+    | "accepted"
+    | "declined"
+    | "completed"
+    | "canceled"
+    | "unknown";
+  tripStatus?: string;
+  tspDriverId?: string | null;
+  fuelStopOnTrip: boolean;
 };
 
 export type TripContextView = {
@@ -93,6 +113,7 @@ export type TripContextView = {
     hasTelemetry: boolean;
     isReadyForRecommendation: boolean;
   };
+  copilot?: CopilotSendView;
 };
 
 function toFuelStopView(fuelStop: TrimbleTripFuelStopRecord): TrimbleTripFuelStopView {

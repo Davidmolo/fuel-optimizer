@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { attachRequestUserIfPresent } from "../../../middlewares/require-authenticated-user";
 import {
   attachFuelStopController,
   dispatchWithFuelStopController,
@@ -12,6 +13,7 @@ import {
   listTripContextsController,
   planTrimbleTripController,
   dispatchTrimbleTripController,
+  sendToCopilotController,
   syncTmsController,
   syncTmsFleetController,
   syncTmsLoadsController,
@@ -25,10 +27,13 @@ import {
   validateGetTripContext,
   validateListActiveLoads,
   validatePlanTrimbleTrip,
+  validateSendToCopilot,
   validateUpdateInProgressFuelStop,
 } from "../validators/tms.validator";
 
 const tmsRouter = Router();
+
+tmsRouter.use(attachRequestUserIfPresent);
 
 tmsRouter.post("/sync", syncTmsController);
 tmsRouter.post("/sync/fleet", syncTmsFleetController);
@@ -56,6 +61,11 @@ tmsRouter.post(
   "/loads/:loadId/trimble-trip/dispatch-with-fuel",
   validateDispatchWithFuelStop,
   dispatchWithFuelStopController,
+);
+tmsRouter.post(
+  "/loads/:loadId/trimble-trip/send-to-copilot",
+  validateSendToCopilot,
+  sendToCopilotController,
 );
 tmsRouter.get(
   "/loads/:loadId/trimble-trip/route-path",

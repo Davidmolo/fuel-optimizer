@@ -41,6 +41,16 @@ export const deleteAccountSchema = z.object({
   query: z.object({}).optional().default({}),
 });
 
+export const assignDispatcherSchema = z.object({
+  body: z.object({
+    dispatcherName: z.string().trim().min(1).nullable().optional(),
+  }),
+  params: z.object({
+    accountId: objectIdSchema,
+  }),
+  query: z.object({}).optional().default({}),
+});
+
 export const invitationTokenParamsSchema = z.object({
   body: z.object({}).optional().default({}),
   params: z.object({

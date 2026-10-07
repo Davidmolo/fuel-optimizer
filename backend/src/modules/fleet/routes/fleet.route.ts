@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { attachRequestUserIfPresent } from "../../../middlewares/require-authenticated-user";
 import {
   getFleetVehicleController,
   listFleetVehiclesController,
@@ -10,6 +11,8 @@ import {
 import { validateGetFleetVehicle, validateListFleetVehicles } from "../validators/fleet.validator";
 
 const fleetRouter = Router();
+
+fleetRouter.use(attachRequestUserIfPresent);
 
 fleetRouter.post("/sync", syncFleetController);
 fleetRouter.post("/sync/registry", syncFleetRegistryController);

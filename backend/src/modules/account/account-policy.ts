@@ -49,3 +49,7 @@ export function canDeleteAccount(args: {
 export function canRevokeInvitation(args: { actor: AccountActor; invitedById: string }) {
   return isAdminRole(args.actor.role) || args.actor.id === args.invitedById;
 }
+
+export function canAssignDispatcherFleet(actorRole: string) {
+  return isAdminRole(actorRole);
+}

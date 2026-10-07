@@ -5,6 +5,7 @@ import {
   deleteAccountController,
   inviteAccountController,
   listAccountsController,
+  assignDispatcherController,
   resendInvitationController,
   revokeInvitationController,
 } from "../controllers/account.controller";
@@ -12,6 +13,7 @@ import {
   deleteAccountSchema,
   invitationIdParamsSchema,
   inviteAccountSchema,
+  assignDispatcherSchema,
   listAccountsSchema,
 } from "../validators/account.validator";
 
@@ -30,6 +32,11 @@ accountRouter.delete(
   "/invitations/:invitationId",
   validateRequest(invitationIdParamsSchema),
   revokeInvitationController,
+);
+accountRouter.patch(
+  "/:accountId/dispatcher",
+  validateRequest(assignDispatcherSchema),
+  assignDispatcherController,
 );
 accountRouter.delete("/:accountId", validateRequest(deleteAccountSchema), deleteAccountController);
 

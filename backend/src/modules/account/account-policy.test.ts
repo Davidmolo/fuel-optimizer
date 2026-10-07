@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { canDeleteAccount, canInviteAsRole, canRevokeInvitation, describeDeleteBlock } from "./account-policy";
+import { canAssignDispatcherFleet, canDeleteAccount, canInviteAsRole, canRevokeInvitation, describeDeleteBlock } from "./account-policy";
 
 const admin = { id: "admin-1", role: "admin" };
 const otherAdmin = { id: "admin-2", role: "admin" };
@@ -55,5 +55,12 @@ describe("invitation revoke policy", () => {
     assert.equal(canRevokeInvitation({ actor: admin, invitedById: user.id }), true);
     assert.equal(canRevokeInvitation({ actor: user, invitedById: user.id }), true);
     assert.equal(canRevokeInvitation({ actor: user, invitedById: admin.id }), false);
+  });
+});
+
+describe("dispatcher assignment policy", () => {
+  it("lets only admins assign dispatcher fleets", () => {
+    assert.equal(canAssignDispatcherFleet("admin"), true);
+    assert.equal(canAssignDispatcherFleet("user"), false);
   });
 });

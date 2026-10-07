@@ -1,7 +1,7 @@
 # Trimble Trip Dispatch — Requirements and Strategy
 
-**Status:** Phase 1–3 done (live-proven on tablet `999`; Phase 3 fuel stop confirmed October 5, 2026). Phase 4 remaining.  
-**Last updated:** October 5, 2026  
+**Status:** Phase 1–3 done (live-proven on tablet `999`; Phase 3 fuel stop confirmed October 5, 2026). Phase 4 dispatcher workflow implemented in code (assign fleets, scoped dashboard, Send to CoPilot, trip/accept status).  
+**Last updated:** October 6, 2026  
 **Sources:** Finn Martel (Trimble Maps), September 9, 2026 and October 1, 2026 (account settings + delete leftover trips before retest); Mantas / David thread, September 9–10, 2026; Mantas on testing tablet `999`, September–October 2026; Account Manager session for XXII Century (company id `BXTQPL`), September 23, 2026; read-only Trip Management search the same day; [Plan Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/plan-trip/), [Modify Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/modify-trip/), [Get Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/get-trip/), [Get Route Path](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/get-route-path/), [Trip Search](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/trip-query/), [Delete Trip](https://developer.trimblemaps.com/restful-apis/trip-management/api-documentation/delete-trip/)
 
 ---
@@ -195,7 +195,7 @@ One developer, phases in order. Loads, trucks, and the fuel recommendation alrea
 | 1. Plan a trip | A real load gets a Trimble trip id. No tablet is notified. | 2–3 days | **Done** |
 | 2. One tablet | One Activated truck receives that trip and can accept it in CoPilot. | 1–2 days | **Done** (proven on `999`, Oct 1, 2026) |
 | 3. Fuel stop | The optimizer’s station is on the trip before it is sent, and can be updated while the driver is moving. | 3–4 days | **Done** (proven on `999`, Oct 5, 2026 — Circle K Amarillo TX) |
-| 4. Dispatcher screen | Each dispatcher sees only their trucks and has a Send to CoPilot action. | 3–4 days | Remaining |
+| 4. Dispatcher screen | Each dispatcher sees only their trucks and has a Send to CoPilot action. | 3–4 days | Done in code |
 
 ### Phase 1 — Prove one planned trip
 
@@ -250,14 +250,14 @@ Exit: ~~the tablet route contains the station the optimizer selected.~~ **Met Oc
 
 ### Phase 4 — Dispatcher workflow
 
-**Estimate:** 3–4 days.
+**Estimate:** 3–4 days. **Status:** Implemented in code (October 6, 2026).
 
-1. Assign drivers to dispatcher users.
-2. Filter the dashboard to that fleet.
-3. Add one action: **Send to CoPilot**. It plans (if needed), inserts the current recommendation, then sets `tspDriverId`.
-4. Show trip status and whether the driver has accepted.
+1. ~~Assign drivers to dispatcher users.~~ **Done.** `User.dispatcherName` matches Trimble Account Manager `FirstName` / `FleetVehicle.dispatcherName`. Admins assign via `PATCH /api/v1/accounts/:accountId/dispatcher` (Accounts settings UI).
+2. ~~Filter the dashboard to that fleet.~~ **Done.** `GET /api/v1/tms/trip-context` and fleet vehicle lists scope by the signed-in user’s dispatcher assignment; admins see all. Users with no assignment see an empty fleet.
+3. ~~Add one action: **Send to CoPilot**.~~ **Done.** `POST /api/v1/tms/loads/:loadId/trimble-trip/send-to-copilot` plans (if needed), inserts the current recommendation, then sets `tspDriverId`. Production Send refuses tablet `999`, and requires Activated + Trip Management. UI button on the trip side panel (no station picker).
+4. ~~Show trip status and whether the driver has accepted.~~ **Done.** Trip context exposes `copilot.driverAcceptStatus` from Trimble `tripStatus` (`Dispatched`/`ReceivedByClient` → waiting, `InProgress` → accepted, `Declined` → declined). Shown on the load list and Send panel.
 
-Exit: a dispatcher can run the flow for their own drivers only.
+Exit: ~~a dispatcher can run the flow for their own drivers only.~~ **Met in code** (fleet scope + ownership checks on Send).
 
 ### What we will not do in v1
 
@@ -301,5 +301,5 @@ These do not block Phase 1. They should be answered before calling the workflow 
 4. ~~The driver can accept the trip and be navigated to the fuel stop in order.~~ **Met (Phase 2 accept + Phase 3 FuelStop on tablet `999`, October 5, 2026).**
 5. ~~Changing the recommendation on an in-progress trip updates the open stops, and a next-stop insert notifies the driver.~~ **Met in code (Phase 3 `PUT .../fuel-stop`).** Optional live proof when a trip is already InProgress.
 
-6. A dispatcher login lists only that dispatcher’s drivers. **Phase 4.**
+6. ~~A dispatcher login lists only that dispatcher’s drivers.~~ **Met in code (Phase 4).** Assign `User.dispatcherName` in Accounts; trip-context and fleet lists filter to that Trimble fleet.
 7. Assets without a Trip Management license are not dispatched. **Enforced in matching / dispatch code; keep for production Send.**

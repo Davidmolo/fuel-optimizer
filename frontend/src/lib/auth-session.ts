@@ -1,6 +1,7 @@
 export type AuthSession = {
   email: string;
   role: string | null;
+  dispatcherName?: string | null;
 };
 
 const SESSION_KEY = "fuel_auth_session";

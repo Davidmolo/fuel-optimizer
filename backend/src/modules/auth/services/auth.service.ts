@@ -36,6 +36,7 @@ export async function loginWithEmailAndPassword(payload: LoginPayload) {
     email: user.email,
     role: role?.name ?? null,
     roleId: user.roleId,
+    dispatcherName: user.dispatcherName ?? null,
     otpRequired: true,
   };
 }
@@ -60,6 +61,7 @@ export async function verifyLoginOtp(payload: { email: string; otp: string }) {
     email: user.email,
     role: role?.name ?? null,
     roleId: user.roleId,
+    dispatcherName: user.dispatcherName ?? null,
   };
 }
 

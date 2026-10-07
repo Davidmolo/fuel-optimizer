@@ -5,9 +5,13 @@ import { RoleModel } from "../../role/models/role.model";
 import { UserModel } from "../../user/models/user.model";
 import { ADMIN_ROLE_NAME, isAccountRole, isAdminRole, type AccountRole } from "../../role/constants";
 import { InvitationModel } from "../models/invitation.model";
-import { canInviteAsRole, canRevokeInvitation, describeDeleteBlock } from "../account-policy";
+import { canAssignDispatcherFleet, canInviteAsRole, canRevokeInvitation, describeDeleteBlock } from "../account-policy";
 import { createInvitationToken, hashInvitationToken } from "../invitation-token";
 import { sendInvitationEmail, type InvitationEmailPayload } from "./invitation-email.service";
+import {
+  listKnownDispatcherNames,
+  normalizeDispatcherName,
+} from "../../fleet/services/dispatcher-fleet-scope";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -16,6 +20,7 @@ export type AccountActor = {
   email: string;
   roleId: string;
   role: string;
+  dispatcherName?: string | null;
 };
 
 export type InvitationDelivery = (payload: InvitationEmailPayload) => Promise<void>;
@@ -82,6 +87,7 @@ export async function listWorkspaceAccounts(actor: AccountActor) {
       id: toId(user._id),
       email: user.email,
       role,
+      dispatcherName: user.dispatcherName ?? null,
       createdAt: user.createdAt,
       isCurrentUser: toId(user._id) === actor.id,
       canDelete: deleteBlockedReason === null,
@@ -97,13 +103,18 @@ export async function listWorkspaceAccounts(actor: AccountActor) {
     return left.email.localeCompare(right.email);
   });
 
+  const dispatcherNames = await listKnownDispatcherNames();
+
   return {
     currentUser: {
       id: actor.id,
       email: actor.email,
       role: actor.role,
+      dispatcherName: actor.dispatcherName ?? null,
       canInviteAdmin: isAdminRole(actor.role),
+      canAssignDispatcher: canAssignDispatcherFleet(actor.role),
     },
+    dispatcherNames,
     members,
     invitations: invitations.map((invitation) => ({
       id: toId(invitation._id),
@@ -352,5 +363,51 @@ export async function acceptInvitation(payload: { token: string; password: strin
   return {
     email: invitation.email,
     role: invitation.role,
+  };
+}
+
+export async function assignDispatcherFleetToAccount(
+  actor: AccountActor,
+  accountId: string,
+  dispatcherNameInput: string | null,
+) {
+  if (!canAssignDispatcherFleet(actor.role)) {
+    throw new HttpError("Only admins can assign dispatcher fleets", 403);
+  }
+
+  if (!Types.ObjectId.isValid(accountId)) {
+    throw new HttpError("Account not found", 404);
+  }
+
+  const user = await UserModel.findById(accountId);
+
+  if (!user) {
+    throw new HttpError("Account not found", 404);
+  }
+
+  const dispatcherName = normalizeDispatcherName(dispatcherNameInput);
+
+  if (dispatcherName) {
+    const knownNames = await listKnownDispatcherNames();
+    const known = knownNames.find((name) => name.toLowerCase() === dispatcherName.toLowerCase());
+
+    if (!known) {
+      throw new HttpError(
+        `Unknown dispatcher name "${dispatcherName}". Sync CoPilot assets so Trimble FirstName values are available.`,
+        400,
+      );
+    }
+
+    user.dispatcherName = known;
+  } else {
+    user.dispatcherName = null;
+  }
+
+  await user.save();
+
+  return {
+    id: toId(user._id),
+    email: user.email,
+    dispatcherName: user.dispatcherName ?? null,
   };
 }

@@ -4,6 +4,7 @@ export type AccountMember = {
   id: string;
   email: string;
   role: AccountRole | string;
+  dispatcherName?: string | null;
   createdAt: string;
   isCurrentUser: boolean;
   canDelete: boolean;
@@ -27,8 +28,11 @@ export type AccountsWorkspace = {
     id: string;
     email: string;
     role: AccountRole | string;
+    dispatcherName?: string | null;
     canInviteAdmin: boolean;
+    canAssignDispatcher?: boolean;
   };
+  dispatcherNames?: string[];
   members: AccountMember[];
   invitations: AccountInvitation[];
 };

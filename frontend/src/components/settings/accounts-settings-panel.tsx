@@ -7,12 +7,15 @@ import Input from "@/components/common/input";
 import Label from "@/components/common/label";
 import Modal from "@/components/common/modal";
 import { IconTrash, IconUserPlus } from "@/components/common/icons";
+import Select, { type SelectOption } from "@/components/common/select";
 import Spinner from "@/components/common/spinner";
 import Tooltip from "@/components/common/tooltip";
 import { apiRequest } from "@/lib/api";
 import { formatFleetTimestamp } from "@/lib/fleet-utils";
 import { cn } from "@/lib/utils";
 import type { AccountInvitation, AccountMember, AccountRole, AccountsWorkspace } from "@/types/account";
+
+const DISPATCHER_UNASSIGNED = "__none__";
 
 const ROLE_OPTIONS: Array<{ value: AccountRole; label: string; description: string }> = [
   { value: "user", label: "User", description: "Can invite teammates and remove other users" },
@@ -57,6 +60,28 @@ function formatExpiry(value: string, expired: boolean) {
   return `Expires in ${days} days`;
 }
 
+function dispatcherLabel(name: string | null | undefined) {
+  const trimmed = name?.trim();
+  return trimmed ? trimmed : "Unassigned";
+}
+
+function memberDispatcherSelectValue(member: AccountMember) {
+  const trimmed = member.dispatcherName?.trim();
+  return trimmed ? trimmed : DISPATCHER_UNASSIGNED;
+}
+
+function dispatcherOptionsForMember(
+  member: AccountMember,
+  baseOptions: Array<SelectOption<string>>,
+): Array<SelectOption<string>> {
+  const value = memberDispatcherSelectValue(member);
+  if (value === DISPATCHER_UNASSIGNED || baseOptions.some((option) => option.value === value)) {
+    return baseOptions;
+  }
+
+  return [...baseOptions, { value, label: value }];
+}
+
 export default function AccountsSettingsPanel({
   workspace,
   loading,
@@ -79,10 +104,20 @@ export default function AccountsSettingsPanel({
   const [pendingDelete, setPendingDelete] = useState<AccountMember | null>(null);
   const [pendingRevoke, setPendingRevoke] = useState<AccountInvitation | null>(null);
 
+  const canAssignDispatcher = Boolean(workspace.currentUser.canAssignDispatcher);
+
   const roleOptions = useMemo(
     () => (workspace.currentUser.canInviteAdmin ? ROLE_OPTIONS : ROLE_OPTIONS.filter((option) => option.value === "user")),
     [workspace.currentUser.canInviteAdmin],
   );
+
+  const dispatcherSelectOptions = useMemo<Array<SelectOption<string>>>(() => {
+    const names = workspace.dispatcherNames ?? [];
+    return [
+      { value: DISPATCHER_UNASSIGNED, label: "Unassigned" },
+      ...names.map((name) => ({ value: name, label: name })),
+    ];
+  }, [workspace.dispatcherNames]);
 
   const members = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -90,9 +125,16 @@ export default function AccountsSettingsPanel({
       return workspace.members;
     }
 
-    return workspace.members.filter(
-      (member) => member.email.toLowerCase().includes(needle) || member.role.toLowerCase().includes(needle),
-    );
+    return workspace.members.filter((member) => {
+      const dispatcherName = member.dispatcherName?.trim().toLowerCase() ?? "";
+      const dispatcherSearch = dispatcherName || "unassigned";
+
+      return (
+        member.email.toLowerCase().includes(needle) ||
+        member.role.toLowerCase().includes(needle) ||
+        dispatcherSearch.includes(needle)
+      );
+    });
   }, [query, workspace.members]);
 
   const invitations = useMemo(() => {
@@ -210,14 +252,46 @@ export default function AccountsSettingsPanel({
     await onReload();
   }
 
+  async function handleAssignDispatcher(member: AccountMember, nextValue: string) {
+    const currentValue = memberDispatcherSelectValue(member);
+    if (nextValue === currentValue) {
+      return;
+    }
+
+    const dispatcherName = nextValue === DISPATCHER_UNASSIGNED ? null : nextValue;
+    const busyKey = `${member.id}:dispatcher`;
+
+    setBusyId(busyKey);
+    setActionMessage("");
+    setActionError(false);
+
+    const result = await apiRequest(`/api/v1/accounts/${member.id}/dispatcher`, {
+      method: "PATCH",
+      body: JSON.stringify({ dispatcherName }),
+    });
+
+    setBusyId("");
+
+    if (!result.success) {
+      setActionError(true);
+      setActionMessage(result.message || "Unable to update dispatcher fleet");
+      return;
+    }
+
+    setActionError(false);
+    setActionMessage(result.message || `Updated dispatcher fleet for ${member.email}`);
+    await onReload();
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="max-w-2xl">
           <h2 className="text-base font-semibold tracking-tight text-foreground">Accounts</h2>
           <p className="mt-1 text-sm text-muted">
-            Access is by invitation only. Admins and users can both invite teammates. Users cannot remove admins;
-            admins can remove any other account.
+            Access is by invitation only. Admins can assign Trimble dispatcher names so members only see matching
+            fleet loads. Admins and users can both invite teammates. Users cannot remove admins; admins can remove any
+            other account.
           </p>
         </div>
         <Button onClick={() => setInviteOpen(true)}>
@@ -251,6 +325,7 @@ export default function AccountsSettingsPanel({
             <tr>
               <th className="px-4 py-3 font-medium">Account</th>
               <th className="px-4 py-3 font-medium">Role</th>
+              <th className="px-4 py-3 font-medium">Dispatcher fleet</th>
               <th className="px-4 py-3 font-medium">Joined</th>
               <th className="px-4 py-3 font-medium text-right">Actions</th>
             </tr>
@@ -258,47 +333,68 @@ export default function AccountsSettingsPanel({
           <tbody>
             {members.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted">
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted">
                   No members match that search.
                 </td>
               </tr>
             ) : (
-              members.map((member) => (
-                <tr key={member.id} className="border-t border-border">
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-foreground">{member.email}</p>
-                    {member.isCurrentUser ? <p className="mt-0.5 text-xs text-muted">You</p> : null}
-                  </td>
-                  <td className="px-4 py-3">
-                    <RoleBadge role={member.role} />
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-muted">{formatFleetTimestamp(member.createdAt)}</td>
-                  <td className="px-4 py-3 text-right">
-                    {member.isCurrentUser ? (
-                      <span className="text-xs text-muted">Current session</span>
-                    ) : member.canDelete ? (
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        disabled={busyId === member.id}
-                        onClick={() => setPendingDelete(member)}
-                      >
-                        <IconTrash className="h-3.5 w-3.5" />
-                        Remove
-                      </Button>
-                    ) : (
-                      <Tooltip content={member.deleteBlockedReason || "You cannot remove this account"} align="end">
-                        <span>
-                          <Button size="sm" variant="danger" disabled>
-                            <IconTrash className="h-3.5 w-3.5" />
-                            Remove
-                          </Button>
-                        </span>
-                      </Tooltip>
-                    )}
-                  </td>
-                </tr>
-              ))
+              members.map((member) => {
+                const dispatcherBusy = busyId === `${member.id}:dispatcher`;
+                const memberBusy = busyId === member.id;
+
+                return (
+                  <tr key={member.id} className="border-t border-border">
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-foreground">{member.email}</p>
+                      {member.isCurrentUser ? <p className="mt-0.5 text-xs text-muted">You</p> : null}
+                    </td>
+                    <td className="px-4 py-3">
+                      <RoleBadge role={member.role} />
+                    </td>
+                    <td className="px-4 py-3">
+                      {canAssignDispatcher ? (
+                        <Select
+                          size="sm"
+                          value={memberDispatcherSelectValue(member)}
+                          options={dispatcherOptionsForMember(member, dispatcherSelectOptions)}
+                          onChange={(value) => void handleAssignDispatcher(member, value)}
+                          disabled={dispatcherBusy || memberBusy}
+                          aria-label={`Dispatcher fleet for ${member.email}`}
+                          className="min-w-[10rem] max-w-[14rem]"
+                          fullWidth
+                        />
+                      ) : (
+                        <span className="text-muted">{dispatcherLabel(member.dispatcherName)}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-muted">{formatFleetTimestamp(member.createdAt)}</td>
+                    <td className="px-4 py-3 text-right">
+                      {member.isCurrentUser ? (
+                        <span className="text-xs text-muted">Current session</span>
+                      ) : member.canDelete ? (
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          disabled={memberBusy || dispatcherBusy}
+                          onClick={() => setPendingDelete(member)}
+                        >
+                          <IconTrash className="h-3.5 w-3.5" />
+                          Remove
+                        </Button>
+                      ) : (
+                        <Tooltip content={member.deleteBlockedReason || "You cannot remove this account"} align="end">
+                          <span>
+                            <Button size="sm" variant="danger" disabled>
+                              <IconTrash className="h-3.5 w-3.5" />
+                              Remove
+                            </Button>
+                          </span>
+                        </Tooltip>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

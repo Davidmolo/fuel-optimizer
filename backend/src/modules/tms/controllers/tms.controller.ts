@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { getRequestUser } from "../../../middlewares/require-authenticated-user";
 import { runManualJob, runManualJobOutcome } from "../../jobs/jobs.service";
 import {
   getActiveLoad,
@@ -17,6 +18,10 @@ import {
   planTrimbleTripForLoad,
   updateFuelStopOnInProgressTripForLoad,
 } from "../services/trimble-trip.service";
+
+function actorFromRequest(req: Request) {
+  return getRequestUser(req) ?? null;
+}
 
 export async function syncTmsController(_req: Request, res: Response) {
   const tms = await runManualJob("openroad.full");
@@ -69,7 +74,7 @@ export async function syncTmsLoadsController(_req: Request, res: Response) {
 
 export async function listActiveLoadsController(req: Request, res: Response) {
   const truckUnit = typeof req.query.truckUnit === "string" ? req.query.truckUnit : undefined;
-  const data = await listActiveLoads({ truckUnit });
+  const data = await listActiveLoads({ truckUnit, actor: actorFromRequest(req) });
 
   return res.status(200).json({
     success: true,
@@ -118,7 +123,11 @@ export async function dispatchTrimbleTripController(req: Request, res: Response)
   const loadId = String(req.params.loadId);
   const tspDriverId = typeof req.body?.tspDriverId === "string" ? req.body.tspDriverId : undefined;
   const allowTestTablet = req.body?.allowTestTablet === true;
-  const data = await dispatchTrimbleTripForLoad(loadId, { tspDriverId, allowTestTablet });
+  const data = await dispatchTrimbleTripForLoad(loadId, {
+    tspDriverId,
+    allowTestTablet,
+    actor: actorFromRequest(req),
+  });
 
   return res.status(200).json({
     success: true,
@@ -161,6 +170,7 @@ export async function dispatchWithFuelStopController(req: Request, res: Response
     useReplanDispatch,
     customerSlug,
     relayAccount: relayAccount as "blue_stallion" | "azfs" | undefined,
+    actor: actorFromRequest(req),
   });
 
   return res.status(200).json({
@@ -168,6 +178,34 @@ export async function dispatchWithFuelStopController(req: Request, res: Response
     message: data.reusedExisting
       ? `Trip already dispatched to ${data.tspDriverId}`
       : `Trimble trip with fuel stop dispatched to tablet ${data.tspDriverId}`,
+    data,
+  });
+}
+
+/** Phase 4 product action: plan (if needed) + fuel stop + dispatch. Never allows test tablet 999. */
+export async function sendToCopilotController(req: Request, res: Response) {
+  const loadId = String(req.params.loadId);
+  const customerSlug = typeof req.body?.customerSlug === "string" ? req.body.customerSlug : undefined;
+  const relayAccount = typeof req.body?.relayAccount === "string" ? req.body.relayAccount : undefined;
+  const data = await dispatchTrimbleTripWithFuelStopForLoad(loadId, {
+    allowTestTablet: false,
+    customerSlug,
+    relayAccount: relayAccount as "blue_stallion" | "azfs" | undefined,
+    actor: actorFromRequest(req),
+  });
+
+  const acceptLabel =
+    data.tripStatus === "InProgress"
+      ? "Driver has accepted"
+      : data.tripStatus === "Declined"
+        ? "Driver declined"
+        : "Waiting for driver to accept";
+
+  return res.status(200).json({
+    success: true,
+    message: data.reusedExisting
+      ? `Already on CoPilot for tablet ${data.tspDriverId}. ${acceptLabel}.`
+      : `Sent to CoPilot tablet ${data.tspDriverId}. ${acceptLabel}.`,
     data,
   });
 }
@@ -201,8 +239,8 @@ export async function getTrimbleTripRoutePathController(req: Request, res: Respo
   });
 }
 
-export async function listTripContextsController(_req: Request, res: Response) {
-  const data = await listTripContexts();
+export async function listTripContextsController(req: Request, res: Response) {
+  const data = await listTripContexts(actorFromRequest(req));
 
   return res.status(200).json({
     success: true,

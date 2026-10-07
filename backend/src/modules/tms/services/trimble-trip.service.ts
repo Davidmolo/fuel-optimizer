@@ -18,6 +18,11 @@ import { HttpError } from "../../../utils/http-error";
 import { distanceAlongPolylineMiles, type GeoPoint } from "../../../utils/geo";
 import { FleetVehicleModel } from "../../fleet/models/fleet-vehicle.model";
 import { isTestCopilotAssetId } from "../../fleet/services/copilot-asset-matching";
+import {
+  assertLoadInDispatcherScope,
+  evaluateCopilotSendReadiness,
+  type FleetScopeActor,
+} from "../../fleet/services/dispatcher-fleet-scope";
 import { getRecommendationForTruck } from "../../recommendation/services/recommendation.service";
 import {
   TmsLoadModel,
@@ -150,11 +155,60 @@ async function refreshTripSnapshot(alkTripId: string) {
   };
 }
 
-async function resolveTspDriverIdFromLoad(load: TmsLoadDocument): Promise<string | null> {
+async function resolveFleetVehicleForLoad(load: TmsLoadDocument) {
   const unit = load.truckUnit?.trim();
   if (!unit) return null;
-  const vehicle = await FleetVehicleModel.findOne({ unitNumber: unit, isActive: true });
+  return FleetVehicleModel.findOne({ unitNumber: unit, isActive: true }).lean();
+}
+
+async function resolveTspDriverIdFromLoad(load: TmsLoadDocument): Promise<string | null> {
+  const vehicle = await resolveFleetVehicleForLoad(load);
   return vehicle?.trimbleAssetId?.trim() || null;
+}
+
+async function assertProductionDispatchAllowed(
+  load: TmsLoadDocument,
+  tspDriverId: string,
+  options: { allowTestTablet?: boolean; skipActivatedCheck?: boolean } = {},
+) {
+  if (isTestCopilotAssetId(tspDriverId) && !options.allowTestTablet) {
+    throw new HttpError(
+      `Refusing to dispatch to test tablet ${tspDriverId} without allowTestTablet=true. Production dispatch must not target 999.`,
+      409,
+    );
+  }
+
+  if (options.skipActivatedCheck || options.allowTestTablet) {
+    return;
+  }
+
+  const vehicle = await resolveFleetVehicleForLoad(load);
+  if (!vehicle) {
+    return;
+  }
+
+  const readiness = evaluateCopilotSendReadiness({
+    trimbleAssetId: vehicle.trimbleAssetId,
+    tripManagementEnabled: vehicle.tripManagementEnabled,
+    copilotStatus: vehicle.copilotStatus,
+    dispatcherName: vehicle.dispatcherName,
+  });
+
+  if (!readiness.canSend && readiness.blockedReason) {
+    throw new HttpError(readiness.blockedReason, 409);
+  }
+}
+
+async function assertActorCanSendLoad(load: TmsLoadDocument, actor?: FleetScopeActor | null) {
+  if (!actor) {
+    return;
+  }
+  await assertLoadInDispatcherScope({
+    actor,
+    truckUnit: load.truckUnit,
+    openroadTruckId: load.openroadTruckId,
+    samsaraVehicleId: load.samsaraVehicleId,
+  });
 }
 
 function assignTrimbleTripFields(
@@ -473,7 +527,7 @@ export async function getTrimbleTripForLoad(loadId: string): Promise<TrimbleTrip
  */
 export async function dispatchTrimbleTripForLoad(
   loadId: string,
-  options: { tspDriverId?: string; allowTestTablet?: boolean } = {},
+  options: { tspDriverId?: string; allowTestTablet?: boolean; actor?: FleetScopeActor | null } = {},
 ): Promise<TrimbleTripView> {
   if (!isTripManagementConfigured()) {
     throw new HttpError("Trimble Trip Management is not configured. Set TRIMBLE_API_KEY.", 503);
@@ -483,6 +537,8 @@ export async function dispatchTrimbleTripForLoad(
   if (!load) {
     throw new HttpError("Load not found", 404);
   }
+
+  await assertActorCanSendLoad(load, options.actor);
 
   const existingTmsTripId = load.trimbleTrip?.tmsTripId;
   if (existingTmsTripId && !isFuelOptimizerTmsTripId(existingTmsTripId)) {
@@ -503,12 +559,9 @@ export async function dispatchTrimbleTripForLoad(
     );
   }
 
-  if (isTestCopilotAssetId(tspDriverId) && !options.allowTestTablet) {
-    throw new HttpError(
-      `Refusing to dispatch to test tablet ${tspDriverId} without allowTestTablet=true. Production dispatch must not target 999.`,
-      409,
-    );
-  }
+  await assertProductionDispatchAllowed(load, tspDriverId, {
+    allowTestTablet: options.allowTestTablet,
+  });
 
   const existingAlkTripId = load.trimbleTrip?.alkTripId;
   if (existingAlkTripId) {
@@ -794,8 +847,15 @@ export async function dispatchTrimbleTripWithFuelStopForLoad(
     relayAccount?: RelayAccount;
     /** Fall back to Phase 2 re-plan dispatch if modify+tspDriverId fails. */
     useReplanDispatch?: boolean;
+    actor?: FleetScopeActor | null;
   } = {},
 ): Promise<TrimbleTripWithFuelView> {
+  const loadForScope = await findLoadByIdentifier(loadId);
+  if (!loadForScope) {
+    throw new HttpError("Load not found", 404);
+  }
+  await assertActorCanSendLoad(loadForScope, options.actor);
+
   const attached = await attachFuelStopToTrimbleTripForLoad(loadId, {
     customerSlug: options.customerSlug,
     relayAccount: options.relayAccount,
@@ -819,12 +879,9 @@ export async function dispatchTrimbleTripWithFuelStopForLoad(
     );
   }
 
-  if (isTestCopilotAssetId(tspDriverId) && !options.allowTestTablet) {
-    throw new HttpError(
-      `Refusing to dispatch to test tablet ${tspDriverId} without allowTestTablet=true. Production dispatch must not target 999.`,
-      409,
-    );
-  }
+  await assertProductionDispatchAllowed(load, tspDriverId, {
+    allowTestTablet: options.allowTestTablet,
+  });
 
   const alkTripId = load.trimbleTrip?.alkTripId;
   if (!alkTripId) {
@@ -876,6 +933,7 @@ export async function dispatchTrimbleTripWithFuelStopForLoad(
       const fallback = await dispatchTrimbleTripForLoad(loadId, {
         tspDriverId,
         allowTestTablet: options.allowTestTablet,
+        actor: options.actor,
       });
       return {
         ...fallback,

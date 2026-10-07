@@ -5,7 +5,7 @@ import {
   getTripLinkageIssues,
 } from "@/lib/trip-linkage-status";
 import { cn } from "@/lib/utils";
-import type { TripContext } from "@/types/tms";
+import type { CopilotSendInfo, TripContext } from "@/types/tms";
 
 export function LoadStatusBadge({ status }: { status: string }) {
   const tone = getLoadStatusTone(status);
@@ -26,6 +26,38 @@ export function LoadStatusBadge({ status }: { status: string }) {
   );
 }
 
+function CopilotAcceptBadge({ status }: { status: CopilotSendInfo["driverAcceptStatus"] }) {
+  if (status === "not_sent" || status === "unknown") {
+    return null;
+  }
+
+  const label =
+    status === "accepted"
+      ? "Accepted"
+      : status === "waiting"
+        ? "On CoPilot"
+        : status === "declined"
+          ? "Declined"
+          : status === "completed"
+            ? "Done"
+            : "Canceled";
+
+  return (
+    <span
+      className={cn(
+        "inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset",
+        status === "accepted" || status === "completed"
+          ? "bg-emerald-50 text-emerald-800 ring-emerald-100"
+          : status === "waiting"
+            ? "bg-sky-50 text-sky-800 ring-sky-100"
+            : "bg-red-50 text-red-700 ring-red-100",
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
 type TripContextRowProps = {
   trip: TripContext;
   onSelect: (trip: TripContext) => void;
@@ -33,7 +65,7 @@ type TripContextRowProps = {
 };
 
 export default function TripContextRow({ trip, onSelect, selected }: TripContextRowProps) {
-  const { load, driver, vehicle } = trip;
+  const { load, driver, vehicle, copilot } = trip;
   const primaryIssue = getTripLinkageIssues(trip)[0];
 
   return (
@@ -55,6 +87,7 @@ export default function TripContextRow({ trip, onSelect, selected }: TripContext
               Hot
             </span>
           ) : null}
+          {copilot ? <CopilotAcceptBadge status={copilot.driverAcceptStatus} /> : null}
           <LoadStatusBadge status={load.status} />
         </div>
       </div>

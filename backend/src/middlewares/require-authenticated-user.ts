@@ -8,6 +8,7 @@ export type RequestUser = {
   email: string;
   roleId: string;
   role: string;
+  dispatcherName?: string | null;
 };
 
 type AuthenticatedRequest = Request & {
@@ -47,9 +48,38 @@ async function attachSignedInUser(req: Request, res: Response) {
     email: user.email,
     roleId: String(user.roleId),
     role: role?.name ?? "",
+    dispatcherName: user.dispatcherName ?? null,
   };
 
   return (req as AuthenticatedRequest).user;
+}
+
+/** Attach the signed-in user when X-User-Email is present; continue without one otherwise. */
+export async function attachRequestUserIfPresent(req: Request, _res: Response, next: NextFunction) {
+  const emailHeader = req.header("X-User-Email");
+
+  if (!emailHeader?.trim()) {
+    return next();
+  }
+
+  const email = emailHeader.trim().toLowerCase();
+  const user = await UserModel.findOne({ email }).lean();
+
+  if (!user) {
+    return next();
+  }
+
+  const role = await RoleModel.findById(user.roleId).lean();
+
+  (req as AuthenticatedRequest).user = {
+    id: String(user._id),
+    email: user.email,
+    roleId: String(user.roleId),
+    role: role?.name ?? "",
+    dispatcherName: user.dispatcherName ?? null,
+  };
+
+  return next();
 }
 
 export async function requireSignedInUser(req: Request, res: Response, next: NextFunction) {

@@ -10,6 +10,31 @@ export type TmsLoadDestination = {
   completed: boolean;
 };
 
+export type TrimbleTripFuelStop = {
+  relayAccount: string;
+  relayLocationId: string;
+  merchantName?: string;
+  name?: string;
+  city?: string;
+  state?: string;
+  latitude: number;
+  longitude: number;
+  effectivePricePerGallon?: number;
+  stopIndex: number;
+  insertedAt: string;
+  reason?: string;
+};
+
+export type TrimbleTripSummary = {
+  alkTripId: string;
+  tmsTripId: string;
+  tripStatus?: string;
+  tspDriverId?: string | null;
+  fuelStop?: TrimbleTripFuelStop | null;
+  lastRecommendationStatus?: "ready" | "not_ready" | "no_candidates";
+  lastRecommendationMessage?: string;
+};
+
 export type TmsLoad = {
   id: string;
   openroadLoadId: number;
@@ -29,6 +54,7 @@ export type TmsLoad = {
   truckUnit?: string;
   openroadTruckId?: number;
   destinations: TmsLoadDestination[];
+  trimbleTrip?: TrimbleTripSummary;
   syncedAt?: string;
   updatedAt: string;
 };
@@ -54,6 +80,10 @@ export type TripContextVehicle = {
   samsaraId?: string;
   unitNumber?: string;
   mappingStatus?: "linked" | "samsara_only" | "openroad_only" | "conflict";
+  trimbleAssetId?: string;
+  tripManagementEnabled?: boolean;
+  copilotStatus?: string;
+  dispatcherName?: string;
   gps?: {
     latitude: number;
     longitude: number;
@@ -77,11 +107,28 @@ export type TripContextLinkage = {
   isReadyForRecommendation: boolean;
 };
 
+export type CopilotSendInfo = {
+  canSend: boolean;
+  blockedReason?: string;
+  driverAcceptStatus:
+    | "not_sent"
+    | "waiting"
+    | "accepted"
+    | "declined"
+    | "completed"
+    | "canceled"
+    | "unknown";
+  tripStatus?: string;
+  tspDriverId?: string | null;
+  fuelStopOnTrip: boolean;
+};
+
 export type TripContext = {
   load: TmsLoad;
   driver?: TmsDriver;
   vehicle?: TripContextVehicle;
   linkage: TripContextLinkage;
+  copilot?: CopilotSendInfo;
 };
 
 export type TripContextListResponse = {
@@ -90,6 +137,11 @@ export type TripContextListResponse = {
     withTelemetryCount: number;
   };
   items: TripContext[];
+  fleetScope?: {
+    mode: "all" | "dispatcher" | "none";
+    dispatcherName?: string;
+    reason?: string;
+  };
 };
 
 export type TmsSyncResponse = {
@@ -120,5 +172,4 @@ export type TripDrivingRoute = {
   polyline: Array<{ lat: number; lng: number }>;
   distanceMiles: number;
   durationMinutes: number;
-  source: "osrm" | "trimble";
 };

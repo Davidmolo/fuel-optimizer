@@ -3,6 +3,7 @@ import { getRequestUser } from "../../../middlewares/require-authenticated-user"
 import { HttpError } from "../../../utils/http-error";
 import {
   acceptInvitation,
+  assignDispatcherFleetToAccount,
   deleteAccount,
   getInvitationByToken,
   inviteAccount,
@@ -67,6 +68,27 @@ export async function deleteAccountController(req: Request, res: Response) {
   return res.status(200).json({
     success: true,
     message: "Account removed",
+    data: result,
+  });
+}
+
+export async function assignDispatcherController(req: Request, res: Response) {
+  const dispatcherName =
+    req.body?.dispatcherName === null || req.body?.dispatcherName === undefined
+      ? null
+      : String(req.body.dispatcherName);
+
+  const result = await assignDispatcherFleetToAccount(
+    requireActor(req),
+    String(req.params.accountId),
+    dispatcherName,
+  );
+
+  return res.status(200).json({
+    success: true,
+    message: result.dispatcherName
+      ? `Assigned dispatcher fleet "${result.dispatcherName}"`
+      : "Cleared dispatcher fleet assignment",
     data: result,
   });
 }

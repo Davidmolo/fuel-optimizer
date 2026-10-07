@@ -2,6 +2,13 @@ import { HttpError } from "../../../utils/http-error";
 import { isValidObjectId } from "mongoose";
 import { FleetVehicleModel } from "../../fleet/models/fleet-vehicle.model";
 import { toFleetVehicleView } from "../../fleet/mappers/fleet-vehicle.mapper";
+import {
+  deriveDriverAcceptLabel,
+  evaluateCopilotSendReadiness,
+  resolveDispatcherFleetScope,
+  truckUnitInScope,
+  type FleetScopeActor,
+} from "../../fleet/services/dispatcher-fleet-scope";
 import { getSamsaraTelemetryStaleMs } from "../../../integrations/samsara";
 import { TmsAssignmentModel } from "../models/tms-assignment.model";
 import { TmsDriverModel } from "../models/tms-driver.model";
@@ -16,6 +23,7 @@ import { isDemoDriver, normalizeVin } from "../utils/tms-normalize";
 
 type ListActiveLoadsOptions = {
   truckUnit?: string;
+  actor?: FleetScopeActor | null;
 };
 
 function buildActiveLoadLookupFilter(identifier: string) {
@@ -43,8 +51,35 @@ async function findActiveLoadByIdentifier(identifier: string) {
 
 export async function listActiveLoads(options: ListActiveLoadsOptions = {}) {
   const filter: Record<string, unknown> = { isActive: true };
+  const scope = await resolveDispatcherFleetScope(options.actor);
 
-  if (options.truckUnit) {
+  if (scope.mode === "none") {
+    return {
+      summary: buildTmsSummary([]),
+      items: [],
+      fleetScope: { mode: scope.mode, reason: scope.reason },
+    };
+  }
+
+  if (scope.mode === "dispatcher") {
+    if (scope.unitNumbers.length === 0) {
+      return {
+        summary: buildTmsSummary([]),
+        items: [],
+        fleetScope: { mode: scope.mode, dispatcherName: scope.dispatcherName },
+      };
+    }
+    filter.truckUnit = options.truckUnit
+      ? options.truckUnit
+      : { $in: scope.unitNumbers };
+    if (options.truckUnit && !scope.unitNumbers.includes(options.truckUnit)) {
+      return {
+        summary: buildTmsSummary([]),
+        items: [],
+        fleetScope: { mode: scope.mode, dispatcherName: scope.dispatcherName },
+      };
+    }
+  } else if (options.truckUnit) {
     filter.truckUnit = options.truckUnit;
   }
 
@@ -54,6 +89,10 @@ export async function listActiveLoads(options: ListActiveLoadsOptions = {}) {
   return {
     summary: buildTmsSummary(items),
     items,
+    fleetScope:
+      scope.mode === "dispatcher"
+        ? { mode: scope.mode, dispatcherName: scope.dispatcherName }
+        : { mode: "all" as const },
   };
 }
 
@@ -112,6 +151,49 @@ function toDriverView(driver: {
   };
 }
 
+function buildCopilotSendView(args: {
+  fleetVehicle?: {
+    trimbleAssetId?: string;
+    tripManagementEnabled?: boolean;
+    copilotStatus?: string;
+    dispatcherName?: string;
+  } | null;
+  tripStatus?: string;
+  tspDriverId?: string | null;
+  fuelStopOnTrip: boolean;
+}): TripContextView["copilot"] {
+  const readiness = evaluateCopilotSendReadiness(args.fleetVehicle ?? null);
+
+  return {
+    canSend: readiness.canSend,
+    blockedReason: readiness.blockedReason,
+    driverAcceptStatus: deriveDriverAcceptLabel(args.tripStatus),
+    tripStatus: args.tripStatus,
+    tspDriverId: args.tspDriverId ?? readiness.trimbleAssetId ?? null,
+    fuelStopOnTrip: args.fuelStopOnTrip,
+  };
+}
+
+function toTripVehicleView(
+  fleetVehicle: NonNullable<Awaited<ReturnType<typeof findFleetVehicleForLoad>>>,
+  staleThresholdMs: number,
+) {
+  const fleetView = toFleetVehicleView(fleetVehicle, staleThresholdMs);
+  return {
+    fleetVehicleId: fleetView.id,
+    samsaraId: fleetView.samsaraId,
+    unitNumber: fleetView.unitNumber,
+    mappingStatus: fleetVehicle.mappingStatus,
+    fuelTankCapacityGallons: fleetView.fuelTankCapacityGallons,
+    trimbleAssetId: fleetView.trimbleAssetId,
+    tripManagementEnabled: fleetView.tripManagementEnabled,
+    copilotStatus: fleetView.copilotStatus,
+    dispatcherName: fleetView.dispatcherName,
+    gps: fleetView.gps,
+    fuel: fleetView.fuel,
+  };
+}
+
 async function buildTripContextForLoad(loadId: string): Promise<TripContextView> {
   const load = await findActiveLoadByIdentifier(loadId);
 
@@ -133,16 +215,7 @@ async function buildTripContextForLoad(loadId: string): Promise<TripContextView>
   let vehicle;
   const fleetVehicle = await findFleetVehicleForLoad(load);
   if (fleetVehicle) {
-    const fleetView = toFleetVehicleView(fleetVehicle, staleThresholdMs);
-    vehicle = {
-      fleetVehicleId: fleetView.id,
-      samsaraId: fleetView.samsaraId,
-      unitNumber: fleetView.unitNumber,
-      mappingStatus: fleetVehicle.mappingStatus,
-      fuelTankCapacityGallons: fleetView.fuelTankCapacityGallons,
-      gps: fleetView.gps,
-      fuel: fleetView.fuel,
-    };
+    vehicle = toTripVehicleView(fleetVehicle, staleThresholdMs);
   }
 
   const hasDriver = Boolean(driver);
@@ -168,6 +241,12 @@ async function buildTripContextForLoad(loadId: string): Promise<TripContextView>
         hasTelemetry &&
         Boolean(load.originCity && load.destinationCity),
     },
+    copilot: buildCopilotSendView({
+      fleetVehicle,
+      tripStatus: load.trimbleTrip?.tripStatus,
+      tspDriverId: load.trimbleTrip?.tspDriverId,
+      fuelStopOnTrip: Boolean(load.trimbleTrip?.fuelStop),
+    }),
   };
 }
 
@@ -203,8 +282,38 @@ export async function getTripContext(identifier: string): Promise<TripContextVie
   return buildTripContextForLoad(String(load._id));
 }
 
-export async function listTripContexts() {
-  const loads = await TmsLoadModel.find({ isActive: true }).sort({ updatedAt: -1 }).lean();
+export async function listTripContexts(actor?: FleetScopeActor | null) {
+  const scope = await resolveDispatcherFleetScope(actor);
+
+  if (scope.mode === "none") {
+    return {
+      summary: {
+        ...buildTmsSummary([]),
+        readyForRecommendationCount: 0,
+        withTelemetryCount: 0,
+      },
+      items: [] as TripContextView[],
+      fleetScope: { mode: scope.mode, reason: scope.reason },
+    };
+  }
+
+  const loadFilter: Record<string, unknown> = { isActive: true };
+  if (scope.mode === "dispatcher") {
+    if (scope.unitNumbers.length === 0) {
+      return {
+        summary: {
+          ...buildTmsSummary([]),
+          readyForRecommendationCount: 0,
+          withTelemetryCount: 0,
+        },
+        items: [] as TripContextView[],
+        fleetScope: { mode: scope.mode, dispatcherName: scope.dispatcherName },
+      };
+    }
+    loadFilter.truckUnit = { $in: scope.unitNumbers };
+  }
+
+  const loads = await TmsLoadModel.find(loadFilter).sort({ updatedAt: -1 }).lean();
   const staleThresholdMs = getSamsaraTelemetryStaleMs();
 
   const driverIds = loads.map((load) => load.primaryDriverId).filter((id): id is number => Boolean(id));
@@ -237,6 +346,9 @@ export async function listTripContexts() {
   );
 
   const eligibleLoads = loads.filter((load) => {
+    if (!truckUnitInScope(scope, load.truckUnit)) {
+      return false;
+    }
     const driverDoc = load.primaryDriverId ? driversById.get(load.primaryDriverId) : undefined;
     return !driverDoc || (driverDoc.isActive && !isDemoDriver(driverDoc));
   });
@@ -249,26 +361,14 @@ export async function listTripContexts() {
       : load.samsaraVehicleId
         ? vehiclesBySamsaraId.get(load.samsaraVehicleId)
         : undefined;
-    const fleetView = fleetVehicle ? toFleetVehicleView(fleetVehicle, staleThresholdMs) : undefined;
-
-    const vehicle = fleetView
-      ? {
-          fleetVehicleId: fleetView.id,
-          samsaraId: fleetView.samsaraId,
-          unitNumber: fleetView.unitNumber,
-          mappingStatus: fleetVehicle?.mappingStatus,
-          fuelTankCapacityGallons: fleetView.fuelTankCapacityGallons,
-          gps: fleetView.gps,
-          fuel: fleetView.fuel,
-        }
-      : undefined;
+    const vehicle = fleetVehicle ? toTripVehicleView(fleetVehicle, staleThresholdMs) : undefined;
 
     const hasDriver = Boolean(driverDoc);
     const hasTruckAssignment = Boolean(load.truckUnit);
     const hasFleetVehicle = Boolean(vehicle);
     const hasTelemetry = Boolean(
-    vehicle?.gps?.freshness === "live" && vehicle?.fuel?.freshness === "live",
-  );
+      vehicle?.gps?.freshness === "live" && vehicle?.fuel?.freshness === "live",
+    );
 
     return {
       load: loadView,
@@ -286,6 +386,12 @@ export async function listTripContexts() {
           hasTelemetry &&
           Boolean(load.originCity && load.destinationCity),
       },
+      copilot: buildCopilotSendView({
+        fleetVehicle,
+        tripStatus: load.trimbleTrip?.tripStatus,
+        tspDriverId: load.trimbleTrip?.tspDriverId,
+        fuelStopOnTrip: Boolean(load.trimbleTrip?.fuelStop),
+      }),
     };
   });
 
@@ -296,6 +402,10 @@ export async function listTripContexts() {
       withTelemetryCount: items.filter((item) => item.linkage.hasTelemetry).length,
     },
     items,
+    fleetScope:
+      scope.mode === "dispatcher"
+        ? { mode: scope.mode, dispatcherName: scope.dispatcherName }
+        : { mode: "all" as const },
   };
 }
 

@@ -82,6 +82,20 @@ export const dispatchWithFuelStopSchema = z.object({
   }),
 });
 
+export const sendToCopilotSchema = z.object({
+  body: z
+    .object({
+      customerSlug: z.string().trim().min(1).optional(),
+      relayAccount: relayAccountSchema,
+    })
+    .optional()
+    .default({}),
+  query: z.object({}).optional().default({}),
+  params: z.object({
+    loadId: z.string().trim().min(1),
+  }),
+});
+
 export const updateInProgressFuelStopSchema = z.object({
   body: z
     .object({
@@ -110,5 +124,6 @@ export const validatePlanTrimbleTrip = validateRequest(planTrimbleTripSchema);
 export const validateDispatchTrimbleTrip = validateRequest(dispatchTrimbleTripSchema);
 export const validateAttachFuelStop = validateRequest(attachFuelStopSchema);
 export const validateDispatchWithFuelStop = validateRequest(dispatchWithFuelStopSchema);
+export const validateSendToCopilot = validateRequest(sendToCopilotSchema);
 export const validateUpdateInProgressFuelStop = validateRequest(updateInProgressFuelStopSchema);
 export const validateGetTripContext = validateRequest(tripContextParamSchema);

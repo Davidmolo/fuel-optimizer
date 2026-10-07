@@ -3,6 +3,7 @@
 import Alert from "@/components/common/alert";
 import Card from "@/components/common/card";
 import Spinner from "@/components/common/spinner";
+import SendToCopilotPanel from "@/components/tms/send-to-copilot-panel";
 import { TripWorkspaceHeader } from "@/components/tms/trip-context-detail-panel";
 import TripRecommendationPanel from "@/components/tms/trip-recommendation-panel";
 import { formatPricePerGallon } from "@/lib/station-utils";
@@ -19,6 +20,7 @@ type TmsTripSidePanelProps = {
   demoMode: boolean;
   inspectedStation: InspectedMapStation | null;
   onClearInspectedStation: () => void;
+  onCopilotSent?: () => Promise<void> | void;
 };
 
 function inspectedKindLabel(kind?: InspectedMapStation["kind"]) {
@@ -79,6 +81,7 @@ export default function TmsTripSidePanel({
   demoMode,
   inspectedStation,
   onClearInspectedStation,
+  onCopilotSent,
 }: TmsTripSidePanelProps) {
   const recommendedId = recommendation?.fuelPlan?.now?.relayLocationId;
   const showInspected = Boolean(inspectedStation && inspectedStation.relayLocationId !== recommendedId);
@@ -90,6 +93,8 @@ export default function TmsTripSidePanel({
       <div className="shrink-0 border-b border-border bg-surface">
         <TripWorkspaceHeader trip={trip} compact />
       </div>
+
+      {trip ? <SendToCopilotPanel trip={trip} onSent={onCopilotSent} /> : null}
 
       {showInspected && inspectedStation ? (
         <div className="shrink-0 border-b border-border px-3 py-2">

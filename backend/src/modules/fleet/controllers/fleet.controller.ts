@@ -1,7 +1,12 @@
 import type { Request, Response } from "express";
+import { getRequestUser } from "../../../middlewares/require-authenticated-user";
 import { runManualJob } from "../../jobs/jobs.service";
 import { getFleetVehicle, listFleetVehicles } from "../services/fleet-query.service";
 import { syncCopilotAssetsFromExport } from "../services/copilot-assets-sync.service";
+
+function actorFromRequest(req: Request) {
+  return getRequestUser(req) ?? null;
+}
 
 export async function syncFleetController(_req: Request, res: Response) {
   const result = await runManualJob("samsara.full");
@@ -46,7 +51,7 @@ export async function syncCopilotAssetsController(_req: Request, res: Response) 
 
 export async function listFleetVehiclesController(req: Request, res: Response) {
   const activeOnly = req.query.activeOnly === "true";
-  const data = await listFleetVehicles({ activeOnly });
+  const data = await listFleetVehicles({ activeOnly, actor: actorFromRequest(req) });
 
   return res.status(200).json({
     success: true,
@@ -57,7 +62,7 @@ export async function listFleetVehiclesController(req: Request, res: Response) {
 
 export async function getFleetVehicleController(req: Request, res: Response) {
   const identifier = String(req.params.identifier);
-  const data = await getFleetVehicle(identifier);
+  const data = await getFleetVehicle(identifier, actorFromRequest(req));
 
   return res.status(200).json({
     success: true,

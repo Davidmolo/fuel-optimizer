@@ -16,6 +16,7 @@ export async function getProfileByEmail(email: string) {
   return {
     email: user.email,
     role: role?.name ?? null,
+    dispatcherName: user.dispatcherName ?? null,
   };
 }
 

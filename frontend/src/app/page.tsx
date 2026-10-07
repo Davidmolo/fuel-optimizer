@@ -28,6 +28,7 @@ type VerifyOtpResponse = {
   data?: {
     email: string;
     role: string | null;
+    dispatcherName?: string | null;
   };
 };
 
@@ -106,6 +107,7 @@ export default function Home() {
       saveAuthSession({
         email: result.data.email,
         role: result.data.role,
+        dispatcherName: result.data.dispatcherName ?? null,
       });
       router.push("/dashboard");
     } catch {
