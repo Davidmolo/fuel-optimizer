@@ -58,7 +58,7 @@ const envSchema = z.object({
   GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
   RECOMMENDATION_DEMO_MODE: z
     .enum(["true", "false"])
-    .default("true")
+    .default("false")
     .transform((value) => value === "true"),
   SYNC_SCHEDULER_ENABLED: z.enum(["true", "false"]).optional(),
   SYNC_SCHEDULER_MAX_CONCURRENCY: z.coerce.number().int().positive().default(1),

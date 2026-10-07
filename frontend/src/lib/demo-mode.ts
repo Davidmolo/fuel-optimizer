@@ -1,41 +1,25 @@
-const DEMO_MODE_STORAGE_KEY = "fuel-optimizer-demo-mode";
-const DEMO_FUEL_STORAGE_KEY = "fuel-optimizer-demo-fuel-percent";
+/** Demo mode is retired for live use. Helpers kept as no-ops for any leftover imports. */
 
 export function getStoredDemoMode() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  return window.localStorage.getItem(DEMO_MODE_STORAGE_KEY) === "true";
+  return false;
 }
 
-export function setStoredDemoMode(enabled: boolean) {
+export function setStoredDemoMode(_enabled: boolean) {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.localStorage.setItem(DEMO_MODE_STORAGE_KEY, enabled ? "true" : "false");
+  window.localStorage.removeItem("fuel-optimizer-demo-mode");
 }
 
 export function getStoredDemoFuelPercent() {
-  if (typeof window === "undefined") {
-    return 20;
-  }
-
-  const stored = window.localStorage.getItem(DEMO_FUEL_STORAGE_KEY);
-  const parsed = stored ? Number.parseFloat(stored) : 20;
-
-  if (!Number.isFinite(parsed)) {
-    return 20;
-  }
-
-  return Math.max(5, Math.min(95, parsed));
+  return 20;
 }
 
-export function setStoredDemoFuelPercent(value: number) {
+export function setStoredDemoFuelPercent(_value: number) {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.localStorage.setItem(DEMO_FUEL_STORAGE_KEY, String(value));
+  window.localStorage.removeItem("fuel-optimizer-demo-fuel-percent");
 }

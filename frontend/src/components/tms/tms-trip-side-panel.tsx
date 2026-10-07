@@ -17,7 +17,6 @@ type TmsTripSidePanelProps = {
   recommendation: Recommendation | null;
   loading: boolean;
   error: string | null;
-  demoMode: boolean;
   inspectedStation: InspectedMapStation | null;
   onClearInspectedStation: () => void;
   onCopilotSent?: () => Promise<void> | void;
@@ -78,7 +77,6 @@ export default function TmsTripSidePanel({
   recommendation,
   loading,
   error,
-  demoMode,
   inspectedStation,
   onClearInspectedStation,
   onCopilotSent,
@@ -117,7 +115,6 @@ export default function TmsTripSidePanel({
             recommendation={recommendation}
             loading={false}
             error={null}
-            demoMode={demoMode}
             embedded
             notReadyMessage={notReadyMessage}
           />

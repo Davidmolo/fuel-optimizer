@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Alert from "@/components/common/alert";
 import Button from "@/components/common/button";
 import { IconRefresh } from "@/components/common/icons";
-import Select, { type SelectOption } from "@/components/common/select";
 import Spinner from "@/components/common/spinner";
 import Tooltip from "@/components/common/tooltip";
 import DashboardShell from "@/components/dashboard/dashboard-shell";
@@ -15,12 +14,6 @@ import TripRouteMap from "@/components/tms/trip-route-map";
 import SyncStatusLine from "@/components/jobs/sync-status-line";
 import { apiRequest } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import {
-  getStoredDemoFuelPercent,
-  getStoredDemoMode,
-  setStoredDemoFuelPercent,
-  setStoredDemoMode,
-} from "@/lib/demo-mode";
 import type { InspectedMapStation } from "@/lib/trip-route-map-markers";
 import {
   EMPTY_TMS_LOAD_FILTERS,
@@ -39,23 +32,6 @@ function formatTimestamp(value?: string | null) {
   return new Date(value).toLocaleString();
 }
 
-function FuelMark({ percent }: { percent: number }) {
-  const fill = percent <= 15 ? "bg-danger" : percent <= 20 ? "bg-warning" : "bg-primary";
-
-  return (
-    <span className="relative h-2 w-6 overflow-hidden rounded-full bg-track" aria-hidden>
-      <span className={cn("absolute inset-y-0 left-0 rounded-full", fill)} style={{ width: `${percent}%` }} />
-    </span>
-  );
-}
-
-const DEMO_FUEL_OPTIONS: Array<SelectOption<number>> = [
-  { value: 15, label: "15%", description: "Very low", leading: <FuelMark percent={15} /> },
-  { value: 20, label: "20%", description: "Low", leading: <FuelMark percent={20} /> },
-  { value: 40, label: "40%", leading: <FuelMark percent={40} /> },
-  { value: 60, label: "60%", leading: <FuelMark percent={60} /> },
-];
-
 export default function TmsPage() {
   const [data, setData] = useState<TripContextListResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,8 +42,6 @@ export default function TmsPage() {
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [recommendationError, setRecommendationError] = useState<string | null>(null);
-  const [demoMode, setDemoMode] = useState(() => getStoredDemoMode());
-  const [demoFuelPercent, setDemoFuelPercent] = useState(() => getStoredDemoFuelPercent());
   const [loadFilter, setLoadFilter] = useState<TmsLoadFilter>("all");
   const [loadSearch, setLoadSearch] = useState("");
   const [storedLoadFilters, setStoredLoadFilters] = usePersistedJson(
@@ -130,7 +104,7 @@ export default function TmsPage() {
     void loadTripContexts();
   }, [loadTripContexts]);
 
-  const loadRecommendation = useCallback(async (trip: TripContext | null, options: { demo: boolean; fuelPercent: number }) => {
+  const loadRecommendation = useCallback(async (trip: TripContext | null) => {
     if (!trip) {
       setRecommendation(null);
       setRecommendationError(null);
@@ -138,7 +112,7 @@ export default function TmsPage() {
       return;
     }
 
-    if (!options.demo && (!trip.load.truckUnit || !trip.linkage.isReadyForRecommendation)) {
+    if (!trip.load.truckUnit || !trip.linkage.isReadyForRecommendation) {
       setRecommendation(null);
       setRecommendationError(null);
       setRecommendationLoading(false);
@@ -150,11 +124,8 @@ export default function TmsPage() {
 
     try {
       const identifier = trip.load.id;
-      const query = options.demo
-        ? `?demo=true&fuelPercent=${encodeURIComponent(String(options.fuelPercent))}`
-        : "";
       const response = await apiRequest<Recommendation>(
-        `/api/v1/recommendations/${encodeURIComponent(identifier)}${query}`,
+        `/api/v1/recommendations/${encodeURIComponent(identifier)}`,
       );
 
       if (!response.success || !response.data) {
@@ -171,8 +142,8 @@ export default function TmsPage() {
   }, []);
 
   useEffect(() => {
-    void loadRecommendation(selectedTrip, { demo: demoMode, fuelPercent: demoFuelPercent });
-  }, [demoFuelPercent, demoMode, loadRecommendation, selectedTrip]);
+    void loadRecommendation(selectedTrip);
+  }, [loadRecommendation, selectedTrip]);
 
   const highlightStationIds = useMemo(() => {
     if (!recommendation) {
@@ -260,47 +231,9 @@ export default function TmsPage() {
     }
   }, [selectedTrip, visibleTrips]);
 
-  const displayTrip = useMemo(() => {
-    if (!selectedTrip) {
-      return null;
-    }
-
-    if (!demoMode || !recommendation?.tripContext.vehicle) {
-      return selectedTrip;
-    }
-
-    return {
-      ...selectedTrip,
-      load: {
-        ...selectedTrip.load,
-        truckUnit: recommendation.tripContext.load.truckUnit ?? selectedTrip.load.truckUnit,
-      },
-      vehicle: recommendation.tripContext.vehicle,
-      linkage: {
-        ...selectedTrip.linkage,
-        hasTruckAssignment: true,
-        hasFleetVehicle: true,
-        hasTelemetry: true,
-        isReadyForRecommendation: true,
-      },
-    } satisfies TripContext;
-  }, [demoMode, recommendation, selectedTrip]);
-
   function handleSelectTrip(trip: TripContext) {
     setInspectedStation(null);
     setSelectedTrip(trip);
-  }
-
-  function toggleDemoMode() {
-    const next = !demoMode;
-    setDemoMode(next);
-    setStoredDemoMode(next);
-  }
-
-  function updateDemoFuelPercent(value: number) {
-    const next = Math.max(5, Math.min(95, value));
-    setDemoFuelPercent(next);
-    setStoredDemoFuelPercent(next);
   }
 
   return (
@@ -327,53 +260,6 @@ export default function TmsPage() {
           )}
 
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <div className="relative z-20 flex flex-wrap items-center gap-2 rounded-full border border-border bg-surface px-2.5 py-1">
-              <Tooltip
-                id="demo-mode-tooltip"
-                content="Uses the real load, stations, and optimizer. Only the truck GPS and fuel level are simulated so you can preview a plan without live telemetry."
-              >
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={demoMode}
-                  aria-describedby="demo-mode-tooltip"
-                  onClick={toggleDemoMode}
-                  className="inline-flex items-center gap-2 text-xs font-medium text-foreground"
-                >
-                  <span
-                    className={cn(
-                      "relative h-5 w-9 shrink-0 rounded-full transition-colors",
-                      demoMode ? "bg-primary" : "bg-track",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
-                        demoMode && "translate-x-4",
-                      )}
-                    />
-                  </span>
-                  Demo
-                </button>
-              </Tooltip>
-
-              {demoMode ? (
-                <div className="inline-flex items-center gap-1.5 text-xs text-muted">
-                  <span id="demo-fuel-label" className="whitespace-nowrap">
-                    Fuel
-                  </span>
-                  <Select
-                    size="sm"
-                    align="end"
-                    value={demoFuelPercent}
-                    onChange={updateDemoFuelPercent}
-                    aria-labelledby="demo-fuel-label"
-                    options={DEMO_FUEL_OPTIONS}
-                  />
-                </div>
-              ) : null}
-            </div>
-
             <Tooltip
               id="tms-sync-tooltip"
               className="relative z-20"
@@ -451,10 +337,9 @@ export default function TmsPage() {
               <div className="min-h-0 flex-1">
                 <TripRouteMap
                   fill
-                  trip={displayTrip}
+                  trip={selectedTrip}
                   corridorStations={recommendation?.corridorStations}
                   highlightStationIds={highlightStationIds}
-                  demoMode={demoMode}
                   corridorBufferMiles={recommendation?.corridor?.bufferMiles}
                   fuelPlan={recommendation?.fuelPlan}
                   primaryStationId={recommendation?.primary?.relayLocationId}
@@ -465,11 +350,10 @@ export default function TmsPage() {
             </div>
 
             <TmsTripSidePanel
-              trip={displayTrip}
+              trip={selectedTrip}
               recommendation={recommendation}
               loading={recommendationLoading}
               error={recommendationError}
-              demoMode={demoMode}
               inspectedStation={inspectedStation}
               onClearInspectedStation={() => setInspectedStation(null)}
               onCopilotSent={loadTripContexts}

@@ -62,7 +62,7 @@ export type GetRecommendationOptions = {
 };
 
 export function isRecommendationDemoAllowed() {
-  return env.NODE_ENV !== "production" || env.RECOMMENDATION_DEMO_MODE;
+  return env.RECOMMENDATION_DEMO_MODE;
 }
 
 function buildNotReadyMessage(tripContext: Awaited<ReturnType<typeof getTripContext>>) {

@@ -205,9 +205,15 @@ export function buildFuelStopChain(input: {
     const distanceMiles = chosen.absoluteAlongRouteMiles - currentAlong;
     const isFirstRequired = stops.length === 0;
     const kind: FuelPlanStopView["kind"] = isFirstRequired ? "survival_fill" : "strategic_fill";
+
+    // Burn fuel driving to this station, then suggest gallons to reach sweet-spot on arrival.
+    const tank = input.fuelRange.tankCapacityGallons;
+    const currentGallons = (tank * fuelPercent) / 100;
+    const arrivalGallons = Math.max(0, currentGallons - distanceMiles / input.fuelRange.mpg);
+    const arrivalPercent = tank > 0 ? (arrivalGallons / tank) * 100 : 0;
     const suggestedGallons = gallonsToSweetSpot(
-      fuelPercent,
-      input.fuelRange.tankCapacityGallons,
+      arrivalPercent,
+      tank,
       input.config.sweetSpotMaxPercent,
     );
 
