@@ -31,6 +31,7 @@ export type {
   TripManagementPlanTripRequest,
   TripManagementRoutePathResponse,
   TripManagementStopInput,
+  TripManagementStopResponse,
   TripManagementStopType,
   TripManagementTripResponse,
 } from "./trip-management.types";

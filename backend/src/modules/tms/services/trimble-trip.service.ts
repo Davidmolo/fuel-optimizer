@@ -12,6 +12,7 @@ import {
   normalizeTripStatus,
   planTrip,
   type TripManagementStopInput,
+  type TripManagementStopResponse,
 } from "../../../integrations/trip-management";
 import type { RelayAccount } from "../../../integrations/relay";
 import { HttpError } from "../../../utils/http-error";
@@ -38,6 +39,11 @@ import {
   toTrimbleTripStopRecord,
   type FuelStopStationInput,
 } from "./fuel-stop-builder";
+import {
+  carryStickyFuelStopEvidence,
+  isTrimbleFuelStopArrived,
+  mergeFuelStopStatusFromTripResponse,
+} from "./fuel-stop-status";
 import { mapLoadDestinationsToTripStops } from "./map-load-to-trip-stops";
 
 export type TrimbleTripView = {
@@ -305,10 +311,15 @@ function assignTrimbleTripFields(
     lastRecommendationStatus?: "ready" | "not_ready" | "no_candidates";
     lastRecommendationMessage?: string;
     clearFuelStop?: boolean;
+    /** Live Trimble stop list used to sticky-merge FuelStop arrived/completed. */
+    statusFromStops?: TripManagementStopResponse[];
   },
 ) {
   const previous = load.trimbleTrip;
-  const nextFuelStops = fields.clearFuelStop
+  const previousFuelStops =
+    previous?.fuelStops ?? (previous?.fuelStop ? [previous.fuelStop] : undefined);
+  const observedAt = fields.refreshedAt ?? new Date();
+  let nextFuelStops = fields.clearFuelStop
     ? []
     : fields.fuelStops !== undefined
       ? fields.fuelStops
@@ -316,12 +327,24 @@ function assignTrimbleTripFields(
         ? fields.fuelStop
           ? [fields.fuelStop]
           : []
-        : (previous?.fuelStops ?? (previous?.fuelStop ? [previous.fuelStop] : undefined));
+        : previousFuelStops;
+
+  if (nextFuelStops?.length) {
+    nextFuelStops = carryStickyFuelStopEvidence(previousFuelStops, nextFuelStops);
+  }
+
+  if (nextFuelStops?.length && fields.statusFromStops?.length) {
+    nextFuelStops = mergeFuelStopStatusFromTripResponse(
+      nextFuelStops,
+      fields.statusFromStops,
+      observedAt,
+    );
+  }
+
   const nextFuelStop = fields.clearFuelStop
     ? null
-    : fields.fuelStop !== undefined
-      ? fields.fuelStop
-      : (nextFuelStops?.[0] ?? previous?.fuelStop ?? null);
+    : (nextFuelStops?.[0] ??
+      (fields.fuelStop !== undefined ? fields.fuelStop : (previous?.fuelStop ?? null)));
 
   load.trimbleTrip = {
     alkTripId: fields.alkTripId,
@@ -332,7 +355,7 @@ function assignTrimbleTripFields(
     tripDurationMinutes: fields.tripDurationMinutes,
     tripUrl: fields.tripUrl,
     plannedAt: fields.plannedAt ?? previous?.plannedAt ?? new Date(),
-    refreshedAt: fields.refreshedAt ?? new Date(),
+    refreshedAt: observedAt,
     stops: fields.stops ?? previous?.stops,
     fuelStop: nextFuelStop,
     fuelStops: nextFuelStops,
@@ -356,6 +379,7 @@ function persistDispatchedSnapshot(
     tripUrl: snapshot.tripUrl,
     plannedAt: load.trimbleTrip?.plannedAt ?? new Date(),
     refreshedAt: new Date(),
+    statusFromStops: snapshot.trip.stops,
   });
 }
 
@@ -391,6 +415,7 @@ function persistTripStopsSnapshot(
     clearFuelStop: options.clearFuelStop,
     lastRecommendationStatus: options.recommendationStatus,
     lastRecommendationMessage: options.recommendationMessage,
+    statusFromStops: snapshot.trip.stops,
   });
 }
 
@@ -597,6 +622,7 @@ export async function getTrimbleTripForLoad(loadId: string): Promise<TrimbleTrip
     tripUrl: snapshot.tripUrl,
     plannedAt: load.trimbleTrip?.plannedAt ?? new Date(),
     refreshedAt: new Date(),
+    statusFromStops: snapshot.trip.stops,
   });
   await load.save();
 
@@ -1062,16 +1088,6 @@ export async function dispatchTrimbleTripWithFuelStopForLoad(
   };
 }
 
-function isCompletedTrimbleStop(stop: {
-  stopStatus?: string | number | boolean | null;
-  arrived?: boolean;
-  completed?: boolean;
-}) {
-  if (stop.completed === true || stop.arrived === true) return true;
-  const status = String(stop.stopStatus ?? "").toLowerCase();
-  return status === "completed" || status === "arrived" || status === "3" || status === "done";
-}
-
 function mapTrimbleResponseStopsToInput(
   tripStops: Array<{
     stopType?: string;
@@ -1083,7 +1099,7 @@ function mapTrimbleResponseStopsToInput(
 ): TripManagementStopInput[] {
   const mapped: TripManagementStopInput[] = [];
   for (const stop of tripStops) {
-    if (isCompletedTrimbleStop(stop)) continue;
+    if (isTrimbleFuelStopArrived(stop)) continue;
     const lat = Number(stop.location?.coords?.lat);
     const lon = Number(stop.location?.coords?.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
@@ -1231,5 +1247,67 @@ export async function getTrimbleTripRoutePathForLoad(loadId: string): Promise<{
     alkTripId,
     polyline,
     coordinateCount: polyline.length,
+  };
+}
+
+const ACTIVE_TRIP_STATUSES_FOR_STATUS_REFRESH = ["Dispatched", "InProgress", "ReceivedByClient"];
+
+/**
+ * Background refresh: pull live Trimble FuelStop arrival/completion onto active loads.
+ */
+export async function refreshActiveTrimbleTripFuelStopStatuses() {
+  if (!isTripManagementConfigured()) {
+    return {
+      considered: 0,
+      refreshed: 0,
+      errors: 0,
+      skipped: "Trimble Trip Management is not configured",
+    };
+  }
+
+  const loads = await TmsLoadModel.find({
+    isActive: true,
+    "trimbleTrip.alkTripId": { $exists: true, $nin: [null, ""] },
+    "trimbleTrip.tripStatus": { $in: ACTIVE_TRIP_STATUSES_FOR_STATUS_REFRESH },
+    $or: [
+      { "trimbleTrip.fuelStops.0": { $exists: true } },
+      { "trimbleTrip.fuelStop": { $ne: null } },
+    ],
+  });
+
+  let refreshed = 0;
+  let errors = 0;
+
+  for (const load of loads) {
+    const alkTripId = load.trimbleTrip?.alkTripId;
+    if (!alkTripId) {
+      continue;
+    }
+
+    try {
+      const snapshot = await refreshTripSnapshot(alkTripId);
+      assignTrimbleTripFields(load, {
+        alkTripId: String(snapshot.trip.alkTripId ?? alkTripId),
+        tmsTripId: load.trimbleTrip?.tmsTripId ?? buildFuelOptimizerTmsTripId(load.openroadLoadId),
+        tripStatus: snapshot.tripStatus,
+        tspDriverId: snapshot.tspDriverId ?? load.trimbleTrip?.tspDriverId ?? null,
+        tripDistanceMiles: snapshot.tripDistanceMiles,
+        tripDurationMinutes: snapshot.tripDurationMinutes,
+        tripUrl: snapshot.tripUrl,
+        plannedAt: load.trimbleTrip?.plannedAt ?? new Date(),
+        refreshedAt: new Date(),
+        statusFromStops: snapshot.trip.stops,
+      });
+      await load.save();
+      refreshed += 1;
+    } catch {
+      errors += 1;
+    }
+  }
+
+  return {
+    considered: loads.length,
+    refreshed,
+    errors,
   };
 }

@@ -101,6 +101,17 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
     priority: 70,
     scheduled: false,
   },
+  {
+    id: "trimble.trip-status",
+    name: "Trimble fuel-stop arrival",
+    description:
+      "Refresh active CoPilot trips and persist FuelStop arrived/completed for compliance.",
+    cron: "5,20,35,50 * * * *",
+    cadenceLabel: "Every 15 minutes",
+    timeoutMs: 180_000,
+    priority: 75,
+    scheduled: true,
+  },
 ];
 
 const JOB_DEFINITION_BY_ID = new Map(JOB_DEFINITIONS.map((job) => [job.id, job]));

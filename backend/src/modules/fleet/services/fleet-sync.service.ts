@@ -1,5 +1,6 @@
 import { getSamsaraVehicleStats, listSamsaraVehicles } from "../../../integrations/samsara";
 import { normalizeVin } from "../../../utils/fleet-identifiers";
+import { markFuelStopGpsProximity } from "../../tms/services/fuel-stop-gps-proximity";
 import { FleetVehicleModel } from "../models/fleet-vehicle.model";
 
 function isVehicleActive(vehicle: { name: string; tags?: Array<{ name: string }> }) {
@@ -98,6 +99,12 @@ export async function syncFleetTelemetry() {
   );
 
   let missingRegistryCount = 0;
+  const gpsSamples: Array<{
+    truckUnit: string;
+    latitude: number;
+    longitude: number;
+    recordedAt: Date;
+  }> = [];
 
   if (stats.length > 0) {
     await FleetVehicleModel.bulkWrite(
@@ -121,6 +128,12 @@ export async function syncFleetTelemetry() {
 
         if (gps) {
           update.gps = gps;
+          gpsSamples.push({
+            truckUnit: stat.name,
+            latitude: gps.latitude,
+            longitude: gps.longitude,
+            recordedAt: gps.recordedAt,
+          });
         }
 
         if (fuel) {
@@ -146,10 +159,13 @@ export async function syncFleetTelemetry() {
     );
   }
 
+  const fuelStopProximity = await markFuelStopGpsProximity(gpsSamples);
+
   return {
     telemetryCount: stats.length,
     missingRegistryCount,
     telemetrySyncedAt: syncedAt.toISOString(),
+    fuelStopProximity,
   };
 }
 

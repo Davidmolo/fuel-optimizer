@@ -42,6 +42,14 @@ export type TrimbleTripFuelStopRecord = {
   stopIndex: number;
   insertedAt: Date;
   reason?: string;
+  /** Sticky: Trimble/CoPilot reported arrival at this FuelStop. */
+  arrived?: boolean;
+  /** Sticky: Trimble/CoPilot reported completion of this FuelStop. */
+  completed?: boolean;
+  stopStatus?: string;
+  statusObservedAt?: Date;
+  /** Sticky: Samsara GPS observed within proximity of this planned stop. */
+  gpsNearAt?: Date;
 };
 
 export type TmsLoadTrimbleTripDocument = {
@@ -141,6 +149,11 @@ const trimbleTripFuelStopSchema = new Schema<TrimbleTripFuelStopRecord>(
     stopIndex: { type: Number, required: true },
     insertedAt: { type: Date, required: true },
     reason: { type: String, trim: true },
+    arrived: { type: Boolean },
+    completed: { type: Boolean },
+    stopStatus: { type: String, trim: true },
+    statusObservedAt: { type: Date },
+    gpsNearAt: { type: Date },
   },
   { _id: false },
 );

@@ -8,12 +8,14 @@ import {
   syncRelayTransactions,
   syncStationsFromRelay,
 } from "../station/services/station-sync.service";
+import { isTripManagementConfigured } from "../../integrations/trip-management";
 import {
   syncTmsActiveLoads,
   syncTmsAssignments,
   syncTmsFleetRoster,
   syncTmsFromOpenRoad,
 } from "../tms/services/tms-sync.service";
+import { refreshActiveTrimbleTripFuelStopStatuses } from "../tms/services/trimble-trip.service";
 import type { JobHandler, JobHandlerContext, JobId } from "./jobs.types";
 import { SkipJobError } from "./skip-job-error";
 
@@ -99,6 +101,12 @@ const handlers: Record<JobId, JobHandler> = {
   async "relay.full"(context) {
     requireRelay();
     return syncStationsFromRelay(relaySyncOptions(context));
+  },
+  async "trimble.trip-status"() {
+    if (!isTripManagementConfigured()) {
+      throw new SkipJobError("Trimble Trip Management is not configured");
+    }
+    return refreshActiveTrimbleTripFuelStopStatuses();
   },
 };
 

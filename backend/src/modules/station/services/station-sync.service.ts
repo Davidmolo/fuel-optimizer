@@ -5,6 +5,8 @@ import {
   splitDateRangeIntoWindows,
   type RelayAccount,
 } from "../../../integrations/relay";
+import { mapRelayTransactionToPersist } from "../../reports/mappers/relay-fuel-transaction.mapper";
+import { RelayFuelTransactionModel } from "../../reports/models/relay-fuel-transaction.model";
 import { FuelStationModel } from "../models/fuel-station.model";
 import { RelayDriverModel } from "../models/relay-driver.model";
 import { mapRelayDriverFields, mapRelayTransactionToStationUpdate } from "../mappers/fuel-station.mapper";
@@ -117,8 +119,15 @@ async function syncRelayTransactionsForAccount(
     NonNullable<ReturnType<typeof mapRelayTransactionToStationUpdate>> & { relayAccount: RelayAccount }
   >();
 
+  const transactionPersists: NonNullable<ReturnType<typeof mapRelayTransactionToPersist>>[] = [];
+
   for (const transaction of transactions) {
     const mapped = mapRelayTransactionToStationUpdate(transaction);
+    const persistMapped = mapRelayTransactionToPersist(account, transaction);
+
+    if (persistMapped) {
+      transactionPersists.push(persistMapped);
+    }
 
     if (!mapped) {
       continue;
@@ -163,11 +172,33 @@ async function syncRelayTransactionsForAccount(
     );
   }
 
+  if (transactionPersists.length > 0) {
+    await RelayFuelTransactionModel.bulkWrite(
+      transactionPersists.map((row) => ({
+        updateOne: {
+          filter: {
+            relayAccount: row.relayAccount,
+            transactionId: row.transactionId,
+          },
+          update: {
+            $set: {
+              ...row,
+              syncedAt,
+            },
+          },
+          upsert: true,
+        },
+      })),
+      { ordered: false },
+    );
+  }
+
   return {
     account,
     transactionCount: transactions.length,
     transactionWindowCount: transactionWindows.length,
     stationCount: stationWrites.length,
+    persistedTransactionCount: transactionPersists.length,
     transactionsUnavailable: transactions.length === 0,
     window,
     stationsSyncedAt: syncedAt.toISOString(),

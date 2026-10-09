@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  IconCheck,
   IconChevronLeft,
   IconFuel,
   IconLayoutDashboard,
@@ -35,8 +36,13 @@ const menuNavItems: NavItem[] = [
     icon: IconRoute,
     match: (path: string) => path.startsWith("/dashboard/tms"),
   },
+  {
+    href: "/dashboard/compliance",
+    label: "Compliance",
+    icon: IconCheck,
+    match: (path: string) => path.startsWith("/dashboard/compliance"),
+  },
 ];
-
 const otherNavItems: NavItem[] = [
   {
     href: "/dashboard/settings",

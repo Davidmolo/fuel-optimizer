@@ -21,7 +21,8 @@ export type JobId =
   | "openroad.full"
   | "relay.transactions"
   | "relay.drivers"
-  | "relay.full";
+  | "relay.full"
+  | "trimble.trip-status";
 
 export type JobDefinition = {
   id: JobId;

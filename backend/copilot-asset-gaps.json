@@ -1,0 +1,2193 @@
+{
+  "summary": {
+    "activeFleet": 190,
+    "withTrimbleAssetId": 48,
+    "withoutTrimbleAssetId": 142,
+    "cleanNumericUnitsMissing": 116,
+    "dirtyUnitLabelsMissing": 26,
+    "exportRows": 56,
+    "exportUnitsMissingFromFleet": 1,
+    "skippedExportAssets": 8,
+    "numericAssetIdNotEqualUnit": 52,
+    "missingByReason": {
+      "not_in_copilot_export_as_unit": 135,
+      "not_activated": 3,
+      "missing_trip_management": 3,
+      "export_ok_but_not_synced": 1
+    },
+    "cleanMissingByReason": {
+      "not_in_copilot_export_as_unit": 109,
+      "not_activated": 3,
+      "missing_trip_management": 3,
+      "export_ok_but_not_synced": 1
+    }
+  },
+  "fleetTrucksMissingAssetId": [
+    {
+      "unit": "101",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "150",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "165",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "167",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "169",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "170 OFF",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "171 OFF",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "172 OFF",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "172 OFF",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "173 OFF",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "175",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "176",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "180",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "181 OFF",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "183",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "184",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "186",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "187",
+      "reason": "not_activated",
+      "exportAssetId": "1020",
+      "exportName": "Joseph Wimmer #187",
+      "exportStatus": "Assigned"
+    },
+    {
+      "unit": "188",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "193",
+      "reason": "missing_trip_management",
+      "exportAssetId": "992",
+      "exportName": "193 (Andre)",
+      "exportStatus": "Unassigned"
+    },
+    {
+      "unit": "196",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "197",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "198",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "199",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "201",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "202",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "203",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "204",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "205",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "207",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "208",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "209",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "211",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "212",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "213",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "214",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "215",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "216",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "217",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "218",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "219",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "220",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "221",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "222",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "223",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "224 (Penske 381200)",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "225 returned",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "226 retuned",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "227",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "228",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "229",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "230",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "231",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "232",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "232 returned",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "234",
+      "reason": "export_ok_but_not_synced",
+      "exportAssetId": "934",
+      "exportName": "Michael Mcginnis #234",
+      "exportStatus": "Activated"
+    },
+    {
+      "unit": "235",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "244",
+      "reason": "not_activated",
+      "exportAssetId": "NR2128",
+      "exportName": "244 (Eric)",
+      "exportStatus": "Assigned"
+    },
+    {
+      "unit": "248",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "259",
+      "reason": "missing_trip_management",
+      "exportAssetId": "965",
+      "exportName": "259 (Chris)",
+      "exportStatus": "Unassigned"
+    },
+    {
+      "unit": "263",
+      "reason": "not_activated",
+      "exportAssetId": "648",
+      "exportName": "Ronnie Sieg #263",
+      "exportStatus": "Assigned"
+    },
+    {
+      "unit": "265",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "267",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "269",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "275",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "279",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "603",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "623",
+      "reason": "missing_trip_management",
+      "exportAssetId": "GOXXII_066",
+      "exportName": "Cheryl Day #623",
+      "exportStatus": "Activated"
+    },
+    {
+      "unit": "643",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "647 Tow Truck",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "648",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "654",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "654",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "655",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "655 (William King)",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "667 (Raymond Malisa)",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "671",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "671",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "672 DashC Needs Reinstall",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "673 (Gintaras Gruodis)",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "674",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "675",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "676",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "677",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "678",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "679",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "680",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "681",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "681",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "684",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "685",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "686",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "687",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "688",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "689",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "690",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "691 (owner operator)",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "692 (owner operator)",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "693",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "694 Owner Operator",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "695",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "697",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "2573S",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "185630",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "191437",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "194917",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "198689",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "223464",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "231002",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "231005",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "231134",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "272182",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "273277",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "291070",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "381440",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "385509",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "385562",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "401305",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "401305",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "406848",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "412545",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "412653",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "423073",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "438335",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "438929 NO NEW MEXICO!",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "452133",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "452211",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "457268",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "459465",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "464169_deactivated 12/6/24",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "466862",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "466895",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "585469  asap to lemont",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "587252",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "589899",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "589899",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "693062",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "693210",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "G4CD-VH6-SUE_for replacement",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "GESM-4G5-76F_for replacement",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "GWMB-M53-MNW_for replacement",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "GYKR-34E-TAG_for replacement",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    }
+  ],
+  "cleanNumericUnitsMissingAssetId": [
+    {
+      "unit": "101",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "150",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "165",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "167",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "169",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "175",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "176",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "180",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "183",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "184",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "186",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "187",
+      "reason": "not_activated",
+      "exportAssetId": "1020",
+      "exportName": "Joseph Wimmer #187",
+      "exportStatus": "Assigned"
+    },
+    {
+      "unit": "188",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "193",
+      "reason": "missing_trip_management",
+      "exportAssetId": "992",
+      "exportName": "193 (Andre)",
+      "exportStatus": "Unassigned"
+    },
+    {
+      "unit": "196",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "197",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "198",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "199",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "201",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "202",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "203",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "204",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "205",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "207",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "208",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "209",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "211",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "212",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "213",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "214",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "215",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "216",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "217",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "218",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "219",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "220",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "221",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "222",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "223",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "227",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "228",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "229",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "230",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "231",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "232",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "234",
+      "reason": "export_ok_but_not_synced",
+      "exportAssetId": "934",
+      "exportName": "Michael Mcginnis #234",
+      "exportStatus": "Activated"
+    },
+    {
+      "unit": "235",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "244",
+      "reason": "not_activated",
+      "exportAssetId": "NR2128",
+      "exportName": "244 (Eric)",
+      "exportStatus": "Assigned"
+    },
+    {
+      "unit": "248",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "259",
+      "reason": "missing_trip_management",
+      "exportAssetId": "965",
+      "exportName": "259 (Chris)",
+      "exportStatus": "Unassigned"
+    },
+    {
+      "unit": "263",
+      "reason": "not_activated",
+      "exportAssetId": "648",
+      "exportName": "Ronnie Sieg #263",
+      "exportStatus": "Assigned"
+    },
+    {
+      "unit": "265",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "267",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "269",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "275",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "279",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "603",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "623",
+      "reason": "missing_trip_management",
+      "exportAssetId": "GOXXII_066",
+      "exportName": "Cheryl Day #623",
+      "exportStatus": "Activated"
+    },
+    {
+      "unit": "643",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "648",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "654",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "654",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "655",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "671",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "671",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "674",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "675",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "676",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "677",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "678",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "679",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "680",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "681",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "681",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "684",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "685",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "686",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "687",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "688",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "689",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "690",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "693",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "695",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "697",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "185630",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "191437",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "194917",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "198689",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "223464",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "231002",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "231005",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "231134",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "272182",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "273277",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "291070",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "381440",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "385509",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "385562",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "401305",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "401305",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "406848",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "412545",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "412653",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "423073",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "438335",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "452133",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "452211",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "457268",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "459465",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "466862",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "466895",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "587252",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "589899",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "589899",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "693062",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    },
+    {
+      "unit": "693210",
+      "reason": "not_in_copilot_export_as_unit",
+      "exportAssetId": null,
+      "exportName": null,
+      "exportStatus": null
+    }
+  ],
+  "dirtyUnitLabelsMissingAssetId": [
+    "170 OFF",
+    "171 OFF",
+    "172 OFF",
+    "172 OFF",
+    "173 OFF",
+    "181 OFF",
+    "224 (Penske 381200)",
+    "225 returned",
+    "226 retuned",
+    "232 returned",
+    "647 Tow Truck",
+    "655 (William King)",
+    "667 (Raymond Malisa)",
+    "672 DashC Needs Reinstall",
+    "673 (Gintaras Gruodis)",
+    "691 (owner operator)",
+    "692 (owner operator)",
+    "694 Owner Operator",
+    "2573S",
+    "438929 NO NEW MEXICO!",
+    "464169_deactivated 12/6/24",
+    "585469  asap to lemont",
+    "G4CD-VH6-SUE_for replacement",
+    "GESM-4G5-76F_for replacement",
+    "GWMB-M53-MNW_for replacement",
+    "GYKR-34E-TAG_for replacement"
+  ],
+  "exportAssetsSkipped": [
+    {
+      "assetId": "1020",
+      "unit": "187",
+      "name": "Joseph Wimmer #187",
+      "reason": "not_activated",
+      "status": "Assigned"
+    },
+    {
+      "assetId": "648",
+      "unit": "263",
+      "name": "Ronnie Sieg #263",
+      "reason": "not_activated",
+      "status": "Assigned"
+    },
+    {
+      "assetId": "965",
+      "unit": "259",
+      "name": "259 (Chris)",
+      "reason": "missing_trip_management",
+      "status": "Unassigned"
+    },
+    {
+      "assetId": "967",
+      "unit": "967",
+      "name": "967 (Nikola)",
+      "reason": "missing_trip_management",
+      "status": "Unassigned"
+    },
+    {
+      "assetId": "992",
+      "unit": "193",
+      "name": "193 (Andre)",
+      "reason": "missing_trip_management",
+      "status": "Unassigned"
+    },
+    {
+      "assetId": "999",
+      "unit": null,
+      "name": "999",
+      "reason": "test_tablet",
+      "status": "Activated"
+    },
+    {
+      "assetId": "GOXXII_066",
+      "unit": "623",
+      "name": "Cheryl Day #623",
+      "reason": "missing_trip_management",
+      "status": "Activated"
+    },
+    {
+      "assetId": "NR2128",
+      "unit": "244",
+      "name": "244 (Eric)",
+      "reason": "not_activated",
+      "status": "Assigned"
+    }
+  ],
+  "exportAssetsWithNoFleetUnit": [
+    {
+      "assetId": "967",
+      "unit": "967",
+      "name": "967 (Nikola)",
+      "dispatchable": false,
+      "skipReason": "missing_trip_management",
+      "dispatcher": "Jerome"
+    }
+  ],
+  "assetIdLooksLikeUnitButMapsElsewhere": [
+    {
+      "assetId": "212",
+      "mapsToUnit": "278",
+      "name": "Mortimer Richards #278"
+    },
+    {
+      "assetId": "293",
+      "mapsToUnit": "258",
+      "name": "Frank Carr #258"
+    },
+    {
+      "assetId": "522",
+      "mapsToUnit": "245",
+      "name": "Abdullahi Daud #245"
+    },
+    {
+      "assetId": "648",
+      "mapsToUnit": "263",
+      "name": "Ronnie Sieg #263"
+    },
+    {
+      "assetId": "649",
+      "mapsToUnit": "241",
+      "name": "Chris Brittain #241"
+    },
+    {
+      "assetId": "653",
+      "mapsToUnit": "252",
+      "name": "Chawndrey Glass #252"
+    },
+    {
+      "assetId": "686",
+      "mapsToUnit": "272",
+      "name": "Gerald Kalyesubula #272"
+    },
+    {
+      "assetId": "699",
+      "mapsToUnit": "240",
+      "name": "Eddy Ilunga #240"
+    },
+    {
+      "assetId": "712",
+      "mapsToUnit": "238",
+      "name": "Juan Parra #238"
+    },
+    {
+      "assetId": "720",
+      "mapsToUnit": "273",
+      "name": "Daniel Nedeljkovic #273"
+    },
+    {
+      "assetId": "748",
+      "mapsToUnit": "280",
+      "name": "Rodney Coleman #280"
+    },
+    {
+      "assetId": "769",
+      "mapsToUnit": "256",
+      "name": "Calvin Chambers #256"
+    },
+    {
+      "assetId": "785",
+      "mapsToUnit": "233",
+      "name": "Troy Wingo #233"
+    },
+    {
+      "assetId": "809",
+      "mapsToUnit": "274",
+      "name": "Sheick Dorleh #274"
+    },
+    {
+      "assetId": "915",
+      "mapsToUnit": "200",
+      "name": "Robert Moreland #200"
+    },
+    {
+      "assetId": "916",
+      "mapsToUnit": "247",
+      "name": "Teairre Moore #247"
+    },
+    {
+      "assetId": "917",
+      "mapsToUnit": "281",
+      "name": "Jeffery Roberson #281"
+    },
+    {
+      "assetId": "922",
+      "mapsToUnit": "236",
+      "name": "Bradley Cameron #236"
+    },
+    {
+      "assetId": "925",
+      "mapsToUnit": "271076",
+      "name": "Abraham Lanz #271076"
+    },
+    {
+      "assetId": "927",
+      "mapsToUnit": "264",
+      "name": "Leonard Washington #264"
+    },
+    {
+      "assetId": "934",
+      "mapsToUnit": "234",
+      "name": "Michael Mcginnis #234"
+    },
+    {
+      "assetId": "939",
+      "mapsToUnit": "260",
+      "name": "Rahul Sood #260"
+    },
+    {
+      "assetId": "940",
+      "mapsToUnit": "190",
+      "name": "Donovoan Martin #190"
+    },
+    {
+      "assetId": "941",
+      "mapsToUnit": "268",
+      "name": "Rashard Morgan #268"
+    },
+    {
+      "assetId": "942",
+      "mapsToUnit": "249",
+      "name": "James Meneilly #249"
+    },
+    {
+      "assetId": "946",
+      "mapsToUnit": "253",
+      "name": "Maxwell Evariste #253"
+    },
+    {
+      "assetId": "947",
+      "mapsToUnit": "266",
+      "name": "Robert Ores #266"
+    },
+    {
+      "assetId": "958",
+      "mapsToUnit": "254",
+      "name": "Rakeem Norton #254"
+    },
+    {
+      "assetId": "959",
+      "mapsToUnit": "257",
+      "name": "Mykell Earl #257"
+    },
+    {
+      "assetId": "965",
+      "mapsToUnit": "259",
+      "name": "259 (Chris)"
+    },
+    {
+      "assetId": "981",
+      "mapsToUnit": "242",
+      "name": "Matthew Jackson #242"
+    },
+    {
+      "assetId": "983",
+      "mapsToUnit": "276",
+      "name": "Zdenko Pavic #276"
+    },
+    {
+      "assetId": "985",
+      "mapsToUnit": "261",
+      "name": "Alberto Figueroa #261"
+    },
+    {
+      "assetId": "986",
+      "mapsToUnit": "195",
+      "name": "Jonathan Minor #195"
+    },
+    {
+      "assetId": "989",
+      "mapsToUnit": "189",
+      "name": "Johny Stewart #189"
+    },
+    {
+      "assetId": "992",
+      "mapsToUnit": "193",
+      "name": "193 (Andre)"
+    },
+    {
+      "assetId": "993",
+      "mapsToUnit": "178",
+      "name": "Nicholas Cline #178"
+    },
+    {
+      "assetId": "998",
+      "mapsToUnit": "255",
+      "name": "Kristopher Elias #255"
+    },
+    {
+      "assetId": "1000",
+      "mapsToUnit": "243",
+      "name": "Deandre Meighan #243"
+    },
+    {
+      "assetId": "1001",
+      "mapsToUnit": "262",
+      "name": "Wayne Rossman #262"
+    },
+    {
+      "assetId": "1002",
+      "mapsToUnit": "239",
+      "name": "Lyndon Smith #239"
+    },
+    {
+      "assetId": "1004",
+      "mapsToUnit": "251",
+      "name": "Lucky Britton #251"
+    },
+    {
+      "assetId": "1010",
+      "mapsToUnit": "237",
+      "name": "Francois Mills #237"
+    },
+    {
+      "assetId": "1013",
+      "mapsToUnit": "246",
+      "name": "Pablo Viera #246"
+    },
+    {
+      "assetId": "1015",
+      "mapsToUnit": "271",
+      "name": "Roberto Ortiz #271"
+    },
+    {
+      "assetId": "1016",
+      "mapsToUnit": "192",
+      "name": "Robert Frederic #192"
+    },
+    {
+      "assetId": "1017",
+      "mapsToUnit": "185",
+      "name": "Tony Reid #185"
+    },
+    {
+      "assetId": "1019",
+      "mapsToUnit": "210",
+      "name": "Thomas Torres #210 (438335)"
+    },
+    {
+      "assetId": "1020",
+      "mapsToUnit": "187",
+      "name": "Joseph Wimmer #187"
+    },
+    {
+      "assetId": "1021",
+      "mapsToUnit": "270",
+      "name": "Carlos Crayton #270"
+    },
+    {
+      "assetId": "1023",
+      "mapsToUnit": "182",
+      "name": "Michael Gilbert #182"
+    },
+    {
+      "assetId": "1024",
+      "mapsToUnit": "250",
+      "name": "Paul Gillet #250"
+    }
+  ]
+}
