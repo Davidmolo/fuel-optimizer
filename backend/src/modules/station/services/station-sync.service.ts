@@ -99,7 +99,11 @@ export async function syncRelayDrivers(accounts = getConfiguredRelayAccounts()) 
     };
   }
 
-  const results = await Promise.all(accounts.map((account) => syncRelayDriversForAccount(account)));
+  // Serialize accounts — parallel driver pagination (~40 pages) bursts Relay's rate limit.
+  const results = [];
+  for (const account of accounts) {
+    results.push(await syncRelayDriversForAccount(account));
+  }
 
   return {
     accounts: results,
@@ -222,7 +226,11 @@ export async function syncRelayTransactions(options: TransactionSyncOptions = {}
     };
   }
 
-  const results = await Promise.all(accounts.map((account) => syncRelayTransactionsForAccount(account, window)));
+  // Serialize accounts so both keys do not hit /fuel/transactions/ at the same instant.
+  const results = [];
+  for (const account of accounts) {
+    results.push(await syncRelayTransactionsForAccount(account, window));
+  }
   const merchantContracts = await syncMerchantContractsFromStations();
 
   return {

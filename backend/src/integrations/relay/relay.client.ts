@@ -17,24 +17,30 @@ type RequestOptions = {
 };
 
 const DRIVER_PAGE_SIZE = 50;
-const RELAY_MAX_ATTEMPTS = 3;
+const RELAY_MAX_ATTEMPTS = 5;
 const RELAY_RETRY_BASE_DELAY_MS = 1_000;
-const RELAY_RETRY_MAX_DELAY_MS = 30_000;
+const RELAY_RETRY_MAX_DELAY_MS = 60_000;
+/** Pause between paced Relay calls so parallel account syncs do not burst the shared limit. */
+const RELAY_INTER_REQUEST_DELAY_MS = 250;
 
 export function isRetryableRelayStatus(status: number) {
   return status === 429 || status >= 500;
 }
 
 export function relayRetryDelayMs(attempt: number, retryAfterHeader?: string | null) {
+  const exponential = Math.min(RELAY_RETRY_BASE_DELAY_MS * 2 ** attempt, RELAY_RETRY_MAX_DELAY_MS);
+
   if (retryAfterHeader) {
     const seconds = Number.parseFloat(retryAfterHeader);
 
+    // Relay sometimes returns Retry-After: 0 on 429. Never sleep 0 — keep at least
+    // exponential backoff so three quick 429s cannot fail the job in <100ms.
     if (Number.isFinite(seconds) && seconds >= 0) {
-      return Math.min(seconds * 1000, RELAY_RETRY_MAX_DELAY_MS);
+      return Math.min(Math.max(seconds * 1000, exponential), RELAY_RETRY_MAX_DELAY_MS);
     }
   }
 
-  return Math.min(RELAY_RETRY_BASE_DELAY_MS * 2 ** attempt, RELAY_RETRY_MAX_DELAY_MS);
+  return exponential;
 }
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -138,6 +144,10 @@ export async function listRelayDrivers(account: RelayAccount) {
   let offset = 0;
 
   while (true) {
+    if (offset > 0) {
+      await sleep(RELAY_INTER_REQUEST_DELAY_MS);
+    }
+
     const page = normalizeRelayArray(
       await relayRequest<RelayDriver[] | { results?: RelayDriver[]; data?: RelayDriver[] }>({
         account,
@@ -168,15 +178,14 @@ export async function listRelayFuelTransactions(
 ) {
   const chunkDays = options.chunkDays ?? DEFAULT_RELAY_TRANSACTION_CHUNK_DAYS;
   const windows = splitDateRangeIntoWindows(filters.dtstart, filters.dtend, chunkDays);
-
-  if (windows.length === 1) {
-    return fetchRelayFuelTransactionsForWindow(account, windows[0]!);
-  }
-
   const transactionsById = new Map<string, RelayTransaction>();
 
-  for (const window of windows) {
-    const batch = await fetchRelayFuelTransactionsForWindow(account, window);
+  for (let index = 0; index < windows.length; index += 1) {
+    if (index > 0) {
+      await sleep(RELAY_INTER_REQUEST_DELAY_MS);
+    }
+
+    const batch = await fetchRelayFuelTransactionsForWindow(account, windows[index]!);
 
     for (const transaction of batch) {
       const key = transaction.transaction_id || `${transaction.created_at}:${transactionsById.size}`;

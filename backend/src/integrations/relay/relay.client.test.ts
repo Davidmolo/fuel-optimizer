@@ -18,6 +18,12 @@ describe("relay retry behavior", () => {
     assert.equal(relayRetryDelayMs(1), 2000);
     assert.equal(relayRetryDelayMs(2), 4000);
     assert.equal(relayRetryDelayMs(0, "3"), 3000);
-    assert.equal(relayRetryDelayMs(4, "600"), 30_000);
+    assert.equal(relayRetryDelayMs(4, "600"), 60_000);
+  });
+
+  it("does not sleep zero when Relay returns Retry-After: 0", () => {
+    assert.equal(relayRetryDelayMs(0, "0"), 1000);
+    assert.equal(relayRetryDelayMs(1, "0"), 2000);
+    assert.equal(relayRetryDelayMs(2, "0.5"), 4000);
   });
 });
