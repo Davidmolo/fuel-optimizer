@@ -65,11 +65,11 @@ async function openroadRequest<T>({ path, query }: RequestOptions): Promise<T> {
 
   if (!response.ok) {
     const errorBody = body && typeof body === "object" ? (body as { message?: string; error?: string }) : null;
-    const message =
-      errorBody?.message ||
-      errorBody?.error ||
-      `Open Road API request failed (${response.status})`;
-    throw new HttpError(String(message), response.status >= 500 ? 502 : response.status);
+    const detail = errorBody?.message || errorBody?.error;
+    const message = detail
+      ? `Open Road API request to ${path} failed (${response.status}): ${detail}`
+      : `Open Road API request to ${path} failed (${response.status})`;
+    throw new HttpError(message, response.status >= 500 ? 502 : response.status);
   }
 
   return body as T;

@@ -1,8 +1,8 @@
 import {
-  listOpenRoadActiveLoads,
-  listOpenRoadAssignments,
+  listOpenRoadExtActiveLoads,
+  listOpenRoadExtAssignments,
+  listOpenRoadExtTrucks,
   listOpenRoadDrivers,
-  listOpenRoadTrucks,
 } from "../../../integrations/openroad";
 import {
   getSamsaraDriverVehicleAssignments,
@@ -75,35 +75,45 @@ export async function syncTmsDrivers() {
 }
 
 export async function syncTmsAssignments() {
-  const assignments = await listOpenRoadAssignments({ assignmentType: "Truck" });
+  const assignments = await listOpenRoadExtAssignments({ assignmentType: "Truck" });
   const syncedAt = new Date();
   const currentAssignmentIds = assignments.map((assignment) => assignment.id);
 
+  // The External API assignments endpoint no longer carries driver phone/team,
+  // so backfill both from the driver roster (synced from the legacy V2 API).
+  const driverIds = [...new Set(assignments.map((assignment) => assignment.driver_id))];
+  const rosterDrivers = await TmsDriverModel.find({ openroadDriverId: { $in: driverIds } }).lean();
+  const rosterDriverById = new Map(rosterDrivers.map((driver) => [driver.openroadDriverId, driver]));
+
   if (assignments.length > 0) {
     await TmsAssignmentModel.bulkWrite(
-      assignments.map((assignment) => ({
-        updateOne: {
-          filter: { openroadAssignmentId: assignment.id },
-          update: {
-            $set: {
-              openroadAssignmentId: assignment.id,
-              openroadDriverId: assignment.driver_id,
-              driverName: assignment.driver_name,
-              driverNr: assignment.driver_nr,
-              driverPhone: assignment.driver_phone,
-              driverTeam: assignment.driver_team,
-              openroadTruckId: assignment.assignment_id,
-              truckUnit: assignment.assignment_unit,
-              assignmentType: assignment.assignment_type,
-              startDate: assignment.start_date ? new Date(assignment.start_date) : undefined,
-              endDate: assignment.end_date ? new Date(assignment.end_date) : null,
-              isCurrent: !assignment.end_date,
-              syncedAt,
+      assignments.map((assignment) => {
+        const rosterDriver = rosterDriverById.get(assignment.driver_id);
+
+        return {
+          updateOne: {
+            filter: { openroadAssignmentId: assignment.id },
+            update: {
+              $set: {
+                openroadAssignmentId: assignment.id,
+                openroadDriverId: assignment.driver_id,
+                driverName: assignment.driver_name,
+                driverNr: assignment.driver_nr,
+                driverPhone: assignment.driver_phone ?? rosterDriver?.phone,
+                driverTeam: assignment.driver_team ?? rosterDriver?.team,
+                openroadTruckId: assignment.assignment_id,
+                truckUnit: assignment.assignment_unit,
+                assignmentType: assignment.assignment_type,
+                startDate: assignment.start_date ? new Date(assignment.start_date) : undefined,
+                endDate: assignment.end_date ? new Date(assignment.end_date) : null,
+                isCurrent: !assignment.end_date,
+                syncedAt,
+              },
             },
+            upsert: true,
           },
-          upsert: true,
-        },
-      })),
+        };
+      }),
       { ordered: false },
     );
   }
@@ -130,7 +140,7 @@ export async function syncTmsAssignments() {
 }
 
 export async function syncTmsTrucksAndFleetLink() {
-  const trucks = await listOpenRoadTrucks("active");
+  const trucks = await listOpenRoadExtTrucks("active");
   const syncedAt = new Date();
   const linking = await linkFleetVehiclesToOpenRoad(trucks, syncedAt);
 
@@ -162,7 +172,7 @@ export async function syncTmsFleet() {
 }
 
 export async function syncTmsActiveLoads() {
-  const loads = await listOpenRoadActiveLoads();
+  const loads = await listOpenRoadExtActiveLoads();
   const syncedAt = new Date();
   const driverIds = loads
     .map((load) => getPrimaryDriverIdFromDestinations(load.destinations))

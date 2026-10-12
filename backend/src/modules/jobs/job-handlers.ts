@@ -1,4 +1,4 @@
-import { isOpenRoadConfigured } from "../../integrations/openroad";
+import { isOpenRoadConfigured, isOpenRoadExtConfigured } from "../../integrations/openroad";
 import { getConfiguredRelayAccounts, type RelayAccount } from "../../integrations/relay";
 import { isSamsaraConfigured } from "../../integrations/samsara";
 import { syncFleetFromSamsara, syncFleetRegistry, syncFleetTelemetry } from "../fleet/services/fleet-sync.service";
@@ -28,6 +28,14 @@ function requireSamsara() {
 function requireOpenRoad() {
   if (!isOpenRoadConfigured()) {
     throw new SkipJobError("Open Road API token is not configured");
+  }
+}
+
+function requireOpenRoadExt() {
+  if (!isOpenRoadExtConfigured()) {
+    throw new SkipJobError(
+      "Open Road External API v1 credentials are not configured — request client_id and client_secret from help@openroadtms.com",
+    );
   }
 }
 
@@ -72,19 +80,23 @@ const handlers: Record<JobId, JobHandler> = {
     return syncFleetFromSamsara();
   },
   async "openroad.loads"() {
-    requireOpenRoad();
+    requireOpenRoadExt();
     return syncTmsActiveLoads();
   },
   async "openroad.assignments"() {
-    requireOpenRoad();
+    requireOpenRoadExt();
     return syncTmsAssignments();
   },
   async "openroad.fleet"() {
+    // Trucks and assignments come from the External API v1; the driver roster
+    // still comes from the legacy V2 API, so both must be configured.
     requireOpenRoad();
+    requireOpenRoadExt();
     return syncTmsFleetRoster();
   },
   async "openroad.full"() {
     requireOpenRoad();
+    requireOpenRoadExt();
     return syncTmsFromOpenRoad();
   },
   async "relay.transactions"(context) {

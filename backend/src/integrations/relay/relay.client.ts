@@ -17,6 +17,60 @@ type RequestOptions = {
 };
 
 const DRIVER_PAGE_SIZE = 50;
+const RELAY_MAX_ATTEMPTS = 3;
+const RELAY_RETRY_BASE_DELAY_MS = 1_000;
+const RELAY_RETRY_MAX_DELAY_MS = 30_000;
+
+export function isRetryableRelayStatus(status: number) {
+  return status === 429 || status >= 500;
+}
+
+export function relayRetryDelayMs(attempt: number, retryAfterHeader?: string | null) {
+  if (retryAfterHeader) {
+    const seconds = Number.parseFloat(retryAfterHeader);
+
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      return Math.min(seconds * 1000, RELAY_RETRY_MAX_DELAY_MS);
+    }
+  }
+
+  return Math.min(RELAY_RETRY_BASE_DELAY_MS * 2 ** attempt, RELAY_RETRY_MAX_DELAY_MS);
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Fetch with retries on transient failures (network errors, 429, 5xx) so a
+ * blip like "fetch failed" does not fail the whole sync job.
+ */
+async function fetchWithRelayRetry(url: URL, init: RequestInit) {
+  let attempt = 0;
+
+  while (true) {
+    let response: Response;
+
+    try {
+      response = await fetch(url, init);
+    } catch (error) {
+      if (attempt + 1 >= RELAY_MAX_ATTEMPTS) {
+        const detail = error instanceof Error ? error.message : "network error";
+        throw new HttpError(`Relay API is unreachable: ${detail}`, 503);
+      }
+
+      await sleep(relayRetryDelayMs(attempt));
+      attempt += 1;
+      continue;
+    }
+
+    if (isRetryableRelayStatus(response.status) && attempt + 1 < RELAY_MAX_ATTEMPTS) {
+      await sleep(relayRetryDelayMs(attempt, response.headers.get("retry-after")));
+      attempt += 1;
+      continue;
+    }
+
+    return response;
+  }
+}
 
 async function relayRequest<T>({ account, path, query, emptyOn404, baseUrl }: RequestOptions): Promise<T> {
   const requestBaseUrl = (baseUrl ?? getRelayBaseUrl()).replace(/\/$/, "");
@@ -31,7 +85,7 @@ async function relayRequest<T>({ account, path, query, emptyOn404, baseUrl }: Re
     }
   }
 
-  const response = await fetch(url, {
+  const response = await fetchWithRelayRetry(url, {
     headers: {
       Accept: "application/json",
       Authorization: apiKey,

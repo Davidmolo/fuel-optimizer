@@ -288,8 +288,37 @@ curl -s "https://{OPENROAD_HOST}/api/v2/fuel_card_transactions?date_from=2026-01
 - [ ] Save `swagger.json` from `/api-docs/v2/swagger.json` into `Docs/` for full response schemas
 - [x] Confirm `{OPENROAD_HOST}` for Paul's Assets — `app.openroadtms.com` (production)
 - [x] Document which fields on load objects contain origin, destination, and route/polyline — **stops have lat/lng; no route polyline** (corridor is truck GPS + ordered TMS stops)
-- [ ] Confirm token provisioning and required scopes per endpoint
-- [ ] Migrate to **External API v1** (`/api/ext/v1`, Basic Auth) — see OpenRoad `/llms-full.txt`
+- [x] Confirm token provisioning and required scopes per endpoint
+- [x] Migrate to **External API v1** (`/api/ext/v1`, Basic Auth) — see OpenRoad `/llms-full.txt` — **done Oct 2026** (see below)
+
+## Migration status (October 2026)
+
+Open Road **removed the fleet/load endpoints from the legacy V2 API** — `/trucks`, `/active_loads`, `/all_loads`, `/assignments`, and `/fuel_cards` now answer `404 {"status":404,"error":"Not Found"}`. The live V2 swagger (`/api-docs/v2/swagger.json`) only serves `/drivers` and `/accidents` anymore.
+
+Fuel Optimizer now reads those resources from the **External API v1**:
+
+| Resource | Legacy V2 (removed) | External API v1 (current) |
+|----------|---------------------|---------------------------|
+| Active loads | `GET /active_loads` | `GET /loads?status[]=assigned&status[]=en_route_to_shipper&status[]=at_shipper&status[]=picked_up&status[]=delayed&status[]=en_route_to_consignee&status[]=at_consignee&per_page=100` |
+| Trucks | `GET /trucks` | `GET /trucks?status=active&per_page=100` |
+| Assignments | `GET /assignments` | `GET /assignments?assignment_type=Truck&per_page=100` (current rows only by default) |
+| Drivers | `GET /drivers` | **still on legacy V2** — richer fields (`employee_nr`, `terminal`, `team`); ext v1 lacks them |
+
+Implementation lives in `backend/src/integrations/openroad/openroad-ext.client.ts`, which maps ext v1 responses (`{ data, error, meta }` envelope, embedded summaries, numeric `lat`/`lng`, string `weight`/`fuel_tank_capacity`) onto the legacy `OpenRoad*` types so the sync services are unchanged. Assignment `driver_phone`/`driver_team` are backfilled from the driver roster in `tms-sync.service.ts`.
+
+**Environment variables** (in `backend/.env.prod` / `.env.local`):
+
+```
+OPENROAD_API_BASE_URL=https://app.openroadtms.com/api/v2        # drivers only
+OPENROAD_API_TOKEN=...                                          # V2 token (drivers)
+OPENROAD_EXT_API_BASE_URL=https://app.openroadtms.com/api/ext/v1
+OPENROAD_EXT_CLIENT_ID=...                                      # request from help@openroadtms.com
+OPENROAD_EXT_CLIENT_SECRET=...
+```
+
+Without ext credentials the `openroad.loads` / `openroad.assignments` / `openroad.fleet` jobs **skip with a clear reason** instead of failing. Errors are actionable: `401` names the env vars to check, `403` names the missing endpoint grant, and every upstream error includes the OpenRoad `request_id`.
+
+Full v1 reference: `https://app.openroadtms.com/llms-full.txt` (Swagger UI: `/api-docs/ext/v1/index.html`).
 
 ---
 

@@ -25,12 +25,12 @@ export function isDemoDriver(driver: { displayName?: string; employeeNr?: string
   return name === "accounting example" || employeeNr === "accounting";
 }
 
-export function parseOpenRoadCoordinate(value?: string | null) {
-  if (!value) {
+export function parseOpenRoadCoordinate(value?: string | number | null) {
+  if (value == null || value === "") {
     return undefined;
   }
 
-  const parsed = Number.parseFloat(value);
+  const parsed = Number.parseFloat(String(value));
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 

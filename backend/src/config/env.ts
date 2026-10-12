@@ -14,6 +14,14 @@ const envSchema = z.object({
     .url()
     .default("https://app.openroadtms.com/api/v2"),
   OPENROAD_API_TOKEN: z.string().min(1).optional(),
+  // Open Road External API v1 — loads, trucks, and assignments moved here
+  // after the legacy V2 endpoints were removed. HTTP Basic auth.
+  OPENROAD_EXT_API_BASE_URL: z
+    .string()
+    .url()
+    .default("https://app.openroadtms.com/api/ext/v1"),
+  OPENROAD_EXT_CLIENT_ID: z.string().min(1).optional(),
+  OPENROAD_EXT_CLIENT_SECRET: z.string().min(1).optional(),
   RELAY_API_BASE_URL: z
     .string()
     .url()
