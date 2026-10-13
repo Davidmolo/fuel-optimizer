@@ -39,6 +39,22 @@ describe("truckUnitInScope", () => {
       true,
     );
   });
+
+  it("scopes a dispatcher role to only their assigned units", () => {
+    const dylanScope = {
+      mode: "dispatcher" as const,
+      dispatcherName: "Dylan",
+      unitNumbers: ["100", "101"],
+    };
+    assert.equal(truckUnitInScope(dylanScope, "100"), true);
+    assert.equal(truckUnitInScope(dylanScope, "200"), false);
+
+    const unassignedScope = {
+      mode: "none" as const,
+      reason: "No dispatcher fleet assigned. Ask an admin to assign your Trimble dispatcher name.",
+    };
+    assert.equal(truckUnitInScope(unassignedScope, "100"), false);
+  });
 });
 
 describe("evaluateCopilotSendReadiness", () => {

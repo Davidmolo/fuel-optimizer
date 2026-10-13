@@ -18,7 +18,8 @@ export function buildInvitationEmailTemplate(payload: {
   invitedByEmail: string;
   fromName: string;
 }) {
-  const roleLabel = payload.role === "admin" ? "Admin" : "User";
+  const roleLabel =
+    payload.role === "admin" ? "Admin" : payload.role === "dispatcher" ? "Dispatcher" : "User";
 
   return `
   <div style="margin:0;padding:0;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;">

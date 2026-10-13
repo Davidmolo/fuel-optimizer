@@ -1,4 +1,9 @@
-import { isAdminRole, type AccountRole } from "../role/constants";
+import {
+  isAdminRole,
+  isDispatcherRole,
+  USER_ROLE_NAME,
+  type AccountRole,
+} from "../role/constants";
 
 export type AccountActor = {
   id: string;
@@ -11,11 +16,15 @@ export type AccountTarget = {
 };
 
 export function canInviteAsRole(actorRole: string, invitedRole: AccountRole) {
-  if (invitedRole === "user") {
-    return true;
+  if (isDispatcherRole(actorRole)) {
+    return false;
   }
 
-  return isAdminRole(actorRole);
+  if (invitedRole === "admin" || invitedRole === "dispatcher") {
+    return isAdminRole(actorRole);
+  }
+
+  return isAdminRole(actorRole) || actorRole === USER_ROLE_NAME;
 }
 
 export function describeDeleteBlock(args: {
@@ -25,6 +34,10 @@ export function describeDeleteBlock(args: {
 }) {
   if (args.actor.id === args.target.id) {
     return "You cannot remove your own account";
+  }
+
+  if (isDispatcherRole(args.actor.role)) {
+    return "Dispatchers cannot manage accounts";
   }
 
   if (!isAdminRole(args.actor.role) && isAdminRole(args.target.role)) {
@@ -47,6 +60,10 @@ export function canDeleteAccount(args: {
 }
 
 export function canRevokeInvitation(args: { actor: AccountActor; invitedById: string }) {
+  if (isDispatcherRole(args.actor.role)) {
+    return false;
+  }
+
   return isAdminRole(args.actor.role) || args.actor.id === args.invitedById;
 }
 

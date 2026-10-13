@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { getRequestUser } from "../../../middlewares/require-authenticated-user";
 import { getDriverComplianceReport } from "../services/driver-compliance.service";
 
 export async function getDriverComplianceController(req: Request, res: Response) {
@@ -10,10 +11,19 @@ export async function getDriverComplianceController(req: Request, res: Response)
       ? Number.parseInt(driverIdRaw, 10)
       : undefined;
 
+  const actor = getRequestUser(req);
+
   const data = await getDriverComplianceReport({
     from,
     to,
     driverId: Number.isFinite(driverId) ? driverId : undefined,
+    actor: actor
+      ? {
+          id: actor.id,
+          role: actor.role,
+          dispatcherName: actor.dispatcherName ?? null,
+        }
+      : null,
   });
 
   return res.status(200).json({

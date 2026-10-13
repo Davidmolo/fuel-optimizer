@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAdmin } from "../../../middlewares/require-admin";
 import { attachRequestUserIfPresent } from "../../../middlewares/require-authenticated-user";
 import {
   getFleetVehicleController,
@@ -14,10 +15,10 @@ const fleetRouter = Router();
 
 fleetRouter.use(attachRequestUserIfPresent);
 
-fleetRouter.post("/sync", syncFleetController);
-fleetRouter.post("/sync/registry", syncFleetRegistryController);
-fleetRouter.post("/sync/telemetry", syncFleetTelemetryController);
-fleetRouter.post("/copilot-assets/sync", syncCopilotAssetsController);
+fleetRouter.post("/sync", requireAdmin, syncFleetController);
+fleetRouter.post("/sync/registry", requireAdmin, syncFleetRegistryController);
+fleetRouter.post("/sync/telemetry", requireAdmin, syncFleetTelemetryController);
+fleetRouter.post("/copilot-assets/sync", requireAdmin, syncCopilotAssetsController);
 fleetRouter.get("/vehicles", validateListFleetVehicles, listFleetVehiclesController);
 fleetRouter.get("/vehicles/:identifier", validateGetFleetVehicle, getFleetVehicleController);
 

@@ -89,6 +89,19 @@ function emailInitial(email: string) {
   return email.trim().charAt(0).toUpperCase() || "?";
 }
 
+function roleDisplayLabel(role: string | null | undefined) {
+  if (role === "admin") {
+    return "Admin";
+  }
+  if (role === "dispatcher") {
+    return "Dispatcher";
+  }
+  if (role === "user") {
+    return "User";
+  }
+  return "Signed in";
+}
+
 export default function DashboardSidebar({ userEmail, userRole, onLogout }: DashboardSidebarProps) {
   const pathname = usePathname();
   const { collapsed, setCollapsed } = useSidebar();
@@ -98,6 +111,8 @@ export default function DashboardSidebar({ userEmail, userRole, onLogout }: Dash
 
   const isExpanded = !collapsed || hovering;
   const isOverlay = collapsed && hovering;
+  const canAccessSettings = userRole === "admin";
+  const systemNavItems = canAccessSettings ? otherNavItems : [];
 
   const clearHoverTimer = () => {
     if (hoverTimerRef.current === null) {
@@ -219,19 +234,23 @@ export default function DashboardSidebar({ userEmail, userRole, onLogout }: Dash
             ))}
           </div>
 
-          {isExpanded ? (
-            <p className="mt-6 mb-2 px-2 text-[0.625rem] font-semibold tracking-[0.14em] text-sidebar-muted uppercase">
-              System
-            </p>
-          ) : (
-            <div className="mt-3" />
-          )}
+          {systemNavItems.length > 0 ? (
+            <>
+              {isExpanded ? (
+                <p className="mt-6 mb-2 px-2 text-[0.625rem] font-semibold tracking-[0.14em] text-sidebar-muted uppercase">
+                  System
+                </p>
+              ) : (
+                <div className="mt-3" />
+              )}
 
-          <div className="space-y-1">
-            {otherNavItems.map((item) => (
-              <SidebarNavLink key={item.href} item={item} expanded={isExpanded} pathname={pathname} />
-            ))}
-          </div>
+              <div className="space-y-1">
+                {systemNavItems.map((item) => (
+                  <SidebarNavLink key={item.href} item={item} expanded={isExpanded} pathname={pathname} />
+                ))}
+              </div>
+            </>
+          ) : null}
         </nav>
 
         <div className={cn("mt-auto shrink-0 border-t border-sidebar-border", isExpanded ? "p-3" : "p-2")}>
@@ -244,9 +263,7 @@ export default function DashboardSidebar({ userEmail, userRole, onLogout }: Dash
                 <p className="truncate text-sm font-medium text-sidebar-foreground" title={userEmail}>
                   {userEmail}
                 </p>
-                <p className="text-[0.6875rem] capitalize text-sidebar-muted">
-                  {userRole === "admin" ? "Admin" : userRole === "user" ? "User" : "Signed in"}
-                </p>
+                <p className="text-[0.6875rem] capitalize text-sidebar-muted">{roleDisplayLabel(userRole)}</p>
               </div>
             </div>
           ) : null}

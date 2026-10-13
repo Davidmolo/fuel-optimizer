@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getHealth } from "../controllers/health.controller";
+import { requireAdmin } from "../middlewares/require-admin";
 import accountRouter from "../modules/account/routes/account.route";
 import authRouter from "../modules/auth/routes/auth.route";
 import contractRouter from "../modules/contract/routes/contract.route";
@@ -18,19 +19,19 @@ import tmsRouter from "../modules/tms/routes/tms.route";
 const apiRouter = Router();
 
 apiRouter.get("/health", getHealth);
-apiRouter.use("/accounts", accountRouter);
+apiRouter.use("/accounts", requireAdmin, accountRouter);
 apiRouter.use("/auth", authRouter);
-apiRouter.use("/contracts", contractRouter);
+apiRouter.use("/contracts", requireAdmin, contractRouter);
 apiRouter.use("/fleet", fleetRouter);
 apiRouter.use("/fuel-logs", fuelLogRouter);
-apiRouter.use("/jobs", jobsRouter);
-apiRouter.use("/mail-config", mailConfigRouter);
+apiRouter.use("/jobs", requireAdmin, jobsRouter);
+apiRouter.use("/mail-config", requireAdmin, mailConfigRouter);
 apiRouter.use("/profile", profileRouter);
 apiRouter.use("/reports", reportsRouter);
 apiRouter.use("/stations", stationRouter);
-apiRouter.use("/recommendation-config", recommendationConfigRouter);
+apiRouter.use("/recommendation-config", requireAdmin, recommendationConfigRouter);
 apiRouter.use("/recommendations", recommendationRouter);
-apiRouter.use("/twilio-config", twilioConfigRouter);
+apiRouter.use("/twilio-config", requireAdmin, twilioConfigRouter);
 apiRouter.use("/tms", tmsRouter);
 
 export default apiRouter;

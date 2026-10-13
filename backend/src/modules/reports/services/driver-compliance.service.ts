@@ -1,4 +1,8 @@
 import type { RelayAccount } from "../../../integrations/relay";
+import {
+  resolveDispatcherFleetScope,
+  type FleetScopeActor,
+} from "../../fleet/services/dispatcher-fleet-scope";
 import { TmsDriverModel } from "../../tms/models/tms-driver.model";
 import {
   TmsLoadModel,
@@ -23,6 +27,7 @@ export type DriverComplianceQuery = {
   from: Date;
   to: Date;
   driverId?: number;
+  actor?: FleetScopeActor | null;
 };
 
 export type DriverComplianceDriverRow = {
@@ -109,10 +114,34 @@ function driverDisplayName(driver: {
   return `Driver ${driver.openroadDriverId}`;
 }
 
+function emptyComplianceReport(from: Date, to: Date): DriverComplianceReport {
+  return {
+    from: from.toISOString(),
+    to: to.toISOString(),
+    matchWindowDays: COMPLIANCE_MATCH_WINDOW_DAYS,
+    totals: {
+      assignedStops: 0,
+      followedStops: 0,
+      missedStops: 0,
+      arrivedStops: 0,
+      purchasedStops: 0,
+      gpsNearStops: 0,
+      compliancePercent: 0,
+      driverCount: 0,
+    },
+    drivers: [],
+  };
+}
+
 export async function getDriverComplianceReport(
   query: DriverComplianceQuery,
 ): Promise<DriverComplianceReport> {
-  const { from, to, driverId } = query;
+  const { from, to, driverId, actor } = query;
+
+  const scope = await resolveDispatcherFleetScope(actor);
+  if (scope.mode === "none") {
+    return emptyComplianceReport(from, to);
+  }
 
   const loadFilter: Record<string, unknown> = {
     $or: [
@@ -129,6 +158,13 @@ export async function getDriverComplianceReport(
     ],
   };
 
+  if (scope.mode === "dispatcher") {
+    if (scope.unitNumbers.length === 0) {
+      return emptyComplianceReport(from, to);
+    }
+    loadFilter.truckUnit = { $in: scope.unitNumbers };
+  }
+
   if (driverId !== undefined) {
     loadFilter.primaryDriverId = driverId;
   }
@@ -140,22 +176,7 @@ export async function getDriverComplianceReport(
     .filter((stop) => stop.insertedAt >= from && stop.insertedAt <= to);
 
   if (plannedStops.length === 0) {
-    return {
-      from: from.toISOString(),
-      to: to.toISOString(),
-      matchWindowDays: COMPLIANCE_MATCH_WINDOW_DAYS,
-      totals: {
-        assignedStops: 0,
-        followedStops: 0,
-        missedStops: 0,
-        arrivedStops: 0,
-        purchasedStops: 0,
-        gpsNearStops: 0,
-        compliancePercent: 0,
-        driverCount: 0,
-      },
-      drivers: [],
-    };
+    return emptyComplianceReport(from, to);
   }
 
   const earliestInserted = plannedStops.reduce(

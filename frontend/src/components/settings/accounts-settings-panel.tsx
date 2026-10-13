@@ -19,21 +19,37 @@ const DISPATCHER_UNASSIGNED = "__none__";
 
 const ROLE_OPTIONS: Array<{ value: AccountRole; label: string; description: string }> = [
   { value: "user", label: "User", description: "Can invite teammates and remove other users" },
+  {
+    value: "dispatcher",
+    label: "Dispatcher",
+    description: "Sees only their assigned fleet; cannot change settings",
+  },
   { value: "admin", label: "Admin", description: "Can invite any role and remove any account" },
 ];
 
 function roleLabel(role: string) {
-  return role === "admin" ? "Admin" : "User";
+  if (role === "admin") {
+    return "Admin";
+  }
+  if (role === "dispatcher") {
+    return "Dispatcher";
+  }
+  return "User";
 }
 
 function RoleBadge({ role }: { role: string }) {
   const isAdmin = role === "admin";
+  const isDispatcher = role === "dispatcher";
 
   return (
     <span
       className={cn(
         "inline-flex rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold",
-        isAdmin ? "bg-primary-muted text-primary" : "bg-surface-muted text-muted",
+        isAdmin
+          ? "bg-primary-muted text-primary"
+          : isDispatcher
+            ? "bg-amber-100 text-amber-800"
+            : "bg-surface-muted text-muted",
       )}
     >
       {roleLabel(role)}

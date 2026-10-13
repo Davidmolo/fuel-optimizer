@@ -146,11 +146,14 @@ export async function inviteAccount(
   const role = payload.role.trim().toLowerCase();
 
   if (!isAccountRole(role)) {
-    throw new HttpError("Role must be admin or user", 400);
+    throw new HttpError("Role must be admin, user, or dispatcher", 400);
   }
 
   if (!canInviteAsRole(actor.role, role)) {
-    throw new HttpError("Users can only invite other users", 403);
+    throw new HttpError(
+      isAdminRole(actor.role) ? "You cannot invite with that role" : "Only admins can invite that role",
+      403,
+    );
   }
 
   const existingUser = await UserModel.findOne({ email }).lean();

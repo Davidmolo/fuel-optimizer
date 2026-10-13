@@ -1,7 +1,7 @@
 import { hash } from "bcryptjs";
 import { ensureRecommendationConfigSeed } from "../../recommendation-config/services/recommendation-config.service";
 import { ensureTwilioConfigSeed } from "../../twilio-config/services/twilio-config.service";
-import { ADMIN_ROLE_NAME, USER_ROLE_NAME } from "../../role/constants";
+import { ADMIN_ROLE_NAME, DISPATCHER_ROLE_NAME, USER_ROLE_NAME } from "../../role/constants";
 import { RoleModel } from "../../role/models/role.model";
 import { UserModel } from "../../user/models/user.model";
 
@@ -28,6 +28,7 @@ export async function ensureAdminUser() {
 
   const adminRole = await ensureRole(ADMIN_ROLE_NAME);
   await ensureRole(USER_ROLE_NAME);
+  await ensureRole(DISPATCHER_ROLE_NAME);
 
   const existingAdmin = await UserModel.findOne({ email: ADMIN_EMAIL }).lean();
 

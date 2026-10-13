@@ -11,7 +11,13 @@ import { apiRequest } from "@/lib/api";
 import type { InvitationPreview } from "@/types/account";
 
 function roleLabel(role: string) {
-  return role === "admin" ? "admin" : "user";
+  if (role === "admin") {
+    return "admin";
+  }
+  if (role === "dispatcher") {
+    return "dispatcher";
+  }
+  return "user";
 }
 
 function AcceptInviteContent() {

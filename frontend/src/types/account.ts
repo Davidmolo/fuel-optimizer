@@ -1,4 +1,4 @@
-export type AccountRole = "admin" | "user";
+export type AccountRole = "admin" | "user" | "dispatcher";
 
 export type AccountMember = {
   id: string;

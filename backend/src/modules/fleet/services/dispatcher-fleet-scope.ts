@@ -42,6 +42,12 @@ export async function listKnownDispatcherNames() {
     .sort((left, right) => left.localeCompare(right));
 }
 
+/**
+ * Resolves fleet visibility for the signed-in actor.
+ * Admins see all units. Dispatchers (and other non-admins) see only trucks
+ * whose `dispatcherName` matches their assigned Trimble FirstName; with no
+ * assignment they get an empty fleet (`mode: "none"`).
+ */
 export async function resolveDispatcherFleetScope(
   actor: FleetScopeActor | null | undefined,
 ): Promise<DispatcherFleetScope> {
