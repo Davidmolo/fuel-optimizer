@@ -3,6 +3,9 @@ import type { TripContext } from "@/types/tms";
 
 export type TmsLoadFuelFilter = "all" | "low" | "live" | "missing";
 
+/** Sentinel for loads whose linked truck has no dispatcherName. */
+export const UNASSIGNED_DISPATCHER = "__unassigned__";
+
 export type TmsLoadListFilters = {
   hotOnly: boolean;
   fuel: TmsLoadFuelFilter;
@@ -11,6 +14,7 @@ export type TmsLoadListFilters = {
   destinationStates: string[];
   customers: string[];
   equipment: string[];
+  dispatchers: string[];
 };
 
 export type LoadFilterOption = {
@@ -27,7 +31,13 @@ export const EMPTY_TMS_LOAD_FILTERS: TmsLoadListFilters = {
   destinationStates: [],
   customers: [],
   equipment: [],
+  dispatchers: [],
 };
+
+export function tripDispatcherFilterValue(trip: TripContext) {
+  const name = trip.vehicle?.dispatcherName?.trim();
+  return name || UNASSIGNED_DISPATCHER;
+}
 
 export function normalizeLoadFilters(value: Partial<TmsLoadListFilters> | null | undefined): TmsLoadListFilters {
   return {
@@ -38,6 +48,7 @@ export function normalizeLoadFilters(value: Partial<TmsLoadListFilters> | null |
     destinationStates: Array.isArray(value?.destinationStates) ? value.destinationStates.filter(Boolean) : [],
     customers: Array.isArray(value?.customers) ? value.customers.filter(Boolean) : [],
     equipment: Array.isArray(value?.equipment) ? value.equipment.filter(Boolean) : [],
+    dispatchers: Array.isArray(value?.dispatchers) ? value.dispatchers.filter(Boolean) : [],
   };
 }
 
@@ -50,7 +61,8 @@ export function countActiveLoadFilters(filters: TmsLoadListFilters) {
     normalized.originStates.length +
     normalized.destinationStates.length +
     normalized.customers.length +
-    normalized.equipment.length
+    normalized.equipment.length +
+    normalized.dispatchers.length
   );
 }
 
@@ -75,12 +87,25 @@ function countBy(trips: TripContext[], pick: (trip: TripContext) => string | und
 }
 
 export function collectLoadFilterOptions(trips: TripContext[]) {
+  const dispatchers = countBy(trips, tripDispatcherFilterValue, (value) =>
+    value === UNASSIGNED_DISPATCHER ? "Unassigned" : value,
+  ).sort((left, right) => {
+    if (left.value === UNASSIGNED_DISPATCHER) {
+      return 1;
+    }
+    if (right.value === UNASSIGNED_DISPATCHER) {
+      return -1;
+    }
+    return left.label.localeCompare(right.label) || right.count - left.count;
+  });
+
   return {
     statuses: countBy(trips, (trip) => trip.load.status, formatLoadStatus),
     originStates: countBy(trips, (trip) => trip.load.originStateCode),
     destinationStates: countBy(trips, (trip) => trip.load.destinationStateCode),
     customers: countBy(trips, (trip) => trip.load.customerName),
     equipment: countBy(trips, (trip) => trip.load.equipment),
+    dispatchers,
     hotCount: trips.filter((trip) => trip.load.hot).length,
     lowFuelCount: trips.filter((trip) => trip.vehicle?.fuel?.isLow).length,
     liveFuelCount: trips.filter((trip) => trip.vehicle?.fuel?.freshness === "live").length,
@@ -127,6 +152,10 @@ export function tripMatchesLoadFilters(trip: TripContext, filters: TmsLoadListFi
   }
 
   if (normalized.equipment.length > 0 && !normalized.equipment.includes(trip.load.equipment ?? "")) {
+    return false;
+  }
+
+  if (normalized.dispatchers.length > 0 && !normalized.dispatchers.includes(tripDispatcherFilterValue(trip))) {
     return false;
   }
 

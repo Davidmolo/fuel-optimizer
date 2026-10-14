@@ -156,7 +156,7 @@ export default function TmsLoadFiltersModal({
       open={open}
       onClose={onClose}
       title="Filter loads"
-      subtitle="Narrow by the work that matters: hot freight, low fuel, TMS status, and lane."
+      subtitle="Narrow by dispatcher, hot freight, low fuel, TMS status, and lane."
       className="max-w-lg"
       footer={
         <div className="flex items-center justify-between gap-3">
@@ -204,6 +204,19 @@ export default function TmsLoadFiltersModal({
             </FilterChip>
           ))}
         </FilterSection>
+
+        {options.dispatchers.length > 0 ? (
+          <FilterSection
+            title="Dispatcher"
+            hint="Fleet dispatcher on the linked truck. Select more than one to include each."
+          >
+            <OptionChips
+              options={options.dispatchers}
+              selected={draft.dispatchers}
+              onToggle={(value) => updateDraft({ dispatchers: toggleFilterValue(draft.dispatchers, value) })}
+            />
+          </FilterSection>
+        ) : null}
 
         {options.statuses.length > 0 ? (
           <FilterSection title="Load status" hint="Open Road status. Select more than one to include each.">
