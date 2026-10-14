@@ -206,10 +206,13 @@ export default function TripRouteMap({
 
     let cancelled = false;
 
-    async function loadDrivingRoute() {
-      setRouteLoading(true);
-      setRouteError(null);
+    // Drop the previous load's road polyline immediately so switching loads never
+    // keeps painting the first route while the next one is still fetching.
+    setDrivingRoute(null);
+    setRouteError(null);
+    setRouteLoading(true);
 
+    async function loadDrivingRoute() {
       try {
         const response = await apiRequest<TripDrivingRoute>(`/api/v1/tms/trip-context/${loadId}/route`);
 
@@ -477,12 +480,17 @@ export default function TripRouteMap({
     useCorridorStations,
   ]);
 
+  const selectedRouteLabel = trip?.load.routeLabel?.trim() || null;
+  const selectedLoadRef =
+    trip?.load.companyLoad?.trim() || trip?.load.customerLoad?.trim() || null;
   const mapHint = trip
-    ? useCorridorStations
-      ? `Fuel stops within ${corridorBufferMiles} mi of driving route`
-      : demoMode
-        ? "Demo truck position along the Open Road route"
-        : "Driving route from truck to remaining Open Road stops"
+    ? routeLoading
+      ? "Updating map for the selected load..."
+      : useCorridorStations
+        ? `Fuel stops within ${corridorBufferMiles} mi of driving route`
+        : demoMode
+          ? "Demo truck position along the Open Road route"
+          : "Driving route from truck to remaining Open Road stops"
     : "Select a load to preview its route";
 
   return (
@@ -499,22 +507,34 @@ export default function TripRouteMap({
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[400] flex flex-wrap items-start justify-between gap-2 p-2 pr-12">
         <div className="pointer-events-auto max-w-[min(100%,28rem)] rounded-xl border border-border/80 bg-white/92 px-3 py-2 shadow-[0_8px_20px_rgba(15,23,42,0.08)] backdrop-blur-sm">
           <h2 className="text-sm font-semibold text-foreground">Route map</h2>
+          {selectedRouteLabel ? (
+            <p className="mt-0.5 truncate text-xs font-medium text-foreground" title={selectedRouteLabel}>
+              {selectedRouteLabel}
+              {selectedLoadRef ? (
+                <span className="font-normal text-muted"> · {selectedLoadRef}</span>
+              ) : null}
+            </p>
+          ) : null}
           <p className="mt-0.5 truncate text-xs text-muted">{mapHint}</p>
         </div>
 
         {trip ? (
           <div className="pointer-events-auto flex flex-wrap items-center gap-1.5">
             {routeLoading ? (
-              <span className="rounded-full bg-white/92 px-2.5 py-1 text-xs text-muted shadow-sm ring-1 ring-border">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/92 px-2.5 py-1 text-xs text-muted shadow-sm ring-1 ring-border">
+                <span
+                  className="inline-block h-3 w-3 animate-spin-slow rounded-full border-2 border-border border-t-primary"
+                  aria-hidden="true"
+                />
                 Calculating route...
               </span>
             ) : null}
-            {drivingRoute ? (
+            {!routeLoading && drivingRoute ? (
               <span className="rounded-full bg-white/92 px-2.5 py-1 text-xs font-medium text-foreground shadow-sm ring-1 ring-border">
                 {formatRouteSummary(drivingRoute)}
               </span>
             ) : null}
-            {!stationsLoading && stationCount > 0 ? (
+            {!routeLoading && !stationsLoading && stationCount > 0 ? (
               <span className="rounded-full bg-white/92 px-2.5 py-1 text-xs font-medium text-foreground shadow-sm ring-1 ring-border">
                 {stationCount.toLocaleString()} stops
               </span>

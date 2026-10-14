@@ -104,49 +104,71 @@ export default function TmsPage() {
     void loadTripContexts();
   }, [loadTripContexts]);
 
-  const loadRecommendation = useCallback(async (trip: TripContext | null) => {
+  useEffect(() => {
+    let cancelled = false;
+    const trip = selectedTrip;
+
+    // Clear immediately on selection change so the map/side panel never keep
+    // another load's fuel plan or corridor pins while the next request is in flight.
+    setRecommendation(null);
+    setRecommendationError(null);
+
     if (!trip) {
-      setRecommendation(null);
-      setRecommendationError(null);
       setRecommendationLoading(false);
       return;
     }
 
     if (!trip.load.truckUnit || !trip.linkage.isReadyForRecommendation) {
-      setRecommendation(null);
-      setRecommendationError(null);
       setRecommendationLoading(false);
       return;
     }
 
     setRecommendationLoading(true);
-    setRecommendationError(null);
 
-    try {
-      const identifier = trip.load.id;
-      const response = await apiRequest<Recommendation>(
-        `/api/v1/recommendations/${encodeURIComponent(identifier)}`,
-      );
+    async function loadRecommendationForTrip() {
+      try {
+        const response = await apiRequest<Recommendation>(
+          `/api/v1/recommendations/${encodeURIComponent(trip.load.id)}`,
+        );
 
-      if (!response.success || !response.data) {
-        throw new Error(response.message || "Failed to load fuel recommendation");
+        if (cancelled) {
+          return;
+        }
+
+        if (!response.success || !response.data) {
+          throw new Error(response.message || "Failed to load fuel recommendation");
+        }
+
+        setRecommendation(response.data);
+      } catch (loadError) {
+        if (cancelled) {
+          return;
+        }
+
+        setRecommendation(null);
+        setRecommendationError(
+          loadError instanceof Error ? loadError.message : "Failed to load fuel recommendation",
+        );
+      } finally {
+        if (!cancelled) {
+          setRecommendationLoading(false);
+        }
       }
-
-      setRecommendation(response.data);
-    } catch (loadError) {
-      setRecommendation(null);
-      setRecommendationError(loadError instanceof Error ? loadError.message : "Failed to load fuel recommendation");
-    } finally {
-      setRecommendationLoading(false);
     }
-  }, []);
 
-  useEffect(() => {
-    void loadRecommendation(selectedTrip);
-  }, [loadRecommendation, selectedTrip]);
+    void loadRecommendationForTrip();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTrip]);
+
+  const recommendationMatchesSelection = Boolean(
+    recommendation && selectedTrip && recommendation.tripContext.load.id === selectedTrip.load.id,
+  );
 
   const highlightStationIds = useMemo(() => {
-    if (!recommendation) {
+    if (!recommendation || !recommendationMatchesSelection) {
       return [];
     }
 
@@ -166,7 +188,7 @@ export default function TmsPage() {
     }
 
     return [...ids];
-  }, [recommendation]);
+  }, [recommendation, recommendationMatchesSelection]);
 
   const trips = useMemo(() => data?.items ?? [], [data]);
   const summary = data?.summary;
@@ -232,7 +254,13 @@ export default function TmsPage() {
   }, [selectedTrip, visibleTrips]);
 
   function handleSelectTrip(trip: TripContext) {
+    if (selectedTrip?.load.id === trip.load.id) {
+      return;
+    }
+
     setInspectedStation(null);
+    setRecommendation(null);
+    setRecommendationError(null);
     setSelectedTrip(trip);
   }
 
@@ -338,11 +366,19 @@ export default function TmsPage() {
                 <TripRouteMap
                   fill
                   trip={selectedTrip}
-                  corridorStations={recommendation?.corridorStations}
-                  highlightStationIds={highlightStationIds}
-                  corridorBufferMiles={recommendation?.corridor?.bufferMiles}
-                  fuelPlan={recommendation?.fuelPlan}
-                  primaryStationId={recommendation?.primary?.relayLocationId}
+                  corridorStations={
+                    recommendationMatchesSelection ? recommendation?.corridorStations : undefined
+                  }
+                  highlightStationIds={recommendationMatchesSelection ? highlightStationIds : []}
+                  corridorBufferMiles={
+                    recommendationMatchesSelection ? recommendation?.corridor?.bufferMiles : undefined
+                  }
+                  fuelPlan={recommendationMatchesSelection ? recommendation?.fuelPlan : undefined}
+                  primaryStationId={
+                    recommendationMatchesSelection
+                      ? recommendation?.primary?.relayLocationId
+                      : undefined
+                  }
                   selectedStationId={inspectedStation?.relayLocationId}
                   onStationSelect={setInspectedStation}
                 />
@@ -351,9 +387,9 @@ export default function TmsPage() {
 
             <TmsTripSidePanel
               trip={selectedTrip}
-              recommendation={recommendation}
+              recommendation={recommendationMatchesSelection ? recommendation : null}
               loading={recommendationLoading}
-              error={recommendationError}
+              error={recommendationMatchesSelection ? recommendationError : null}
               inspectedStation={inspectedStation}
               onClearInspectedStation={() => setInspectedStation(null)}
               onCopilotSent={loadTripContexts}
