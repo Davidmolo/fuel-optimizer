@@ -123,14 +123,14 @@ export default function TmsPage() {
       return;
     }
 
+    const loadId = trip.load.id;
     setRecommendationLoading(true);
 
     async function loadRecommendationForTrip() {
       try {
         const response = await apiRequest<Recommendation>(
-          `/api/v1/recommendations/${encodeURIComponent(trip.load.id)}`,
+          `/api/v1/recommendations/${encodeURIComponent(loadId)}`,
         );
-
         if (cancelled) {
           return;
         }
