@@ -160,6 +160,19 @@ function toDriverView(driver: {
   };
 }
 
+/** Prefer OpenRoad manager label for filters; fall back to Trimble FirstName. */
+function resolveTripDispatcherName(args: {
+  openroadManagerName?: string | null;
+  trimbleDispatcherName?: string | null;
+}) {
+  const fromOpenRoad = args.openroadManagerName?.trim();
+  if (fromOpenRoad) {
+    return fromOpenRoad;
+  }
+  const fromTrimble = args.trimbleDispatcherName?.trim();
+  return fromTrimble || undefined;
+}
+
 function buildCopilotSendView(args: {
   fleetVehicle?: {
     trimbleAssetId?: string;
@@ -186,6 +199,7 @@ function buildCopilotSendView(args: {
 function toTripVehicleView(
   fleetVehicle: NonNullable<Awaited<ReturnType<typeof findFleetVehicleForLoad>>>,
   staleThresholdMs: number,
+  openroadManagerName?: string | null,
 ) {
   const fleetView = toFleetVehicleView(fleetVehicle, staleThresholdMs);
   return {
@@ -197,7 +211,10 @@ function toTripVehicleView(
     trimbleAssetId: fleetView.trimbleAssetId,
     tripManagementEnabled: fleetView.tripManagementEnabled,
     copilotStatus: fleetView.copilotStatus,
-    dispatcherName: fleetView.dispatcherName,
+    dispatcherName: resolveTripDispatcherName({
+      openroadManagerName,
+      trimbleDispatcherName: fleetView.dispatcherName,
+    }),
     gps: fleetView.gps,
     fuel: fleetView.fuel,
   };
@@ -214,17 +231,19 @@ async function buildTripContextForLoad(loadId: string): Promise<TripContextView>
   const loadView = toTmsLoadView(load);
 
   let driver: TmsDriverView | undefined;
+  let openroadManagerName: string | null | undefined;
   if (load.primaryDriverId) {
     const driverDoc = await TmsDriverModel.findOne({ openroadDriverId: load.primaryDriverId }).lean();
     if (driverDoc) {
       driver = toDriverView(driverDoc);
+      openroadManagerName = driverDoc.openroadManagerName;
     }
   }
 
   let vehicle;
   const fleetVehicle = await findFleetVehicleForLoad(load);
   if (fleetVehicle) {
-    vehicle = toTripVehicleView(fleetVehicle, staleThresholdMs);
+    vehicle = toTripVehicleView(fleetVehicle, staleThresholdMs, openroadManagerName);
   }
 
   const hasDriver = Boolean(driver);
@@ -364,8 +383,13 @@ export async function listTripContexts(actor?: FleetScopeActor | null) {
   );
 
   const eligibleLoads = loads.filter((load) => {
-    if (!truckUnitInScope(scope, load.truckUnit)) {
-      return false;
+    if (scope.mode === "dispatcher") {
+      const unitOk = truckUnitInScope(scope, load.truckUnit);
+      const driverOk =
+        Boolean(load.primaryDriverId) && scope.openroadDriverIds.includes(load.primaryDriverId!);
+      if (!unitOk && !driverOk) {
+        return false;
+      }
     }
     const driverDoc = load.primaryDriverId ? driversById.get(load.primaryDriverId) : undefined;
     return !driverDoc || (driverDoc.isActive && !isDemoDriver(driverDoc));
@@ -379,7 +403,9 @@ export async function listTripContexts(actor?: FleetScopeActor | null) {
       : load.samsaraVehicleId
         ? vehiclesBySamsaraId.get(load.samsaraVehicleId)
         : undefined;
-    const vehicle = fleetVehicle ? toTripVehicleView(fleetVehicle, staleThresholdMs) : undefined;
+    const vehicle = fleetVehicle
+      ? toTripVehicleView(fleetVehicle, staleThresholdMs, driverDoc?.openroadManagerName)
+      : undefined;
 
     const hasDriver = Boolean(driverDoc);
     const hasTruckAssignment = Boolean(load.truckUnit);

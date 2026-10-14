@@ -208,7 +208,7 @@ export default function TmsLoadFiltersModal({
         {options.dispatchers.length > 0 ? (
           <FilterSection
             title="Dispatcher"
-            hint="Fleet dispatcher on the linked truck. Select more than one to include each."
+            hint="OpenRoad manager for the load’s driver. Select more than one to include each."
           >
             <OptionChips
               options={options.dispatchers}

@@ -4,6 +4,7 @@ import {
   listOpenRoadExtAssignments,
   listOpenRoadExtDrivers,
   listOpenRoadExtTrucks,
+  listOpenRoadExtUsers,
   listOpenRoadDrivers,
 } from "../../../integrations/openroad";
 import {
@@ -12,10 +13,12 @@ import {
 } from "../../../integrations/samsara";
 import { ensureDatabaseConnected } from "../../../config/database";
 import { HttpError } from "../../../utils/http-error";
+import { UserModel } from "../../user/models/user.model";
 import { TmsAssignmentModel } from "../models/tms-assignment.model";
 import { TmsDriverModel } from "../models/tms-driver.model";
 import { TmsLoadModel } from "../models/tms-load.model";
 import { mapOpenRoadLoadFields } from "../mappers/tms-load.mapper";
+import { buildOpenRoadManagerLabelMap } from "../utils/openroad-manager-label";
 import {
   getPrimaryDriverIdFromDestinations,
   isDemoDriver,
@@ -37,14 +40,49 @@ function buildDriverDisplayName(driver: {
   return driver.employee_nr ? `Driver ${driver.employee_nr}` : "Unknown driver";
 }
 
+async function loadOpenRoadManagerLabels() {
+  const labels = new Map<number, string>();
+  if (!isOpenRoadExtConfigured()) {
+    return labels;
+  }
+
+  const [extUsers, foUsers] = await Promise.all([
+    listOpenRoadExtUsers({ status: "active" }),
+    UserModel.find({ openroadUserId: { $nin: [null] } })
+      .select({ openroadUserId: 1, dispatcherName: 1 })
+      .lean(),
+  ]);
+
+  for (const [id, label] of buildOpenRoadManagerLabelMap(extUsers)) {
+    labels.set(id, label);
+  }
+
+  // Prefer the Trimble-style label already assigned on a FO account when present
+  // (e.g. alex.m@ → "Alex M" instead of a freshly computed variant).
+  for (const user of foUsers) {
+    const openroadUserId = user.openroadUserId;
+    const dispatcherName = user.dispatcherName?.trim();
+    if (typeof openroadUserId === "number" && dispatcherName) {
+      labels.set(openroadUserId, dispatcherName);
+    }
+  }
+
+  return labels;
+}
+
 export async function syncTmsDrivers() {
   const drivers = await listOpenRoadDrivers();
   const syncedAt = new Date();
 
   // External API v1 carries manager_id (dispatcher → driver). Legacy V2 does not.
   const managerByDriverId = new Map<number, number | null>();
+  let managerLabels = new Map<number, string>();
   if (isOpenRoadExtConfigured()) {
-    const extDrivers = await listOpenRoadExtDrivers();
+    const [extDrivers, labels] = await Promise.all([
+      listOpenRoadExtDrivers(),
+      loadOpenRoadManagerLabels(),
+    ]);
+    managerLabels = labels;
     for (const driver of extDrivers) {
       managerByDriverId.set(
         driver.id,
@@ -57,6 +95,8 @@ export async function syncTmsDrivers() {
     await TmsDriverModel.bulkWrite(
       drivers.map((driver) => {
         const managerId = managerByDriverId.get(driver.id);
+        const managerName =
+          typeof managerId === "number" ? managerLabels.get(managerId) ?? null : null;
         return {
           updateOne: {
             filter: { openroadDriverId: driver.id },
@@ -74,7 +114,10 @@ export async function syncTmsDrivers() {
                 terminal: driver.terminal,
                 team: driver.team,
                 ...(managerByDriverId.has(driver.id)
-                  ? { openroadManagerId: managerId ?? null }
+                  ? {
+                      openroadManagerId: managerId ?? null,
+                      openroadManagerName: managerName,
+                    }
                   : {}),
                 isActive: isOpenRoadDriverActive(driver.status),
                 syncedAt,
@@ -91,6 +134,7 @@ export async function syncTmsDrivers() {
   return {
     driverCount: drivers.length,
     managersSynced: managerByDriverId.size,
+    managerLabels: managerLabels.size,
     driversSyncedAt: syncedAt.toISOString(),
   };
 }
