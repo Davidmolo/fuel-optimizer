@@ -20,8 +20,10 @@ export async function getDriverComplianceController(req: Request, res: Response)
     actor: actor
       ? {
           id: actor.id,
+          email: actor.email,
           role: actor.role,
           dispatcherName: actor.dispatcherName ?? null,
+          openroadUserId: actor.openroadUserId ?? null,
         }
       : null,
   });

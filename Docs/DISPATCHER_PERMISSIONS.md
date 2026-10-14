@@ -9,7 +9,7 @@ Beta access matrix for the Fuel Optimizer **dispatcher** role.
 |------|------------------|--------------------------|
 | `admin` | All trucks, drivers, loads | Full access |
 | `user` | Scoped if `dispatcherName` is set; otherwise empty | No settings access (admin-only APIs) |
-| `dispatcher` | Only trucks whose Trimble CoPilot `FirstName` / `FleetVehicle.dispatcherName` matches the user’s assigned `dispatcherName` | **Blocked** (API 403 + Settings hidden in UI) |
+| `dispatcher` | Prefer OpenRoad `manager_id` drivers (matched by FO email → OpenRoad user, or stored `openroadUserId`) and their current truck assignments. Fallback: Trimble CoPilot `FirstName` / `FleetVehicle.dispatcherName` | **Blocked** (API 403 + Settings hidden in UI) |
 
 ## Dispatcher can
 
@@ -28,9 +28,11 @@ Beta access matrix for the Fuel Optimizer **dispatcher** role.
 ## How fleet scope is assigned
 
 1. Admin invites the person as role **dispatcher**.
-2. Admin assigns a Trimble dispatcher name on Accounts (`PATCH /api/v1/accounts/:accountId/dispatcher`).
-3. That name must match `FleetVehicle.dispatcherName` from the CoPilot assets sync (export `FirstName`).
-4. With no assignment, the dispatcher sees an empty fleet / empty compliance and a hint to ask an admin.
+2. **Preferred:** FO account email matches an OpenRoad `/users` email (e.g. `alex.m@goxxii.com`). After driver sync, scope = active drivers with `manager_id` = that OpenRoad user, via their current truck assignments.
+3. **Fallback:** Admin assigns a Trimble dispatcher name on Accounts (`PATCH /api/v1/accounts/:accountId/dispatcher`) matching `FleetVehicle.dispatcherName` (CoPilot export `FirstName`).
+4. With neither OpenRoad link nor Trimble name, the dispatcher sees an empty fleet / empty compliance and a hint to ask an admin.
+
+OpenRoad `manager_id` is the source of truth for “Alex M has 10 drivers.” Trimble FirstName alone can be incomplete/stale (e.g. only 4 tablets labeled `Alex M`).
 
 ## David lock
 

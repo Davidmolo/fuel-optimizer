@@ -62,22 +62,31 @@ export async function listActiveLoads(options: ListActiveLoadsOptions = {}) {
   }
 
   if (scope.mode === "dispatcher") {
-    if (scope.unitNumbers.length === 0) {
+    if (scope.unitNumbers.length === 0 && scope.openroadDriverIds.length === 0) {
       return {
         summary: buildTmsSummary([]),
         items: [],
         fleetScope: { mode: scope.mode, dispatcherName: scope.dispatcherName },
       };
     }
-    filter.truckUnit = options.truckUnit
-      ? options.truckUnit
-      : { $in: scope.unitNumbers };
-    if (options.truckUnit && !scope.unitNumbers.includes(options.truckUnit)) {
-      return {
-        summary: buildTmsSummary([]),
-        items: [],
-        fleetScope: { mode: scope.mode, dispatcherName: scope.dispatcherName },
-      };
+    if (options.truckUnit) {
+      if (!scope.unitNumbers.includes(options.truckUnit)) {
+        return {
+          summary: buildTmsSummary([]),
+          items: [],
+          fleetScope: { mode: scope.mode, dispatcherName: scope.dispatcherName },
+        };
+      }
+      filter.truckUnit = options.truckUnit;
+    } else {
+      const scopeClauses: Record<string, unknown>[] = [];
+      if (scope.unitNumbers.length > 0) {
+        scopeClauses.push({ truckUnit: { $in: scope.unitNumbers } });
+      }
+      if (scope.openroadDriverIds.length > 0) {
+        scopeClauses.push({ primaryDriverId: { $in: scope.openroadDriverIds } });
+      }
+      filter.$or = scopeClauses;
     }
   } else if (options.truckUnit) {
     filter.truckUnit = options.truckUnit;
@@ -301,7 +310,7 @@ export async function listTripContexts(actor?: FleetScopeActor | null) {
 
   const loadFilter: Record<string, unknown> = { isActive: true };
   if (scope.mode === "dispatcher") {
-    if (scope.unitNumbers.length === 0) {
+    if (scope.unitNumbers.length === 0 && scope.openroadDriverIds.length === 0) {
       return {
         summary: {
           ...buildTmsSummary([]),
@@ -312,7 +321,14 @@ export async function listTripContexts(actor?: FleetScopeActor | null) {
         fleetScope: { mode: scope.mode, dispatcherName: scope.dispatcherName },
       };
     }
-    loadFilter.truckUnit = { $in: scope.unitNumbers };
+    const scopeClauses: Record<string, unknown>[] = [];
+    if (scope.unitNumbers.length > 0) {
+      scopeClauses.push({ truckUnit: { $in: scope.unitNumbers } });
+    }
+    if (scope.openroadDriverIds.length > 0) {
+      scopeClauses.push({ primaryDriverId: { $in: scope.openroadDriverIds } });
+    }
+    loadFilter.$or = scopeClauses;
   }
 
   const loads = await TmsLoadModel.find(loadFilter).sort({ updatedAt: -1 }).lean();

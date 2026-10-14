@@ -4,8 +4,13 @@ export type UserDocument = {
   email: string;
   password: string;
   roleId: Types.ObjectId;
-  /** Matches FleetVehicle.dispatcherName from Trimble Account Manager FirstName. */
+  /**
+   * Legacy Trimble CoPilot FirstName label. Prefer `openroadUserId` for fleet
+   * scope when OpenRoad manager assignments are synced.
+   */
   dispatcherName?: string | null;
+  /** OpenRoad `/users` id — primary manager for dispatcher → driver scope. */
+  openroadUserId?: number | null;
   invitedBy?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
@@ -17,6 +22,7 @@ const userSchema = new Schema<UserDocument>(
     password: { type: String, required: true },
     roleId: { type: Schema.Types.ObjectId, ref: "Role", required: true, index: true },
     dispatcherName: { type: String, trim: true, default: null, index: true },
+    openroadUserId: { type: Number, default: null, index: true },
     invitedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
   },
   { timestamps: true },

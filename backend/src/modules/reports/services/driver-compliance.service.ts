@@ -159,10 +159,17 @@ export async function getDriverComplianceReport(
   };
 
   if (scope.mode === "dispatcher") {
-    if (scope.unitNumbers.length === 0) {
+    const scopeClauses: Record<string, unknown>[] = [];
+    if (scope.unitNumbers.length > 0) {
+      scopeClauses.push({ truckUnit: { $in: scope.unitNumbers } });
+    }
+    if (scope.openroadDriverIds.length > 0) {
+      scopeClauses.push({ primaryDriverId: { $in: scope.openroadDriverIds } });
+    }
+    if (scopeClauses.length === 0) {
       return emptyComplianceReport(from, to);
     }
-    loadFilter.truckUnit = { $in: scope.unitNumbers };
+    loadFilter.$and = [...(Array.isArray(loadFilter.$and) ? loadFilter.$and : []), { $or: scopeClauses }];
   }
 
   if (driverId !== undefined) {

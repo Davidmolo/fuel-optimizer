@@ -12,6 +12,8 @@ export type TmsDriverDocument = {
   position?: string;
   terminal?: string;
   team?: string;
+  /** OpenRoad `/users` id of the driver's primary manager (dispatcher). */
+  openroadManagerId?: number | null;
   isActive: boolean;
   syncedAt?: Date;
   createdAt: Date;
@@ -31,6 +33,7 @@ const tmsDriverSchema = new Schema<TmsDriverDocument>(
     position: { type: String, trim: true },
     terminal: { type: String, trim: true },
     team: { type: String, trim: true },
+    openroadManagerId: { type: Number, default: null, index: true },
     isActive: { type: Boolean, default: true, index: true },
     syncedAt: { type: Date },
   },

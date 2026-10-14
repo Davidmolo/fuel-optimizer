@@ -9,6 +9,7 @@ export type RequestUser = {
   roleId: string;
   role: string;
   dispatcherName?: string | null;
+  openroadUserId?: number | null;
 };
 
 type AuthenticatedRequest = Request & {
@@ -49,6 +50,7 @@ async function attachSignedInUser(req: Request, res: Response) {
     roleId: String(user.roleId),
     role: role?.name ?? "",
     dispatcherName: user.dispatcherName ?? null,
+    openroadUserId: user.openroadUserId ?? null,
   };
 
   return (req as AuthenticatedRequest).user;
@@ -77,6 +79,7 @@ export async function attachRequestUserIfPresent(req: Request, _res: Response, n
     roleId: String(user.roleId),
     role: role?.name ?? "",
     dispatcherName: user.dispatcherName ?? null,
+    openroadUserId: user.openroadUserId ?? null,
   };
 
   return next();

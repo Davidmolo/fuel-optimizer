@@ -109,3 +109,30 @@ export type OpenRoadExtAssignment = {
   driver?: OpenRoadExtDriverSummary | null;
   assignment?: OpenRoadExtEquipmentSummary | null;
 };
+
+/** Driver roster row from External API v1 — includes OpenRoad manager assignment. */
+export type OpenRoadExtDriver = {
+  id: number;
+  first_name?: string | null;
+  last_name?: string | null;
+  middle_name?: string | null;
+  driver_nr?: string | null;
+  status?: string | null;
+  driver_type?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  /** FK to `/users` — primary dispatcher/manager for this driver. */
+  manager_id?: number | null;
+  substitute_manager_id?: number | null;
+};
+
+export type OpenRoadExtUser = {
+  id: number;
+  name?: string | null;
+  lastname?: string | null;
+  type?: string | null;
+  status?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  team?: string | null;
+};

@@ -1,18 +1,34 @@
-import { isAdminRole } from "../../role/constants";
-import { FleetVehicleModel } from "../models/fleet-vehicle.model";
+import {
+  isOpenRoadExtConfigured,
+  listOpenRoadExtUsers,
+} from "../../../integrations/openroad";
 import { HttpError } from "../../../utils/http-error";
+import { isAdminRole } from "../../role/constants";
+import { TmsAssignmentModel } from "../../tms/models/tms-assignment.model";
+import { TmsDriverModel } from "../../tms/models/tms-driver.model";
+import { UserModel } from "../../user/models/user.model";
+import { FleetVehicleModel } from "../models/fleet-vehicle.model";
 import { isTestCopilotAssetId } from "./copilot-asset-matching";
 
 export type FleetScopeActor = {
   id: string;
+  email?: string;
   role: string;
   dispatcherName?: string | null;
+  openroadUserId?: number | null;
 };
 
 export type DispatcherFleetScope =
   | { mode: "all" }
   | { mode: "none"; reason: string }
-  | { mode: "dispatcher"; dispatcherName: string; unitNumbers: string[] };
+  | {
+      mode: "dispatcher";
+      dispatcherName: string;
+      unitNumbers: string[];
+      openroadDriverIds: number[];
+      openroadUserId?: number;
+      source: "openroad_manager" | "trimble_firstname";
+    };
 
 export function normalizeDispatcherName(value: string | null | undefined) {
   const trimmed = value?.trim();
@@ -43,10 +59,124 @@ export async function listKnownDispatcherNames() {
 }
 
 /**
+ * Resolves the OpenRoad user id for a FO actor: stored id first, then email
+ * match against OpenRoad `/users` (persisted back onto the FO user).
+ */
+export async function resolveOpenRoadUserIdForActor(
+  actor: FleetScopeActor,
+): Promise<number | null> {
+  if (typeof actor.openroadUserId === "number" && Number.isFinite(actor.openroadUserId)) {
+    return actor.openroadUserId;
+  }
+
+  const email = actor.email?.trim().toLowerCase();
+  if (!email || !isOpenRoadExtConfigured()) {
+    return null;
+  }
+
+  const users = await listOpenRoadExtUsers({ status: "active" });
+  const match = users.find((user) => user.email?.trim().toLowerCase() === email);
+  if (!match?.id) {
+    return null;
+  }
+
+  await UserModel.updateOne({ _id: actor.id }, { $set: { openroadUserId: match.id } });
+  return match.id;
+}
+
+/** Pure helper: truck units currently assigned to the given OpenRoad driver ids. */
+export function unitNumbersForManagedDrivers(
+  openroadDriverIds: number[],
+  assignments: Array<{ openroadDriverId: number; truckUnit?: string | null; isCurrent?: boolean }>,
+) {
+  const managed = new Set(openroadDriverIds);
+  return [
+    ...new Set(
+      assignments
+        .filter(
+          (row) =>
+            row.isCurrent !== false &&
+            managed.has(row.openroadDriverId) &&
+            Boolean(row.truckUnit?.trim()),
+        )
+        .map((row) => String(row.truckUnit).trim()),
+    ),
+  ];
+}
+
+async function resolveScopeFromOpenRoadManager(
+  openroadUserId: number,
+  label: string,
+): Promise<DispatcherFleetScope> {
+  const drivers = await TmsDriverModel.find({
+    openroadManagerId: openroadUserId,
+    isActive: true,
+  })
+    .select({ openroadDriverId: 1 })
+    .lean();
+
+  const openroadDriverIds = drivers.map((driver) => driver.openroadDriverId);
+
+  if (openroadDriverIds.length === 0) {
+    return {
+      mode: "dispatcher",
+      dispatcherName: label,
+      unitNumbers: [],
+      openroadDriverIds: [],
+      openroadUserId,
+      source: "openroad_manager",
+    };
+  }
+
+  const assignments = await TmsAssignmentModel.find({
+    isCurrent: true,
+    assignmentType: "Truck",
+    openroadDriverId: { $in: openroadDriverIds },
+  })
+    .select({ truckUnit: 1, openroadDriverId: 1, isCurrent: 1 })
+    .lean();
+
+  const unitNumbers = unitNumbersForManagedDrivers(openroadDriverIds, assignments);
+
+  return {
+    mode: "dispatcher",
+    dispatcherName: label,
+    unitNumbers,
+    openroadDriverIds,
+    openroadUserId,
+    source: "openroad_manager",
+  };
+}
+
+async function resolveScopeFromTrimbleDispatcherName(
+  dispatcherName: string,
+): Promise<DispatcherFleetScope> {
+  const vehicles = await FleetVehicleModel.find({
+    isActive: true,
+    dispatcherName: { $regex: `^${escapeRegex(dispatcherName)}$`, $options: "i" },
+  })
+    .select({ unitNumber: 1 })
+    .lean();
+
+  const unitNumbers = [
+    ...new Set(vehicles.map((vehicle) => String(vehicle.unitNumber).trim()).filter(Boolean)),
+  ];
+
+  return {
+    mode: "dispatcher",
+    dispatcherName,
+    unitNumbers,
+    openroadDriverIds: [],
+    source: "trimble_firstname",
+  };
+}
+
+/**
  * Resolves fleet visibility for the signed-in actor.
- * Admins see all units. Dispatchers (and other non-admins) see only trucks
- * whose `dispatcherName` matches their assigned Trimble FirstName; with no
- * assignment they get an empty fleet (`mode: "none"`).
+ * Admins see all units. Dispatchers prefer OpenRoad `manager_id` → current
+ * truck assignments (source of truth for who owns which drivers). Falls back
+ * to Trimble CoPilot FirstName on `FleetVehicle.dispatcherName` when the FO
+ * user cannot be linked to an OpenRoad user.
  */
 export async function resolveDispatcherFleetScope(
   actor: FleetScopeActor | null | undefined,
@@ -60,25 +190,22 @@ export async function resolveDispatcherFleetScope(
   }
 
   const dispatcherName = normalizeDispatcherName(actor.dispatcherName);
+  const openroadUserId = await resolveOpenRoadUserIdForActor(actor);
+
+  if (openroadUserId != null) {
+    const label = dispatcherName || actor.email || `OpenRoad user ${openroadUserId}`;
+    return resolveScopeFromOpenRoadManager(openroadUserId, label);
+  }
+
   if (!dispatcherName) {
     return {
       mode: "none",
-      reason: "No dispatcher fleet assigned. Ask an admin to assign your Trimble dispatcher name.",
+      reason:
+        "No dispatcher fleet assigned. Ask an admin to link your account to OpenRoad (email match) or a Trimble dispatcher name.",
     };
   }
 
-  const vehicles = await FleetVehicleModel.find({
-    isActive: true,
-    dispatcherName: { $regex: `^${escapeRegex(dispatcherName)}$`, $options: "i" },
-  })
-    .select({ unitNumber: 1 })
-    .lean();
-
-  const unitNumbers = [
-    ...new Set(vehicles.map((vehicle) => String(vehicle.unitNumber).trim()).filter(Boolean)),
-  ];
-
-  return { mode: "dispatcher", dispatcherName, unitNumbers };
+  return resolveScopeFromTrimbleDispatcherName(dispatcherName);
 }
 
 export function truckUnitInScope(scope: DispatcherFleetScope, truckUnit: string | null | undefined) {

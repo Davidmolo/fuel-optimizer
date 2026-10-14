@@ -1,6 +1,8 @@
 import {
+  isOpenRoadExtConfigured,
   listOpenRoadExtActiveLoads,
   listOpenRoadExtAssignments,
+  listOpenRoadExtDrivers,
   listOpenRoadExtTrucks,
   listOpenRoadDrivers,
 } from "../../../integrations/openroad";
@@ -39,37 +41,56 @@ export async function syncTmsDrivers() {
   const drivers = await listOpenRoadDrivers();
   const syncedAt = new Date();
 
+  // External API v1 carries manager_id (dispatcher → driver). Legacy V2 does not.
+  const managerByDriverId = new Map<number, number | null>();
+  if (isOpenRoadExtConfigured()) {
+    const extDrivers = await listOpenRoadExtDrivers();
+    for (const driver of extDrivers) {
+      managerByDriverId.set(
+        driver.id,
+        typeof driver.manager_id === "number" ? driver.manager_id : null,
+      );
+    }
+  }
+
   if (drivers.length > 0) {
     await TmsDriverModel.bulkWrite(
-      drivers.map((driver) => ({
-        updateOne: {
-          filter: { openroadDriverId: driver.id },
-          update: {
-            $set: {
-              openroadDriverId: driver.id,
-              employeeNr: driver.employee_nr,
-              firstName: driver.first_name,
-              lastName: driver.last_name,
-              displayName: buildDriverDisplayName(driver),
-              phone: driver.phone,
-              email: driver.email ?? undefined,
-              status: driver.status,
-              position: driver.position,
-              terminal: driver.terminal,
-              team: driver.team,
-              isActive: isOpenRoadDriverActive(driver.status),
-              syncedAt,
+      drivers.map((driver) => {
+        const managerId = managerByDriverId.get(driver.id);
+        return {
+          updateOne: {
+            filter: { openroadDriverId: driver.id },
+            update: {
+              $set: {
+                openroadDriverId: driver.id,
+                employeeNr: driver.employee_nr,
+                firstName: driver.first_name,
+                lastName: driver.last_name,
+                displayName: buildDriverDisplayName(driver),
+                phone: driver.phone,
+                email: driver.email ?? undefined,
+                status: driver.status,
+                position: driver.position,
+                terminal: driver.terminal,
+                team: driver.team,
+                ...(managerByDriverId.has(driver.id)
+                  ? { openroadManagerId: managerId ?? null }
+                  : {}),
+                isActive: isOpenRoadDriverActive(driver.status),
+                syncedAt,
+              },
             },
+            upsert: true,
           },
-          upsert: true,
-        },
-      })),
+        };
+      }),
       { ordered: false },
     );
   }
 
   return {
     driverCount: drivers.length,
+    managersSynced: managerByDriverId.size,
     driversSyncedAt: syncedAt.toISOString(),
   };
 }

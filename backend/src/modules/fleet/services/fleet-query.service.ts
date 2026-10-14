@@ -27,7 +27,18 @@ export async function listFleetVehicles(options: ListFleetVehiclesOptions = {}) 
   }
 
   if (scope.mode === "dispatcher") {
-    filter.dispatcherName = { $regex: `^${escapeRegex(scope.dispatcherName)}$`, $options: "i" };
+    if (scope.unitNumbers.length === 0) {
+      return {
+        summary: buildFleetSummary([], staleThresholdMs),
+        items: [],
+        fleetScope: {
+          mode: scope.mode,
+          dispatcherName: scope.dispatcherName,
+          source: scope.source,
+        },
+      };
+    }
+    filter.unitNumber = { $in: scope.unitNumbers };
   }
 
   const vehicles = await FleetVehicleModel.find(filter).sort({ unitNumber: 1 }).lean();
@@ -38,7 +49,7 @@ export async function listFleetVehicles(options: ListFleetVehiclesOptions = {}) 
     items,
     fleetScope:
       scope.mode === "dispatcher"
-        ? { mode: scope.mode, dispatcherName: scope.dispatcherName }
+        ? { mode: scope.mode, dispatcherName: scope.dispatcherName, source: scope.source }
         : { mode: "all" as const },
   };
 }
@@ -74,8 +85,4 @@ export async function getFleetVehicle(identifier: string, actor?: FleetScopeActo
   }
 
   return toFleetVehicleView(vehicle, staleThresholdMs);
-}
-
-function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

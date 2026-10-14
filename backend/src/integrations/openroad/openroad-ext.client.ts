@@ -21,10 +21,12 @@ import type { OpenRoadAssignment, OpenRoadLoad, OpenRoadLoadDestination, OpenRoa
 import type {
   OpenRoadExtAssignment,
   OpenRoadExtDestination,
+  OpenRoadExtDriver,
   OpenRoadExtEnvelope,
   OpenRoadExtEquipmentSummary,
   OpenRoadExtLoad,
   OpenRoadExtTruck,
+  OpenRoadExtUser,
 } from "./openroad-ext.types";
 
 const EXT_PAGE_SIZE = 100;
@@ -428,4 +430,44 @@ export async function listOpenRoadExtAssignments(filters?: {
   );
 
   return assignments.map(mapOpenRoadExtAssignment);
+}
+
+/**
+ * Driver roster from External API v1. Prefer this when you need `manager_id`
+ * (dispatcher → driver). Legacy V2 `/drivers` still has richer HR fields but
+ * does not expose manager assignment.
+ */
+export async function listOpenRoadExtDrivers(filters?: {
+  managerId?: number;
+  status?: string | string[];
+}) {
+  return fetchAllOpenRoadExtPages<OpenRoadExtDriver>((page) =>
+    openRoadExtRequest<OpenRoadExtDriver[]>({
+      path: "/drivers",
+      query: {
+        page,
+        per_page: EXT_PAGE_SIZE,
+        manager_id: filters?.managerId,
+        status: filters?.status,
+      },
+    }),
+  );
+}
+
+/** Back-office users (dispatchers, admins, etc.) — used to resolve manager_id. */
+export async function listOpenRoadExtUsers(filters?: {
+  type?: string | string[];
+  status?: string | string[];
+}) {
+  return fetchAllOpenRoadExtPages<OpenRoadExtUser>((page) =>
+    openRoadExtRequest<OpenRoadExtUser[]>({
+      path: "/users",
+      query: {
+        page,
+        per_page: EXT_PAGE_SIZE,
+        type: filters?.type,
+        status: filters?.status,
+      },
+    }),
+  );
 }
