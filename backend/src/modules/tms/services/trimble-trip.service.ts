@@ -1042,6 +1042,20 @@ export async function dispatchTrimbleTripWithFuelStopForLoad(
     };
   }
 
+  const tabletReceivedStatuses = new Set(["Dispatched", "InProgress", "ReceivedByClient"]);
+
+  const replanDispatchFallback = async () => {
+    const fallback = await dispatchTrimbleTripForLoad(loadId, {
+      tspDriverId,
+      allowTestTablet: options.allowTestTablet,
+      actor: options.actor,
+    });
+    return {
+      ...fallback,
+      recommendation: attached.recommendation,
+    };
+  };
+
   try {
     await modifyTrip({
       alkTripId,
@@ -1051,21 +1065,34 @@ export async function dispatchTrimbleTripWithFuelStopForLoad(
     });
   } catch (error) {
     if (options.useReplanDispatch) {
-      const fallback = await dispatchTrimbleTripForLoad(loadId, {
-        tspDriverId,
-        allowTestTablet: options.allowTestTablet,
-        actor: options.actor,
-      });
-      return {
-        ...fallback,
-        recommendation: attached.recommendation,
-      };
+      return replanDispatchFallback();
     }
     const message = error instanceof Error ? error.message : String(error);
     throw new HttpError(`Modify-dispatch with fuel stop failed: ${message}`, 502);
   }
 
   const snapshot = await refreshTripSnapshot(alkTripId);
+
+  // Modify can leave the trip Planned when the tablet is offline / AssetId mismatch.
+  // Fall back to Plan+assignTablet (proven path) before treating Send as successful.
+  if (!tabletReceivedStatuses.has(snapshot.tripStatus)) {
+    if (options.useReplanDispatch) {
+      const fallback = await replanDispatchFallback();
+      if (!tabletReceivedStatuses.has(fallback.tripStatus)) {
+        throw new HttpError(
+          `Fuel stop was planned, but CoPilot tablet ${tspDriverId} did not receive the trip (status ${fallback.tripStatus}). Confirm the tablet is online, logged in as Vehicle ID ${tspDriverId}, and Trip Management is activated — then Send again.`,
+          502,
+        );
+      }
+      return fallback;
+    }
+
+    throw new HttpError(
+      `Fuel stop was planned, but CoPilot tablet ${tspDriverId} did not receive the trip (status ${snapshot.tripStatus}). Confirm the tablet is online, logged in as Vehicle ID ${tspDriverId}, and Trip Management is activated — then Send again.`,
+      502,
+    );
+  }
+
   persistTripStopsSnapshot(load, snapshot, {
     stops,
     tspDriverId,

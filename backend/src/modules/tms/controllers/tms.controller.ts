@@ -202,6 +202,7 @@ export async function sendToCopilotController(req: Request, res: Response) {
   const relayAccount = typeof req.body?.relayAccount === "string" ? req.body.relayAccount : undefined;
   const data = await dispatchTrimbleTripWithFuelStopForLoad(loadId, {
     allowTestTablet: false,
+    useReplanDispatch: true,
     customerSlug,
     relayAccount: relayAccount as "blue_stallion" | "azfs" | undefined,
     actor: actorFromRequest(req),
@@ -212,7 +213,9 @@ export async function sendToCopilotController(req: Request, res: Response) {
       ? "Driver has accepted"
       : data.tripStatus === "Declined"
         ? "Driver declined"
-        : "Waiting for driver to accept";
+        : data.tripStatus === "Dispatched" || data.tripStatus === "ReceivedByClient"
+          ? "Waiting for driver to accept"
+          : `Trip status is ${data.tripStatus || "unknown"}`;
 
   return res.status(200).json({
     success: true,
