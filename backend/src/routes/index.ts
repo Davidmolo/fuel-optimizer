@@ -14,6 +14,7 @@ import recommendationRouter from "../modules/recommendation/routes/recommendatio
 import reportsRouter from "../modules/reports/routes/reports.route";
 import stationRouter from "../modules/station/routes/station.route";
 import twilioConfigRouter from "../modules/twilio-config/routes/twilio-config.route";
+import copilotLabRouter from "../modules/copilot-lab/routes/copilot-lab.route";
 import tmsRouter from "../modules/tms/routes/tms.route";
 
 const apiRouter = Router();
@@ -33,5 +34,6 @@ apiRouter.use("/recommendation-config", requireAdmin, recommendationConfigRouter
 apiRouter.use("/recommendations", recommendationRouter);
 apiRouter.use("/twilio-config", requireAdmin, twilioConfigRouter);
 apiRouter.use("/tms", tmsRouter);
+apiRouter.use("/copilot-lab", requireAdmin, copilotLabRouter);
 
 export default apiRouter;

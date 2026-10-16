@@ -28,7 +28,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   return (
     <DashboardShell
       title="Settings"
-      subtitle="Manage recommendations, data sync, and workspace accounts"
+      subtitle="Manage recommendations, data sync, accounts, and the CoPilot lab"
     >
       <div className="space-y-6">
         <SettingsTabs />

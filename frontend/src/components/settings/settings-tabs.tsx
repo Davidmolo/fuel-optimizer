@@ -8,6 +8,7 @@ const settingsTabs = [
   { href: "/dashboard/settings/fuel-recommendations", label: "Fuel recommendations" },
   { href: "/dashboard/settings/data-sync", label: "Data sync" },
   { href: "/dashboard/settings/accounts", label: "Accounts" },
+  { href: "/dashboard/settings/copilot-lab", label: "CoPilot lab" },
 ];
 
 export default function SettingsTabs() {
