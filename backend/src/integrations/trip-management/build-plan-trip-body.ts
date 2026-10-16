@@ -1,5 +1,9 @@
 import { DEFAULT_ROUTING_PROFILE_NAME } from "./trip-management.config";
-import type { TripManagementPlanTripRequest } from "./trip-management.types";
+import type {
+  TripManagementModifyTripRequest,
+  TripManagementPlanTripRequest,
+  TripManagementStopInput,
+} from "./trip-management.types";
 
 function formatCoordinate(value: number) {
   return value.toFixed(6);
@@ -92,6 +96,54 @@ export function buildPlanTripBody(input: TripManagementPlanTripRequest) {
     // Hard safety: never assign a CoPilot asset during Phase 1 planning.
     delete body.tspDriverId;
   }
+
+  return body;
+}
+
+function mapStopsForModify(stops: TripManagementStopInput[]) {
+  return stops.map((stop) => ({
+    stopType: stop.stopType,
+    location: {
+      coords: { lat: formatCoordinate(stop.lat), lon: formatCoordinate(stop.lon) },
+      ...(stop.label ? { label: stop.label } : {}),
+    },
+  }));
+}
+
+/**
+ * Modify body for an existing trip.
+ * preserveRoutingProfile sends tripId + stops only, so an InProgress CoPilot
+ * trip keeps its driver and routing profile.
+ */
+export function buildModifyTripBody(input: TripManagementModifyTripRequest) {
+  const body: Record<string, unknown> = { tripId: input.alkTripId };
+
+  if (input.stops && input.stops.length > 0) {
+    body.stops = mapStopsForModify(input.stops);
+  }
+
+  if (input.preserveRoutingProfile) {
+    return body;
+  }
+
+  const tspDriverId = input.tspDriverId?.trim();
+  if (tspDriverId) {
+    body.tspDriverId = tspDriverId;
+  }
+
+  if (input.stops && input.stops.length > 0) {
+    body.routingProfile = buildRoutingProfile({
+      routingType: input.routingType,
+      routingProfileName: input.routingProfileName,
+    });
+  }
+
+  applyTripManagementIdentity(body, {
+    tspId: input.tspId,
+    tmsCustomerId: input.tmsCustomerId,
+    tmsId: input.tmsId,
+    tmsUserId: input.tmsUserId,
+  });
 
   return body;
 }

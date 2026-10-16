@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   buildFuelOptimizerTmsTripId,
+  buildModifyTripBody,
   buildPlanTripBody,
   buildRoutingProfile,
   isFuelOptimizerTmsTripId,
@@ -95,6 +96,44 @@ describe("buildRoutingProfile", () => {
       name: "Custom",
       routingType: 2,
     });
+  });
+});
+
+describe("buildModifyTripBody", () => {
+  const stops = [
+    { stopType: "Work" as const, lat: 38.955, lon: -90.186, label: "IMC Outdoor Living" },
+    { stopType: "Work" as const, lat: 41.657, lon: -84.552, label: "Menards" },
+  ];
+
+  it("sends stops only when the tablet trip must keep its driver and routing profile", () => {
+    const body = buildModifyTripBody({
+      alkTripId: "331397433",
+      tspDriverId: "1013",
+      stops,
+      routingType: 0,
+      routingProfileName: "XXII Century",
+      tspId: "should-not-send",
+      preserveRoutingProfile: true,
+    });
+
+    assert.equal(body.tripId, "331397433");
+    assert.equal("tspDriverId" in body, false);
+    assert.equal("routingProfile" in body, false);
+    assert.equal("tspId" in body, false);
+    assert.equal(Array.isArray(body.stops), true);
+  });
+
+  it("includes the driver and routing profile for a new dispatch modify", () => {
+    const body = buildModifyTripBody({
+      alkTripId: "100",
+      tspDriverId: "1013",
+      stops,
+      routingProfileName: "XXII Century",
+      routingType: 0,
+    });
+
+    assert.equal(body.tspDriverId, "1013");
+    assert.deepEqual(body.routingProfile, { name: "XXII Century", routingType: 0 });
   });
 });
 

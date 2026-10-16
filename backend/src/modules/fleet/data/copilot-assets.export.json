@@ -21,13 +21,6 @@
     "productAddons": "TripManagement"
   },
   {
-    "assetId": "1004",
-    "externalName": "Lucky Britton #251",
-    "dispatcherName": "Andre",
-    "status": "Activated",
-    "productAddons": "TripManagement"
-  },
-  {
     "assetId": "1010",
     "externalName": "Francois Mills #237",
     "dispatcherName": "Nikola",
@@ -73,7 +66,7 @@
     "assetId": "1020",
     "externalName": "Joseph Wimmer #187",
     "dispatcherName": "Felix",
-    "status": "Assigned",
+    "status": "Activated",
     "productAddons": "TripManagement"
   },
   {
@@ -98,6 +91,34 @@
     "productAddons": "TripManagement"
   },
   {
+    "assetId": "1031",
+    "externalName": "Michael White #279",
+    "dispatcherName": "Daisy",
+    "status": "Activated",
+    "productAddons": "TripManagement"
+  },
+  {
+    "assetId": "1032",
+    "externalName": "Correy Murchison #269",
+    "dispatcherName": "Dylan",
+    "status": "Activated",
+    "productAddons": "TripManagement"
+  },
+  {
+    "assetId": "1033",
+    "externalName": "Craig Greene #254",
+    "dispatcherName": "Alex M",
+    "status": "Activated",
+    "productAddons": "TripManagement"
+  },
+  {
+    "assetId": "1034",
+    "externalName": "Garry Speer #251",
+    "dispatcherName": "Nikola",
+    "status": "Activated",
+    "productAddons": "TripManagement"
+  },
+  {
     "assetId": "212",
     "externalName": "Mortimer Richards #278",
     "dispatcherName": "Felix",
@@ -109,6 +130,13 @@
     "externalName": "Frank Carr #258",
     "dispatcherName": "Felix",
     "status": "Activated",
+    "productAddons": "TripManagement"
+  },
+  {
+    "assetId": "451",
+    "externalName": "Lucian Cantus #693",
+    "dispatcherName": "Alex",
+    "status": "Assigned",
     "productAddons": "TripManagement"
   },
   {
@@ -147,9 +175,9 @@
     "productAddons": "TripManagement"
   },
   {
-    "assetId": "699",
-    "externalName": "Eddy Ilunga #240",
-    "dispatcherName": "Milan",
+    "assetId": "698",
+    "externalName": "Robert Yelm #235",
+    "dispatcherName": "Alex M",
     "status": "Activated",
     "productAddons": "TripManagement"
   },
@@ -231,20 +259,6 @@
     "productAddons": "TripManagement"
   },
   {
-    "assetId": "927",
-    "externalName": "Leonard Washington #264",
-    "dispatcherName": "Nikola",
-    "status": "Activated",
-    "productAddons": "TripManagement"
-  },
-  {
-    "assetId": "934",
-    "externalName": "Michael Mcginnis #234",
-    "dispatcherName": "Felix",
-    "status": "Activated",
-    "productAddons": "TripManagement"
-  },
-  {
     "assetId": "939",
     "externalName": "Rahul Sood #260",
     "dispatcherName": "Nikola",
@@ -280,20 +294,6 @@
     "productAddons": "TripManagement"
   },
   {
-    "assetId": "947",
-    "externalName": "Robert Ores #266",
-    "dispatcherName": "Alex",
-    "status": "Activated",
-    "productAddons": "TripManagement"
-  },
-  {
-    "assetId": "958",
-    "externalName": "Rakeem Norton #254",
-    "dispatcherName": "Chris",
-    "status": "Activated",
-    "productAddons": "TripManagement"
-  },
-  {
     "assetId": "959",
     "externalName": "Mykell Earl #257",
     "dispatcherName": "Dylan",
@@ -311,8 +311,15 @@
     "assetId": "967",
     "externalName": "967 (Nikola)",
     "dispatcherName": "Jerome",
-    "status": "Unassigned",
-    "productAddons": ""
+    "status": "Activated",
+    "productAddons": "TripManagement"
+  },
+  {
+    "assetId": "979",
+    "externalName": "979",
+    "dispatcherName": "Morgan",
+    "status": "Activated",
+    "productAddons": "TripManagement"
   },
   {
     "assetId": "981",
@@ -355,13 +362,6 @@
     "dispatcherName": "Kevin",
     "status": "Unassigned",
     "productAddons": ""
-  },
-  {
-    "assetId": "993",
-    "externalName": "Nicholas Cline #178",
-    "dispatcherName": "Chris",
-    "status": "Activated",
-    "productAddons": "TripManagement"
   },
   {
     "assetId": "998",

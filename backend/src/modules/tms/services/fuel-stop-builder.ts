@@ -1,7 +1,36 @@
-import type { TripManagementStopInput } from "../../../integrations/trip-management";
+import type { TripManagementStopInput, TripManagementStopType } from "../../../integrations/trip-management";
 import { distanceAlongPolylineMiles, type GeoPoint } from "../../../utils/geo";
 import type { TrimbleTripStopRecord } from "../models/tms-load.model";
+import { isTrimbleFuelStopArrived } from "./fuel-stop-status";
 import { mapLoadDestinationsToTripStops, type GeocodedLoadStop } from "./map-load-to-trip-stops";
+
+const TRIP_STOP_TYPES = new Set<TripManagementStopType>([
+  "Origin",
+  "Work",
+  "Waypoint",
+  "FuelStop",
+  "Destination",
+  "Delivery",
+  "Pickup",
+]);
+
+function asTripStopType(stopType: string | undefined): TripManagementStopType {
+  if (stopType && TRIP_STOP_TYPES.has(stopType as TripManagementStopType)) {
+    return stopType as TripManagementStopType;
+  }
+  return "Work";
+}
+
+function sortFuelStations<T extends FuelStopStationInput>(stations: T[], routePolyline: GeoPoint[]) {
+  return [...stations].sort((left, right) => {
+    if (!routePolyline.length) {
+      return 0;
+    }
+    const leftAlong = distanceAlongPolylineMiles({ lat: left.latitude, lng: left.longitude }, routePolyline);
+    const rightAlong = distanceAlongPolylineMiles({ lat: right.latitude, lng: right.longitude }, routePolyline);
+    return leftAlong - rightAlong;
+  });
+}
 
 export type FuelStopStationInput = {
   latitude: number;
@@ -206,6 +235,66 @@ export function replaceOpenFuelStops(
   }
 
   return { stops, fuelStopIndexes };
+}
+
+type ExistingTripStop = {
+  stopType?: string;
+  stopStatus?: string | number | boolean | null;
+  arrived?: boolean;
+  completed?: boolean;
+  location?: { label?: string; coords?: { lat?: string | number; lon?: string | number } };
+};
+
+/**
+ * Keeps completed or arrived stops, drops open fuel stops, and inserts the new chain
+ * among the freight stops that are still ahead.
+ */
+export function rebuildTripStopsPreservingCompleted<T extends FuelStopStationInput>(
+  existingStops: ExistingTripStop[],
+  fuelStations: T[],
+  routePolyline: GeoPoint[],
+): { stops: TripManagementStopInput[]; fuelStopIndexes: BuiltFuelStopIndex[]; orderedStations: T[] } {
+  const locked: TripManagementStopInput[] = [];
+  const openFreight: TripManagementStopInput[] = [];
+
+  for (const stop of existingStops) {
+    const lat = Number(stop.location?.coords?.lat);
+    const lon = Number(stop.location?.coords?.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      continue;
+    }
+
+    const mapped: TripManagementStopInput = {
+      stopType: asTripStopType(stop.stopType),
+      lat,
+      lon,
+      label: stop.location?.label,
+    };
+
+    if (isTrimbleFuelStopArrived(stop)) {
+      locked.push(mapped);
+      continue;
+    }
+
+    if (mapped.stopType === "FuelStop") {
+      continue;
+    }
+
+    openFreight.push(mapped);
+  }
+
+  const orderedStations = sortFuelStations(fuelStations, routePolyline);
+  const replaced = replaceOpenFuelStops(openFreight, orderedStations, routePolyline);
+  const lockedCount = locked.length;
+
+  return {
+    stops: [...locked, ...replaced.stops],
+    fuelStopIndexes: replaced.fuelStopIndexes.map((entry) => ({
+      ...entry,
+      stopIndex: entry.stopIndex + lockedCount,
+    })),
+    orderedStations,
+  };
 }
 
 export function toTrimbleTripStopRecord(stop: TripManagementStopInput): TrimbleTripStopRecord {

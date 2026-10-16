@@ -16,6 +16,7 @@ import {
   getTrimbleTripForLoad,
   getTrimbleTripRoutePathForLoad,
   planTrimbleTripForLoad,
+  sendToCopilotForLoad,
   updateFuelStopOnInProgressTripForLoad,
 } from "../services/trimble-trip.service";
 
@@ -200,9 +201,7 @@ export async function sendToCopilotController(req: Request, res: Response) {
   const loadId = String(req.params.loadId);
   const customerSlug = typeof req.body?.customerSlug === "string" ? req.body.customerSlug : undefined;
   const relayAccount = typeof req.body?.relayAccount === "string" ? req.body.relayAccount : undefined;
-  const data = await dispatchTrimbleTripWithFuelStopForLoad(loadId, {
-    allowTestTablet: false,
-    useReplanDispatch: true,
+  const data = await sendToCopilotForLoad(loadId, {
     customerSlug,
     relayAccount: relayAccount as "blue_stallion" | "azfs" | undefined,
     actor: actorFromRequest(req),
@@ -217,11 +216,18 @@ export async function sendToCopilotController(req: Request, res: Response) {
           ? "Waiting for driver to accept"
           : `Trip status is ${data.tripStatus || "unknown"}`;
 
+  const fuelCount = data.fuelStops?.length ?? (data.fuelStop ? 1 : 0);
+  const message = data.updatedExistingTabletTrip
+    ? fuelCount > 0
+      ? `Updated the trip already on tablet ${data.tspDriverId} with ${fuelCount} fuel stop${fuelCount === 1 ? "" : "s"}.`
+      : `Updated the trip already on tablet ${data.tspDriverId} without a new fuel stop.`
+    : data.reusedExisting
+      ? `Already on CoPilot for tablet ${data.tspDriverId}. ${acceptLabel}.`
+      : `Sent to CoPilot tablet ${data.tspDriverId}. ${acceptLabel}.`;
+
   return res.status(200).json({
     success: true,
-    message: data.reusedExisting
-      ? `Already on CoPilot for tablet ${data.tspDriverId}. ${acceptLabel}.`
-      : `Sent to CoPilot tablet ${data.tspDriverId}. ${acceptLabel}.`,
+    message,
     data,
   });
 }

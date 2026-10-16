@@ -6,6 +6,7 @@ import {
   buildTripStopsWithFuelStops,
   computeFuelStopInsertionIndex,
   formatStationLabel,
+  rebuildTripStopsPreservingCompleted,
   replaceOpenFuelStops,
   toTrimbleTripStopRecord,
 } from "./fuel-stop-builder";
@@ -234,5 +235,50 @@ describe("fuel-stop-builder", () => {
     assert.equal(fuels.length, 1);
     assert.match(fuels[0]?.label ?? "", /Pilot/);
     assert.ok(stops.every((stop) => stop.label !== "Old"));
+  });
+
+  it("keeps completed stops and replaces only open fuel stops", () => {
+    const rebuilt = rebuildTripStopsPreservingCompleted(
+      [
+        {
+          stopType: "Work",
+          stopStatus: "Completed",
+          location: { label: "IMC Outdoor Living", coords: { lat: "38.955", lon: "-90.186" } },
+        },
+        {
+          stopType: "FuelStop",
+          arrived: true,
+          location: { label: "Love's Hannibal", coords: { lat: "39.700", lon: "-91.350" } },
+        },
+        {
+          stopType: "FuelStop",
+          stopStatus: "Open",
+          location: { label: "Old open stop", coords: { lat: "40.500", lon: "-88.000" } },
+        },
+        {
+          stopType: "Work",
+          stopStatus: "Open",
+          location: { label: "Menards", coords: { lat: "41.657", lon: "-84.552" } },
+        },
+      ],
+      [
+        {
+          latitude: 40.1,
+          longitude: -89.0,
+          merchantName: "Pilot",
+          city: "Springfield",
+          state: "IL",
+        },
+      ],
+      [],
+    );
+
+    assert.equal(rebuilt.stops[0]?.label, "IMC Outdoor Living");
+    assert.equal(rebuilt.stops[1]?.label, "Love's Hannibal");
+    assert.equal(rebuilt.stops[1]?.stopType, "FuelStop");
+    assert.ok(rebuilt.stops.every((stop) => stop.label !== "Old open stop"));
+    assert.equal(rebuilt.stops[rebuilt.stops.length - 1]?.label, "Menards");
+    assert.match(rebuilt.stops.find((stop) => stop.label?.startsWith("Pilot"))?.label ?? "", /Pilot/);
+    assert.ok((rebuilt.fuelStopIndexes[0]?.stopIndex ?? 0) >= 2);
   });
 });

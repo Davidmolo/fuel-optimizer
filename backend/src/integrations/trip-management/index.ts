@@ -1,6 +1,7 @@
 export {
   applyTripManagementIdentity,
   buildFuelOptimizerTmsTripId,
+  buildModifyTripBody,
   buildPlanTripBody,
   buildRoutingProfile,
   isFuelOptimizerTmsTripId,
@@ -16,6 +17,7 @@ export {
   modifyTrip,
   normalizeTripStatus,
   planTrip,
+  searchTripsByDriverId,
 } from "./trip-management.client";
 export {
   DEFAULT_ROUTING_PROFILE_NAME,
@@ -34,4 +36,5 @@ export type {
   TripManagementStopResponse,
   TripManagementStopType,
   TripManagementTripResponse,
+  TripManagementTripSearchResponse,
 } from "./trip-management.types";

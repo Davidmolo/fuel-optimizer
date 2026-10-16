@@ -1,10 +1,6 @@
 import { HttpError } from "../../utils/http-error";
 import type { GeoPoint } from "../../utils/geo";
-import {
-  applyTripManagementIdentity,
-  buildPlanTripBody,
-  buildRoutingProfile,
-} from "./build-plan-trip-body";
+import { buildModifyTripBody, buildPlanTripBody } from "./build-plan-trip-body";
 import {
   getRoutingProfileName,
   getTripManagementIdentity,
@@ -15,6 +11,7 @@ import type {
   TripManagementPlanTripRequest,
   TripManagementRoutePathResponse,
   TripManagementTripResponse,
+  TripManagementTripSearchResponse,
 } from "./trip-management.types";
 
 async function tripManagementFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -106,39 +103,57 @@ export async function modifyTrip(input: TripManagementModifyTripRequest): Promis
   }
 
   const identity = getTripManagementIdentity();
-
-  // Trimble Modify Trip identifies the trip as `tripId` (value = alkTripId from Plan Trip).
-  const body: Record<string, unknown> = { tripId: input.alkTripId };
-
-  if (input.tspDriverId != null && input.tspDriverId !== "") {
-    body.tspDriverId = input.tspDriverId;
-  }
-
-  if (input.stops && input.stops.length > 0) {
-    body.stops = input.stops.map((stop) => ({
-      stopType: stop.stopType,
-      location: {
-        coords: { lat: stop.lat.toFixed(6), lon: stop.lon.toFixed(6) },
-        ...(stop.label ? { label: stop.label } : {}),
-      },
-    }));
-    body.routingProfile = buildRoutingProfile({
-      routingType: input.routingType,
-      routingProfileName: input.routingProfileName ?? getRoutingProfileName(),
-    });
-  }
-
-  applyTripManagementIdentity(body, {
-    tspId: input.tspId ?? identity.tspId,
-    tmsCustomerId: input.tmsCustomerId ?? identity.tmsCustomerId,
-    tmsId: input.tmsId ?? identity.tmsId,
-    tmsUserId: input.tmsUserId ?? identity.tmsUserId,
+  const body = buildModifyTripBody({
+    ...input,
+    routingProfileName: input.preserveRoutingProfile
+      ? undefined
+      : (input.routingProfileName ?? getRoutingProfileName()),
+    tspId: input.preserveRoutingProfile ? undefined : (input.tspId ?? identity.tspId),
+    tmsCustomerId: input.preserveRoutingProfile ? undefined : (input.tmsCustomerId ?? identity.tmsCustomerId),
+    tmsId: input.preserveRoutingProfile ? undefined : (input.tmsId ?? identity.tmsId),
+    tmsUserId: input.preserveRoutingProfile ? undefined : (input.tmsUserId ?? identity.tmsUserId),
   });
 
   return tripManagementFetch<TripManagementTripResponse>("/trip/modify", {
     method: "PUT",
     body: JSON.stringify(body),
   });
+}
+
+const TRIP_SEARCH_PAGE_SIZE = 10;
+const TRIP_SEARCH_MAX_PAGES = 20;
+
+/** All Trip Management trips currently assigned to one CoPilot Vehicle ID. */
+export async function searchTripsByDriverId(tspDriverId: string): Promise<TripManagementTripResponse[]> {
+  const driverId = tspDriverId.trim();
+  if (!driverId) {
+    return [];
+  }
+
+  const trips: TripManagementTripResponse[] = [];
+
+  for (let pageNumber = 1; pageNumber <= TRIP_SEARCH_MAX_PAGES; pageNumber += 1) {
+    const query = new URLSearchParams({
+      tspDriverId: driverId,
+      pageNumber: String(pageNumber),
+      pageSize: String(TRIP_SEARCH_PAGE_SIZE),
+    });
+    const body = await tripManagementFetch<TripManagementTripSearchResponse | TripManagementTripResponse[]>(
+      `/trips/search?${query.toString()}`,
+    );
+    const page = Array.isArray(body) ? body : (body.data ?? []);
+    trips.push(...page);
+
+    const totalCount = Array.isArray(body) ? undefined : body.totalCount;
+    if (page.length < TRIP_SEARCH_PAGE_SIZE) {
+      break;
+    }
+    if (typeof totalCount === "number" && trips.length >= totalCount) {
+      break;
+    }
+  }
+
+  return trips;
 }
 
 export async function getTripByAlkTripId(alkTripId: number | string): Promise<TripManagementTripResponse> {

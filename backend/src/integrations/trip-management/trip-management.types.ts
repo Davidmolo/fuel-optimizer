@@ -44,11 +44,23 @@ export type TripManagementModifyTripRequest = {
   routingType?: 0 | 1 | 2;
   /** Account Manager Vehicle Routing Profile name (e.g. "XXII Century"). */
   routingProfileName?: string;
+  /**
+   * In-progress tablet trips reject driver and routing-profile changes.
+   * When true, Modify sends tripId and stops only.
+   */
+  preserveRoutingProfile?: boolean;
   /** Optional Trimble identity fields. Filled from env by the client. */
   tspId?: string;
   tmsCustomerId?: string;
   tmsId?: 0 | 1 | 2;
   tmsUserId?: string;
+};
+
+export type TripManagementTripSearchResponse = {
+  data?: TripManagementTripResponse[];
+  pageNumber?: number;
+  pageSize?: number;
+  totalCount?: number;
 };
 
 export type TripManagementStopResponse = {

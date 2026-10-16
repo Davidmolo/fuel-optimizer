@@ -155,8 +155,8 @@ export default function SendToCopilotPanel({ trip, onSent }: SendToCopilotPanelP
           {sending ? "Sending…" : alreadySent ? "Resend to CoPilot" : "Send to CoPilot"}
         </Button>
         <p className="mt-1.5 text-[11px] leading-relaxed text-muted">
-          Plans the trip if needed, inserts every required fuel stop along the route automatically, then notifies the
-          driver’s tablet.
+          If this load is already on the driver’s tablet, updates the fuel stops on that trip. Otherwise plans a new
+          trip, inserts the fuel stops, and sends it.
         </p>
       </div>
     </div>
