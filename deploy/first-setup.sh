@@ -62,6 +62,10 @@ chmod +x deploy/remote-deploy.sh deploy/first-setup.sh
 echo "==> Installing nginx site (leaves fuel-staging and trailhead untouched)"
 sudo cp deploy/nginx-fueloptimiser.conf /etc/nginx/sites-available/fueloptimiser
 sudo ln -sf /etc/nginx/sites-available/fueloptimiser /etc/nginx/sites-enabled/fueloptimiser
+if [[ -f /etc/letsencrypt/live/fueloptimiser.goxxii.com/fullchain.pem ]]; then
+  sudo cp deploy/nginx-fueloptimiser-goxxii.conf /etc/nginx/sites-available/fueloptimiser-goxxii
+  sudo ln -sf /etc/nginx/sites-available/fueloptimiser-goxxii /etc/nginx/sites-enabled/fueloptimiser-goxxii
+fi
 sudo nginx -t
 sudo systemctl reload nginx
 

@@ -114,10 +114,31 @@ export async function modifyTrip(input: TripManagementModifyTripRequest): Promis
     tmsUserId: input.preserveRoutingProfile ? undefined : (input.tmsUserId ?? identity.tmsUserId),
   });
 
-  return tripManagementFetch<TripManagementTripResponse>("/trip/modify", {
-    method: "PUT",
-    body: JSON.stringify(body),
-  });
+  const response = await tripManagementFetch<TripManagementTripResponse & { success?: boolean; message?: unknown }>(
+    "/trip/modify",
+    {
+      method: "PUT",
+      body: JSON.stringify(body),
+    },
+  );
+  const rejection = trimbleModifyRejection(response);
+  if (rejection) {
+    throw new HttpError(rejection, 502);
+  }
+  return response;
+}
+
+/** Modify Trip can return HTTP 200 with success:false. That did not change the driver's route. */
+export function trimbleModifyRejection(body: unknown): string | null {
+  if (!body || typeof body !== "object") {
+    return null;
+  }
+  const record = body as { success?: unknown; message?: unknown };
+  if (record.success !== false) {
+    return null;
+  }
+  const message = typeof record.message === "string" ? record.message.trim() : "";
+  return message || "Trimble did not apply the trip update.";
 }
 
 const TRIP_SEARCH_PAGE_SIZE = 10;

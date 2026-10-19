@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { TrimbleTripFuelStopRecord } from "../models/tms-load.model";
 import {
+  assessFuelStopUpdate,
   carryStickyFuelStopEvidence,
+  fuelStopsLandedOnTrip,
   mergeFuelStopStatusFromTripResponse,
   withStickyGpsNearAt,
 } from "./fuel-stop-status";
@@ -18,6 +20,54 @@ function planned(partial: Partial<TrimbleTripFuelStopRecord> = {}): TrimbleTripF
     ...partial,
   };
 }
+
+describe("fuelStopsLandedOnTrip", () => {
+  it("accepts a trip that contains the fuel stop we sent", () => {
+    assert.equal(
+      fuelStopsLandedOnTrip(
+        [
+          { stopType: "Work", lat: 38.95, lon: -90.19 },
+          { stopType: "FuelStop", lat: 39.8, lon: -86.1 },
+        ],
+        [{ stopType: "FuelStop", location: { coords: { lat: "39.8001", lon: "-86.1001" } } }],
+      ),
+      true,
+    );
+  });
+
+  it("rejects a trip that is still only the freight stops", () => {
+    assert.equal(
+      fuelStopsLandedOnTrip(
+        [{ stopType: "FuelStop", lat: 39.8, lon: -86.1 }],
+        [{ stopType: "Work", location: { coords: { lat: "38.95", lon: "-90.19" } } }],
+      ),
+      false,
+    );
+  });
+
+  it("counts a stop Trimble kept at the same coordinates under another type", () => {
+    const assessment = assessFuelStopUpdate(
+      [{ stopType: "FuelStop", lat: 39.8, lon: -86.1 }],
+      [{ stopType: "Work", location: { coords: { lat: "39.8002", lon: "-86.1002" } } }],
+    );
+    assert.equal(assessment.landed, true);
+  });
+
+  it("reports a fuel stop that remained after we sent none", () => {
+    const assessment = assessFuelStopUpdate(
+      [
+        { stopType: "Work", lat: 38.95, lon: -90.19 },
+        { stopType: "Work", lat: 41.62, lon: -84.53 },
+      ],
+      [
+        { stopType: "Work", location: { coords: { lat: "38.95", lon: "-90.19" } } },
+        { stopType: "FuelStop", location: { coords: { lat: "39.8", lon: "-86.1" } } },
+      ],
+    );
+    assert.equal(assessment.landed, false);
+    assert.match(assessment.message, /still on it/);
+  });
+});
 
 describe("mergeFuelStopStatusFromTripResponse", () => {
   it("marks arrived sticky when Trimble reports FuelStop arrived", () => {

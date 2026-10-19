@@ -35,6 +35,11 @@ if sudo -n true 2>/dev/null; then
   echo "==> Refreshing nginx site fueloptimiser.azfsllc.com"
   sudo cp "$APP_DIR/deploy/nginx-fueloptimiser.conf" /etc/nginx/sites-available/fueloptimiser
   sudo ln -sf /etc/nginx/sites-available/fueloptimiser /etc/nginx/sites-enabled/fueloptimiser
+  if [[ -f /etc/letsencrypt/live/fueloptimiser.goxxii.com/fullchain.pem ]]; then
+    echo "==> Refreshing nginx site fueloptimiser.goxxii.com"
+    sudo cp "$APP_DIR/deploy/nginx-fueloptimiser-goxxii.conf" /etc/nginx/sites-available/fueloptimiser-goxxii
+    sudo ln -sf /etc/nginx/sites-available/fueloptimiser-goxxii /etc/nginx/sites-enabled/fueloptimiser-goxxii
+  fi
   sudo nginx -t
   sudo systemctl reload nginx
 else

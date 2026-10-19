@@ -5,6 +5,72 @@ import type { TrimbleTripFuelStopRecord } from "../models/tms-load.model";
 /** Max distance (miles) to treat a Trimble response FuelStop as the same planned stop. */
 export const FUEL_STOP_STATUS_MATCH_MILES = 0.5;
 
+function stopNearPoint(
+  point: { lat: number; lon: number },
+  tripStops: TripManagementStopResponse[] | undefined,
+) {
+  return (tripStops ?? []).some((candidate) => {
+    const coords = responseStopCoords(candidate);
+    if (!coords) {
+      return false;
+    }
+    return haversineDistanceMiles({ lat: point.lat, lng: point.lon }, coords) <= FUEL_STOP_STATUS_MATCH_MILES;
+  });
+}
+
+export type FuelStopUpdateAssessment = {
+  landed: boolean;
+  message: string;
+};
+
+/**
+ * Compares the stop list we sent with the trip Trimble returned after modify.
+ * A sent fuel stop counts when any returned stop sits on those coordinates, even if
+ * Trimble did not keep the FuelStop type. Sending none is complete only when no FuelStop remains.
+ */
+export function assessFuelStopUpdate(
+  sentStops: Array<{ stopType?: string; lat: number; lon: number }>,
+  tripStops: TripManagementStopResponse[] | undefined,
+): FuelStopUpdateAssessment {
+  const expected = sentStops.filter((stop) => isFuelStopType(stop.stopType));
+  const returnedFuelStops = (tripStops ?? []).filter((stop) => isFuelStopType(stop.stopType));
+
+  if (expected.length === 0) {
+    if (returnedFuelStops.length === 0) {
+      return { landed: true, message: "" };
+    }
+    return {
+      landed: false,
+      message: "Trimble updated the trip, but a fuel stop is still on it.",
+    };
+  }
+
+  const missing = expected.filter((stop) => !stopNearPoint(stop, tripStops));
+  if (missing.length === 0) {
+    return { landed: true, message: "" };
+  }
+
+  return {
+    landed: false,
+    message: "Trimble updated the trip, but the fuel stop is not on the trip it returned.",
+  };
+}
+
+/** True when every FuelStop we sent is present on the trip Trimble returned. */
+export function fuelStopsLandedOnTrip(
+  sentStops: Array<{ stopType?: string; lat: number; lon: number }>,
+  tripStops: TripManagementStopResponse[] | undefined,
+): boolean {
+  return assessFuelStopUpdate(sentStops, tripStops).landed;
+}
+
+export function fuelStopCoordinateLanded(
+  point: { lat: number; lon: number },
+  tripStops: TripManagementStopResponse[] | undefined,
+) {
+  return stopNearPoint(point, tripStops);
+}
+
 export function isTrimbleFuelStopArrived(stop: {
   stopStatus?: string | number | boolean | null;
   arrived?: boolean;

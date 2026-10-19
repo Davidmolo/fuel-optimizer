@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  confirmOwnedTripForFuelUpdate,
   pickActiveTabletTrip,
   resolveCopilotSendPlan,
+  resolveInProgressFuelUpdateTarget,
   tripMatchesLoad,
   type TabletTripCandidate,
 } from "./tablet-trip-match";
@@ -74,6 +76,93 @@ describe("tablet trip matching", () => {
       ],
     });
     assert.equal(pickActiveTabletTrip([owned], loadStops)?.tmsTripId, "fo-2353614");
+  });
+});
+
+describe("in-progress fuel update target", () => {
+  it("updates the Open Road trip the tablet is already driving", () => {
+    const target = resolveInProgressFuelUpdateTarget({
+      activeTabletTrip: { alkTripId: "331397433" },
+      ownedTrip: { alkTripId: "331401983", tmsTripId: "fo-2353614", tripStatus: "Planned" },
+    });
+    assert.deepEqual(target, { action: "update", alkTripId: "331397433" });
+  });
+
+  it("asks for a live check when search misses a stored in-progress or received trip", () => {
+    assert.deepEqual(
+      resolveInProgressFuelUpdateTarget({
+        activeTabletTrip: null,
+        ownedTrip: { alkTripId: "50", tmsTripId: "fo-2353614", tripStatus: "InProgress" },
+      }),
+      { action: "confirm-owned", alkTripId: "50" },
+    );
+    assert.deepEqual(
+      resolveInProgressFuelUpdateTarget({
+        activeTabletTrip: null,
+        ownedTrip: { alkTripId: "51", tmsTripId: "9910c581_1", tripStatus: "ReceivedByClient" },
+      }),
+      { action: "confirm-owned", alkTripId: "51" },
+    );
+  });
+
+  it("confirms a stored trip only while Trimble still shows it active on this load", () => {
+    assert.deepEqual(
+      confirmOwnedTripForFuelUpdate({
+        tripStatus: "InProgress",
+        stops: [
+          { lat: godfrey.lat, lon: godfrey.lng },
+          { lat: pioneer.lat, lon: pioneer.lng },
+        ],
+        destinations: loadStops,
+      }),
+      { action: "confirmed" },
+    );
+    assert.equal(
+      confirmOwnedTripForFuelUpdate({
+        tripStatus: "ReceivedByClient",
+        stops: [
+          { lat: godfrey.lat, lon: godfrey.lng },
+          { lat: pioneer.lat, lon: pioneer.lng },
+        ],
+        destinations: loadStops,
+      }).action,
+      "confirmed",
+    );
+    assert.equal(
+      confirmOwnedTripForFuelUpdate({
+        tripStatus: "Completed",
+        stops: [
+          { lat: godfrey.lat, lon: godfrey.lng },
+          { lat: pioneer.lat, lon: pioneer.lng },
+        ],
+        destinations: loadStops,
+      }).action,
+      "refuse",
+    );
+    assert.equal(
+      confirmOwnedTripForFuelUpdate({
+        tripStatus: "InProgress",
+        stops: [
+          { lat: 32.78, lon: -96.8 },
+          { lat: 39.74, lon: -104.99 },
+        ],
+        destinations: loadStops,
+      }).action,
+      "refuse",
+    );
+  });
+
+  it("does not edit a Planned copy or create a second trip", () => {
+    const target = resolveInProgressFuelUpdateTarget({
+      activeTabletTrip: null,
+      ownedTrip: { alkTripId: "331401983", tmsTripId: "fo-2353614", tripStatus: "Planned" },
+    });
+    assert.equal(target.action, "refuse");
+  });
+
+  it("refuses when the driver has no active trip for this load", () => {
+    const target = resolveInProgressFuelUpdateTarget({ activeTabletTrip: null, ownedTrip: null });
+    assert.equal(target.action, "refuse");
   });
 });
 

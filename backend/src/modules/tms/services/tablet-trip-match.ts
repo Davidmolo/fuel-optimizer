@@ -1,4 +1,5 @@
 import {
+  isFuelOptimizerTmsTripId,
   normalizeTripStatus,
   type TripManagementStopResponse,
   type TripManagementTripResponse,
@@ -159,4 +160,79 @@ export function resolveCopilotSendPlan(match: TabletTripCandidate | null):
     return { action: "update-existing", alkTripId: match.alkTripId };
   }
   return { action: "create-new" };
+}
+
+export type OwnedTripUpdateCandidate = {
+  alkTripId?: string | null;
+  tmsTripId?: string | null;
+  tripStatus?: string | null;
+};
+
+export type InProgressFuelUpdateTarget =
+  | { action: "update"; alkTripId: string }
+  | { action: "confirm-owned"; alkTripId: string }
+  | { action: "refuse"; reason: string };
+
+const CONFIRMABLE_OWNED_STATUSES = new Set(["Dispatched", "InProgress", "ReceivedByClient"]);
+
+/**
+ * Fuel-stop updates go to the trip the tablet is already driving.
+ * A stored status is not enough to edit a trip. Search must find it, or a live
+ * Trimble read must still show that trip active and on this load.
+ * A Planned Fuel Optimizer copy is never edited in its place, and no second trip is created.
+ */
+export function resolveInProgressFuelUpdateTarget(input: {
+  activeTabletTrip: Pick<TabletTripCandidate, "alkTripId"> | null;
+  ownedTrip?: OwnedTripUpdateCandidate | null;
+}): InProgressFuelUpdateTarget {
+  if (input.activeTabletTrip) {
+    return { action: "update", alkTripId: input.activeTabletTrip.alkTripId };
+  }
+
+  const owned = input.ownedTrip;
+  const alkTripId = owned?.alkTripId?.trim() ?? "";
+  const tripStatus = owned?.tripStatus ?? "";
+  if (alkTripId && CONFIRMABLE_OWNED_STATUSES.has(tripStatus)) {
+    return { action: "confirm-owned", alkTripId };
+  }
+
+  if (alkTripId && isFuelOptimizerTmsTripId(owned?.tmsTripId) && tripStatus === "Planned") {
+    return {
+      action: "refuse",
+      reason:
+        "The Fuel Optimizer trip is still Planned and the tablet is not driving it, so fuel stops were not changed and a second trip was not created.",
+    };
+  }
+
+  return {
+    action: "refuse",
+    reason:
+      "No in-progress trip for this load is on the tablet, so fuel stops were not changed and a second trip was not created.",
+  };
+}
+
+export type OwnedTripConfirmation = { action: "confirmed" } | { action: "refuse"; reason: string };
+
+/** Live Trimble read of a stored trip. Edit it only while it is active and still this load. */
+export function confirmOwnedTripForFuelUpdate(input: {
+  tripStatus: string;
+  stops: TabletTripStop[];
+  destinations: LoadStopPoint[];
+}): OwnedTripConfirmation {
+  if (!isActiveTabletTripStatus(input.tripStatus)) {
+    return {
+      action: "refuse",
+      reason: `The stored trip is ${input.tripStatus}, so fuel stops were not changed and a second trip was not created.`,
+    };
+  }
+
+  if (!tripMatchesLoad(input.destinations, input.stops)) {
+    return {
+      action: "refuse",
+      reason:
+        "The stored trip is not the route on this load, so fuel stops were not changed and a second trip was not created.",
+    };
+  }
+
+  return { action: "confirmed" };
 }

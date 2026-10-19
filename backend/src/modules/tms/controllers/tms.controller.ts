@@ -239,17 +239,19 @@ export async function updateInProgressFuelStopController(req: Request, res: Resp
   const data = await updateFuelStopOnInProgressTripForLoad(loadId, {
     customerSlug,
     relayAccount: relayAccount as "blue_stallion" | "azfs" | undefined,
+    actor: actorFromRequest(req),
   });
 
   const fuelCount = data.fuelStops?.length ?? (data.fuelStop ? 1 : 0);
+  const tablet = data.tspDriverId ? ` on tablet ${data.tspDriverId}` : "";
   return res.status(200).json({
     success: true,
     message:
       fuelCount > 1
-        ? `In-progress trip updated with ${fuelCount} fuel stops`
+        ? `Updated the trip already in progress${tablet} with ${fuelCount} fuel stops.`
         : fuelCount === 1
-          ? "In-progress trip fuel stop updated"
-          : `In-progress trip updated without a fuel stop (${data.recommendation.status})`,
+          ? `Updated the trip already in progress${tablet} with a fuel stop.`
+          : `Updated the trip already in progress${tablet} without a new fuel stop.`,
     data,
   });
 }

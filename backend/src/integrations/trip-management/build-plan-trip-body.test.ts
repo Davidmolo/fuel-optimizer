@@ -7,6 +7,7 @@ import {
   buildRoutingProfile,
   isFuelOptimizerTmsTripId,
 } from "./build-plan-trip-body";
+import { trimbleModifyRejection } from "./trip-management.client";
 
 describe("buildPlanTripBody", () => {
   it("omits tspDriverId so Phase 1 never assigns a tablet", () => {
@@ -134,6 +135,14 @@ describe("buildModifyTripBody", () => {
 
     assert.equal(body.tspDriverId, "1013");
     assert.deepEqual(body.routingProfile, { name: "XXII Century", routingType: 0 });
+  });
+});
+
+describe("trimbleModifyRejection", () => {
+  it("treats success false as a rejected stop update", () => {
+    assert.equal(trimbleModifyRejection({ success: false, message: "Cannot modify completed stops" }), "Cannot modify completed stops");
+    assert.equal(trimbleModifyRejection({ success: true, message: null }), null);
+    assert.equal(trimbleModifyRejection(null), null);
   });
 });
 

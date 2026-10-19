@@ -52,6 +52,7 @@ type LabActionResult = LabSnapshot & {
   reachedTablet: boolean;
   fuelStopCount: number;
   recommendationNote?: string;
+  actedTrip: LabTrip | null;
 };
 
 type LabAction = "create" | "update-active" | "send-while-busy" | "cancel-lab-trips";
