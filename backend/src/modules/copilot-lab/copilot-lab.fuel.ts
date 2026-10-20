@@ -10,6 +10,7 @@ import {
 import { listCorridorStationCandidates } from "../recommendation/services/fuel-plan.service";
 import { calculateFuelRangeEstimate } from "../recommendation/services/fuel-range";
 import { getRecommendationConfig } from "../recommendation-config/services/recommendation-config.service";
+import { relayDieselPriceFields, selectFreshestStations } from "../station/mappers/fuel-station.mapper";
 import { FuelStationModel } from "../station/models/fuel-station.model";
 import type { FuelStopStationInput } from "../tms/services/fuel-stop-builder";
 import { HttpError } from "../../utils/http-error";
@@ -80,11 +81,13 @@ async function recommendStations(origin: LabPoint, polyline: GeoPoint[]) {
 
   const customer = await getCustomerBySlug(PAULS_ASSETS_SLUG);
   const contractRules = await loadActiveContractRules(String(customer._id));
-  const stations = await FuelStationModel.find({
-    isActive: true,
-    latitude: { $gte: boundingBox.minLat, $lte: boundingBox.maxLat },
-    longitude: { $gte: boundingBox.minLng, $lte: boundingBox.maxLng },
-  }).lean();
+  const stations = selectFreshestStations(
+    await FuelStationModel.find({
+      isActive: true,
+      latitude: { $gte: boundingBox.minLat, $lte: boundingBox.maxLat },
+      longitude: { $gte: boundingBox.minLng, $lte: boundingBox.maxLng },
+    }).lean(),
+  );
 
   const pricingByLocationId = new Map(
     stations.map((station) => [
@@ -93,8 +96,7 @@ async function recommendStations(origin: LabPoint, polyline: GeoPoint[]) {
         {
           relayLocationId: station.relayLocationId,
           merchantName: station.merchantName,
-          retailPricePerUnit: station.retailPricePerUnit,
-          discountedPricePerUnit: station.discountedPricePerUnit,
+          ...relayDieselPriceFields(station),
         },
         contractRules,
       ),

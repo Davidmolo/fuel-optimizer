@@ -68,7 +68,7 @@ export type InspectedMapStation = {
   name?: string;
   city?: string;
   state?: string;
-  effectivePricePerGallon: number;
+  effectivePricePerGallon?: number;
   distanceAlongRouteMiles?: number;
   kind?: CorridorStationMarkerKind;
   badge?: string;
@@ -99,7 +99,10 @@ export function buildCorridorStationMarkerHtml(
   selected = false,
 ) {
   const style = MARKER_STYLES[kind];
-  const price = `$${station.effectivePricePerGallon.toFixed(2)}`;
+  const price =
+    station.effectivePricePerGallon === undefined
+      ? ""
+      : `$${station.effectivePricePerGallon.toFixed(3)}`;
   const title = escapeHtml(station.merchantDisplayName);
   const badgeHtml = badge
     ? `<span style="display:block;margin-top:2px;font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#fef3c7;">${escapeHtml(badge)}</span>`
@@ -120,7 +123,7 @@ export function buildCorridorStationMarkerHtml(
         white-space:nowrap;
       ">
         <span style="font-size:12px;line-height:1;">⛽</span>
-        ${style.showPrice ? `<span>${price}</span>` : ""}
+        ${style.showPrice && price ? `<span>${price}</span>` : ""}
       </div>
       ${badgeHtml}
       <span style="

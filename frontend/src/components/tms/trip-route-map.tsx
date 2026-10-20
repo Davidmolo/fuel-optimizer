@@ -185,8 +185,7 @@ export default function TripRouteMap({
             name: station.name,
             city: station.city,
             state: station.state,
-            effectivePricePerGallon:
-              station.discountedPricePerUnit ?? station.retailPricePerUnit ?? 0,
+            effectivePricePerGallon: station.discountedPricePerUnit ?? station.retailPricePerUnit,
           });
         });
       }

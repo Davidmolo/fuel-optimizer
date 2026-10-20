@@ -4,6 +4,7 @@ import { FuelStationModel } from "../models/fuel-station.model";
 import { RelayDriverModel } from "../models/relay-driver.model";
 import {
   buildStationSummary,
+  selectFreshestStations,
   toFuelStationView,
   toRelayDriverView,
 } from "../mappers/fuel-station.mapper";
@@ -34,9 +35,21 @@ export async function listFuelStations(options: ListStationsOptions = {}) {
     filter.isActive = true;
   }
 
-  const stations = await FuelStationModel.find(filter)
-    .sort({ merchantName: 1, state: 1, name: 1 })
-    .lean();
+  const stations = selectFreshestStations(
+    await FuelStationModel.find(filter).sort({ merchantName: 1, state: 1, name: 1 }).lean(),
+  ).sort((left, right) => {
+    const merchant = (left.merchantName ?? "").localeCompare(right.merchantName ?? "");
+    if (merchant !== 0) {
+      return merchant;
+    }
+
+    const state = (left.state ?? "").localeCompare(right.state ?? "");
+    if (state !== 0) {
+      return state;
+    }
+
+    return (left.name ?? "").localeCompare(right.name ?? "");
+  });
 
   const items = stations.map(toFuelStationView);
 
@@ -53,7 +66,7 @@ export async function getFuelStation(relayLocationId: string, relayAccount?: Rel
     filter.relayAccount = relayAccount;
   }
 
-  const station = await FuelStationModel.findOne(filter).lean();
+  const station = selectFreshestStations(await FuelStationModel.find(filter).lean())[0];
 
   if (!station) {
     throw new HttpError("Fuel station not found", 404);

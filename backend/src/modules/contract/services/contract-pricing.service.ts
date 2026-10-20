@@ -1,5 +1,6 @@
 import { HttpError } from "../../../utils/http-error";
 import type { RelayAccount } from "../../../integrations/relay";
+import { relayDieselPriceFields, selectFreshestStations } from "../../station/mappers/fuel-station.mapper";
 import { FuelStationModel } from "../../station/models/fuel-station.model";
 import { CustomerModel } from "../models/customer.model";
 import { MerchantContractModel } from "../models/merchant-contract.model";
@@ -91,17 +92,16 @@ export async function listContractPricing(options: ListContractPricingOptions = 
     filter.isActive = true;
   }
 
-  const stations = await FuelStationModel.find(filter)
-    .sort({ merchantName: 1, state: 1, name: 1 })
-    .lean();
+  const stations = selectFreshestStations(
+    await FuelStationModel.find(filter).sort({ merchantName: 1, state: 1, name: 1 }).lean(),
+  );
 
   const items = stations.map((station) => {
     const pricing = resolveContractPricing(
       {
         relayLocationId: station.relayLocationId,
         merchantName: station.merchantName,
-        retailPricePerUnit: station.retailPricePerUnit,
-        discountedPricePerUnit: station.discountedPricePerUnit,
+        ...relayDieselPriceFields(station),
       },
       contractRules,
     );
@@ -133,7 +133,7 @@ export async function getStationContractPricing(
     filter.relayAccount = options.relayAccount;
   }
 
-  const station = await FuelStationModel.findOne(filter).lean();
+  const station = selectFreshestStations(await FuelStationModel.find(filter).lean())[0];
 
   if (!station) {
     throw new HttpError("Fuel station not found", 404);
@@ -143,8 +143,7 @@ export async function getStationContractPricing(
     {
       relayLocationId: station.relayLocationId,
       merchantName: station.merchantName,
-      retailPricePerUnit: station.retailPricePerUnit,
-      discountedPricePerUnit: station.discountedPricePerUnit,
+      ...relayDieselPriceFields(station),
     },
     contractRules,
   );

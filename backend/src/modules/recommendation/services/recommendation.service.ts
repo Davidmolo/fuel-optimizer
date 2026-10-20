@@ -18,6 +18,7 @@ import {
   loadActiveContractRules,
 } from "../../contract/services/contract-pricing.service";
 import { resolveContractPricing } from "../../contract/services/contract-pricing.engine";
+import { relayDieselPriceFields, selectFreshestStations } from "../../station/mappers/fuel-station.mapper";
 import { FuelStationModel } from "../../station/models/fuel-station.model";
 import { TmsLoadModel } from "../../tms/models/tms-load.model";
 import { getTripContext } from "../../tms/services/tms-query.service";
@@ -265,7 +266,7 @@ export async function getRecommendationForTruck(identifier: string, options: Get
     stationFilter.longitude = { $gte: boundingBox.minLng, $lte: boundingBox.maxLng };
   }
 
-  const stations = await FuelStationModel.find(stationFilter).lean();
+  const stations = selectFreshestStations(await FuelStationModel.find(stationFilter).lean());
   const pricingByLocationId = new Map(
     stations.map((station) => [
       station.relayLocationId,
@@ -273,8 +274,7 @@ export async function getRecommendationForTruck(identifier: string, options: Get
         {
           relayLocationId: station.relayLocationId,
           merchantName: station.merchantName,
-          retailPricePerUnit: station.retailPricePerUnit,
-          discountedPricePerUnit: station.discountedPricePerUnit,
+          ...relayDieselPriceFields(station),
         },
         contractRules,
       ),
