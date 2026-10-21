@@ -9,6 +9,7 @@ import {
   syncStationsFromRelay,
 } from "../station/services/station-sync.service";
 import { isTripManagementConfigured } from "../../integrations/trip-management";
+import { runTablet999AutoSend } from "../copilot-lab/copilot-lab-automation.service";
 import {
   syncTmsActiveLoads,
   syncTmsAssignments,
@@ -119,6 +120,17 @@ const handlers: Record<JobId, JobHandler> = {
       throw new SkipJobError("Trimble Trip Management is not configured");
     }
     return refreshActiveTrimbleTripFuelStopStatuses();
+  },
+  async "copilot-lab.auto-send"() {
+    const automation = await runTablet999AutoSend();
+    return {
+      enabled: automation.enabled,
+      tabletId: automation.tabletId,
+      watchedLoad: automation.watchedLoad,
+      status: automation.lastStatus,
+      message: automation.lastMessage,
+      openroadLoadId: automation.lastOpenroadLoadId,
+    };
   },
 };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Alert from "@/components/common/alert";
 import Button from "@/components/common/button";
 import Input from "@/components/common/input";
@@ -38,12 +38,22 @@ type LabTrip = {
   hasFuelStop: boolean;
 };
 
+type LabAutomation = {
+  enabled: boolean;
+  tabletId: string;
+  watchedLoad: string | null;
+  lastStatus: string;
+  lastMessage: string;
+  lastOpenroadLoadId: number | null;
+};
+
 type LabSnapshot = {
   tabletId: string;
   trips: LabTrip[];
   activeTrip: LabTrip | null;
   productionLabel: ProductionLabel;
   summary: string;
+  automation?: LabAutomation;
 };
 
 type LabActionResult = LabSnapshot & {
@@ -163,6 +173,10 @@ export default function CopilotLabPage() {
   const [action, setAction] = useState<ChoosableAction>("create");
   const [modalOpen, setModalOpen] = useState(false);
   const [showStops, setShowStops] = useState(false);
+  const [watchedLoad, setWatchedLoad] = useState("");
+  const [automationPending, setAutomationPending] = useState(false);
+  const [confirmAutomation, setConfirmAutomation] = useState(false);
+  const hydratedLoad = useRef(false);
 
   const loadTablet = useCallback(async () => {
     const response = await apiRequest<LabSnapshot>("/api/v1/copilot-lab");
@@ -173,6 +187,11 @@ export default function CopilotLabPage() {
     }
     setError("");
     setSnapshot(response.data);
+    const savedLoad = response.data.automation?.watchedLoad ?? "";
+    if (!hydratedLoad.current || response.data.automation?.enabled) {
+      hydratedLoad.current = true;
+      setWatchedLoad(savedLoad);
+    }
   }, []);
 
   useEffect(() => {
@@ -181,6 +200,18 @@ export default function CopilotLabPage() {
       setFetching(false);
     })();
   }, [loadTablet]);
+
+  const automationOn = Boolean(snapshot?.automation?.enabled);
+
+  useEffect(() => {
+    if (!automationOn) {
+      return;
+    }
+    const timer = setInterval(() => {
+      void loadTablet();
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [automationOn, loadTablet]);
 
   const activeTrip = snapshot?.activeTrip ?? null;
   const canCreate = !activeTrip;
@@ -270,6 +301,32 @@ export default function CopilotLabPage() {
     setModalOpen(false);
   };
 
+  const setAutomation = async (enabled: boolean) => {
+    const loadNumber = watchedLoad.trim();
+    if (enabled && !loadNumber) {
+      setError("Enter the OpenRoad load number first.");
+      return;
+    }
+
+    setAutomationPending(true);
+    setError("");
+    const response = await apiRequest<LabAutomation>("/api/v1/copilot-lab/automation", {
+      method: "PUT",
+      body: JSON.stringify({ enabled, watchedLoad: loadNumber }),
+    });
+    setAutomationPending(false);
+    setConfirmAutomation(false);
+
+    if (!response.success || !response.data) {
+      setError(response.message || "Could not change tablet 999 automation.");
+      return;
+    }
+
+    const automation = response.data;
+    setSnapshot((current) => (current ? { ...current, automation } : current));
+    await loadTablet();
+  };
+
   const closeModal = useCallback(() => {
     if (pending) {
       return;
@@ -356,7 +413,46 @@ export default function CopilotLabPage() {
         </div>
       </div>
 
-      {error && !modalOpen ? <Alert variant="error">{error}</Alert> : null}
+      <section className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface">
+        <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-5 sm:px-6">
+          <div className="min-w-0 max-w-2xl">
+            <p className="text-xs font-medium tracking-wide text-muted uppercase">Tablet 999 automation</p>
+            <h3 className="mt-1 text-lg font-semibold tracking-tight text-foreground">
+              {automationOn ? "On" : "Off"}
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              {snapshot?.automation?.lastMessage ??
+                "Off. Enter one OpenRoad load number, then turn this on. That load is sent only to tablet 999 within a few seconds of being assigned."}
+            </p>
+          </div>
+          <div className="flex w-full max-w-sm flex-col gap-2 sm:w-auto">
+            <Label htmlFor="lab-watched-load">OpenRoad load number</Label>
+            <Input
+              id="lab-watched-load"
+              value={watchedLoad}
+              disabled={automationOn || automationPending}
+              placeholder="Load number"
+              onChange={(event) => setWatchedLoad(event.target.value)}
+            />
+            <Button
+              variant={automationOn ? "danger" : "primary"}
+              disabled={automationPending || pending !== null || (!automationOn && !watchedLoad.trim())}
+              onClick={() => {
+                if (automationOn) {
+                  void setAutomation(false);
+                  return;
+                }
+                setError("");
+                setConfirmAutomation(true);
+              }}
+            >
+              {automationPending ? "Saving…" : automationOn ? "Turn off" : "Turn on"}
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {error && !modalOpen && !confirmAutomation ? <Alert variant="error">{error}</Alert> : null}
 
       {result ? (
         <div
@@ -446,6 +542,33 @@ export default function CopilotLabPage() {
           </ul>
         ) : null}
       </section>
+
+      <Modal
+        open={confirmAutomation}
+        onClose={() => {
+          if (!automationPending) {
+            setConfirmAutomation(false);
+          }
+        }}
+        title="Send this load to tablet 999"
+        subtitle="Other trucks are not touched."
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setConfirmAutomation(false)} disabled={automationPending}>
+              Cancel
+            </Button>
+            <Button onClick={() => void setAutomation(true)} disabled={automationPending}>
+              {automationPending ? "Turning on…" : "Turn on"}
+            </Button>
+          </div>
+        }
+      >
+        <p className="px-4 py-4 text-sm leading-relaxed text-muted">
+          Load {watchedLoad.trim() || "this load"} is checked in OpenRoad every few seconds and sent to tablet 999 as
+          soon as it is assigned. Accept it in OpenRoad, skip Open in Copilot, then open CoPilot. Turn this off when
+          the test is done.
+        </p>
+      </Modal>
 
       <Modal
         open={modalOpen}

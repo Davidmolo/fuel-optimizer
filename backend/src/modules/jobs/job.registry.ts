@@ -102,6 +102,17 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
     scheduled: false,
   },
   {
+    id: "copilot-lab.auto-send",
+    name: "CoPilot lab tablet 999",
+    description:
+      "Backup for the tablet 999 switch. While that switch is on, the server already checks the named load every few seconds.",
+    cron: null,
+    cadenceLabel: "While the lab switch is on",
+    timeoutMs: 180_000,
+    priority: 60,
+    scheduled: false,
+  },
+  {
     id: "trimble.trip-status",
     name: "Trimble fuel-stop arrival",
     description:

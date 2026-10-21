@@ -39,3 +39,14 @@ export const copilotLabActionSchema = z.object({
 });
 
 export const validateCopilotLabAction = validateRequest(copilotLabActionSchema);
+
+const copilotLabAutomationSchema = z.object({
+  body: z.object({
+    enabled: z.boolean(),
+    watchedLoad: z.string().trim().max(40).optional(),
+  }),
+  params: z.object({}).optional().default({}),
+  query: z.object({}).optional().default({}),
+});
+
+export const validateCopilotLabAutomation = validateRequest(copilotLabAutomationSchema);

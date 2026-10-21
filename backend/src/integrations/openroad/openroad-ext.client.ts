@@ -392,6 +392,40 @@ export async function listOpenRoadExtActiveLoads() {
   return loads.map(mapOpenRoadExtLoad);
 }
 
+/** One load, including destinations. 404 means it is not visible to this account. */
+export async function getOpenRoadExtLoad(id: number) {
+  try {
+    const { data } = await openRoadExtRequest<OpenRoadExtLoad>({
+      path: `/loads/${id}`,
+    });
+    return data ? mapOpenRoadExtLoad(data) : null;
+  } catch (error) {
+    if (error instanceof HttpError && error.statusCode === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/** Exact customer reference match. Does not page through the fleet. */
+export async function findOpenRoadExtLoadByCustomerLoad(customerLoad: string) {
+  const trimmed = customerLoad.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const { data } = await openRoadExtRequest<OpenRoadExtLoad[]>({
+    path: "/loads",
+    query: {
+      page: 1,
+      per_page: 5,
+      customer_load: trimmed,
+    },
+  });
+  const match = (data ?? []).find((load) => load.customer_load?.trim() === trimmed) ?? null;
+  return match ? mapOpenRoadExtLoad(match) : null;
+}
+
 export async function listOpenRoadExtTrucks(status?: string) {
   const trucks = await fetchAllOpenRoadExtPages<OpenRoadExtTruck>((page) =>
     openRoadExtRequest<OpenRoadExtTruck[]>({

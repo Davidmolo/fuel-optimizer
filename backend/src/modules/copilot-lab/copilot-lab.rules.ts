@@ -72,6 +72,63 @@ export function buildLabTmsTripId(now = Date.now()) {
   return `${LAB_TMS_TRIP_PREFIX}${now}`;
 }
 
+export type WatchedLoadForAutoSend = {
+  found: boolean;
+  openroadLoadId?: number;
+  geocodedStopCount: number;
+  tspDriverId?: string | null;
+  /** True when the stored trip belongs to OpenRoad or another system. */
+  ownedByOtherSystem: boolean;
+};
+
+export type Tablet999AutoSendDecision =
+  | "waiting"
+  | "not-ready"
+  | "already-on-lab"
+  | "blocked-fleet"
+  | "blocked-other-system"
+  | "busy"
+  | "send";
+
+/**
+ * Decide whether the one load named in the lab should be dispatched to tablet 999.
+ * A fleet tablet id is never a send target. The caller must pass LAB_TABLET_ID itself.
+ */
+export function decideTablet999AutoSend(input: {
+  load: WatchedLoadForAutoSend;
+  tabletBusy: boolean;
+}): Tablet999AutoSendDecision {
+  const load = input.load;
+  if (!load.found) {
+    return "waiting";
+  }
+  if (load.ownedByOtherSystem) {
+    return "blocked-other-system";
+  }
+
+  const assigned = load.tspDriverId?.trim() ?? "";
+  if (assigned) {
+    if (isTestCopilotAssetId(assigned)) {
+      return "already-on-lab";
+    }
+    return "blocked-fleet";
+  }
+
+  if (load.geocodedStopCount < 2) {
+    return "not-ready";
+  }
+  if (input.tabletBusy) {
+    return "busy";
+  }
+  return "send";
+}
+
+export function countGeocodedLoadStops(
+  destinations: Array<{ lat?: number | null; lng?: number | null }>,
+) {
+  return destinations.filter((stop) => Number.isFinite(stop.lat) && Number.isFinite(stop.lng)).length;
+}
+
 export function assertLabTablet(tspDriverId: string) {
   const id = tspDriverId.trim();
   if (!isTestCopilotAssetId(id) || id !== LAB_TABLET_ID) {

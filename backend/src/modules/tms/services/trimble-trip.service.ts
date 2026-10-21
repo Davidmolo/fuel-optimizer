@@ -1127,6 +1127,14 @@ export async function sendToCopilotForLoad(
     throw new HttpError("Load not found", 404);
   }
 
+  const labTabletId = load.trimbleTrip?.tspDriverId?.trim() ?? "";
+  if (isTestCopilotAssetId(labTabletId)) {
+    throw new HttpError(
+      `Load ${load.openroadLoadId} is on test tablet ${labTabletId}. Production Send leaves it there.`,
+      409,
+    );
+  }
+
   await assertActorCanSendLoad(load, options.actor);
 
   const tspDriverId = await resolveTspDriverIdFromLoad(load);

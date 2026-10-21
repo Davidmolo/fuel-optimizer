@@ -10,11 +10,14 @@ import {
   buildActionVerdict,
   buildCancelVerdict,
   buildInspectSummary,
+  countGeocodedLoadStops,
+  decideTablet999AutoSend,
   isLabTmsTripId,
   partitionLabTrips,
   pickTabletTrip,
   toLabTripView,
   type LabTripView,
+  type WatchedLoadForAutoSend,
 } from "./copilot-lab.rules";
 
 function trip(overrides: Partial<LabTripView> & { alkTripId: string; tripStatus: string }): LabTripView {
@@ -215,5 +218,36 @@ describe("copilot lab verdicts", () => {
     assert.match(verdict.verdict, /Deleted 1 lab trip/);
     assert.match(verdict.verdict, /left unchanged/);
     assert.equal(verdict.productionLabel, "accepted");
+  });
+
+  it("sends the named load to tablet 999 only when that tablet is clear", () => {
+    const ready: WatchedLoadForAutoSend = {
+      found: true,
+      openroadLoadId: 42,
+      geocodedStopCount: 2,
+      tspDriverId: null,
+      ownedByOtherSystem: false,
+    };
+
+    assert.equal(decideTablet999AutoSend({ load: { ...ready, found: false }, tabletBusy: false }), "waiting");
+    assert.equal(decideTablet999AutoSend({ load: ready, tabletBusy: false }), "send");
+    assert.equal(decideTablet999AutoSend({ load: ready, tabletBusy: true }), "busy");
+    assert.equal(
+      decideTablet999AutoSend({ load: { ...ready, geocodedStopCount: 1 }, tabletBusy: false }),
+      "not-ready",
+    );
+    assert.equal(
+      decideTablet999AutoSend({ load: { ...ready, tspDriverId: "999" }, tabletBusy: false }),
+      "already-on-lab",
+    );
+    assert.equal(
+      decideTablet999AutoSend({ load: { ...ready, tspDriverId: "1013" }, tabletBusy: false }),
+      "blocked-fleet",
+    );
+    assert.equal(
+      decideTablet999AutoSend({ load: { ...ready, ownedByOtherSystem: true }, tabletBusy: false }),
+      "blocked-other-system",
+    );
+    assert.equal(countGeocodedLoadStops([{ lat: 1, lng: 2 }, { lat: null, lng: 3 }, { lat: 4, lng: 5 }]), 2);
   });
 });

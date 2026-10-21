@@ -22,7 +22,8 @@ export type JobId =
   | "relay.transactions"
   | "relay.drivers"
   | "relay.full"
-  | "trimble.trip-status";
+  | "trimble.trip-status"
+  | "copilot-lab.auto-send";
 
 export type JobDefinition = {
   id: JobId;

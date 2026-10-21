@@ -1,5 +1,6 @@
 import { connectDatabase } from "./config/database";
 import { env } from "./config/env";
+import { startTablet999AutomationWatcher, stopTablet999AutomationWatcher } from "./modules/copilot-lab/copilot-lab-automation.watcher";
 import { startJobScheduler, stopJobScheduler } from "./modules/jobs/jobs.service";
 
 async function bootstrap() {
@@ -10,10 +11,12 @@ async function bootstrap() {
 
     await connectDatabase();
     startJobScheduler();
+    startTablet999AutomationWatcher();
     console.log("Fuel optimizer worker started");
 
     const shutdown = async (signal: string) => {
       console.log(`Received ${signal}, shutting down worker`);
+      stopTablet999AutomationWatcher();
       await stopJobScheduler();
       process.exit(0);
     };

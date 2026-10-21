@@ -16,6 +16,7 @@ import {
   replaceOpenFuelStops,
 } from "../tms/services/fuel-stop-builder";
 import { resolveLabFuel } from "./copilot-lab.fuel";
+import { getTablet999Automation, type CopilotLabAutomationView } from "./copilot-lab-automation.service";
 import {
   LAB_TABLET_ID,
   assertCreateAllowed,
@@ -50,6 +51,7 @@ export type CopilotLabSnapshot = {
   activeTrip: LabTripView | null;
   productionLabel: LabTripView["productionLabel"];
   summary: string;
+  automation: CopilotLabAutomationView;
 };
 
 export type CopilotLabActionResult = CopilotLabSnapshot & {
@@ -111,13 +113,18 @@ async function listTabletTrips() {
   return { trips, activeTrip };
 }
 
-function snapshotFrom(trips: LabTripView[], activeTrip: LabTripView | null): CopilotLabSnapshot {
+function snapshotFrom(
+  trips: LabTripView[],
+  activeTrip: LabTripView | null,
+  automation: CopilotLabAutomationView,
+): CopilotLabSnapshot {
   return {
     tabletId: LAB_TABLET_ID,
     trips,
     activeTrip,
     productionLabel: activeTrip?.productionLabel ?? "not_sent",
     summary: buildInspectSummary(trips, activeTrip),
+    automation,
   };
 }
 
@@ -235,8 +242,8 @@ async function updateActiveLabTrip(input: CopilotLabActionInput, active: LabTrip
 
 export async function inspectCopilotLab(): Promise<CopilotLabSnapshot> {
   assertConfigured();
-  const { trips, activeTrip } = await listTabletTrips();
-  return snapshotFrom(trips, activeTrip);
+  const [{ trips, activeTrip }, automation] = await Promise.all([listTabletTrips(), getTablet999Automation()]);
+  return snapshotFrom(trips, activeTrip, automation);
 }
 
 export async function runCopilotLabAction(input: CopilotLabActionInput): Promise<CopilotLabActionResult> {
@@ -244,7 +251,7 @@ export async function runCopilotLabAction(input: CopilotLabActionInput): Promise
   assertLabTablet(LAB_TABLET_ID);
 
   const fuelMode = input.fuelMode ?? "none";
-  const before = await listTabletTrips();
+  const [before, automation] = await Promise.all([listTabletTrips(), getTablet999Automation()]);
 
   if (input.action === "cancel-lab-trips") {
     const parts = partitionLabTrips(before.trips);
@@ -277,7 +284,7 @@ export async function runCopilotLabAction(input: CopilotLabActionInput): Promise
     });
 
     return {
-      ...snapshotFrom(after.trips, after.activeTrip),
+      ...snapshotFrom(after.trips, after.activeTrip, automation),
       action: input.action,
       verdict: verdict.verdict,
       reachedTablet: verdict.reachedTablet,
@@ -320,7 +327,7 @@ export async function runCopilotLabAction(input: CopilotLabActionInput): Promise
   });
 
   return {
-    ...snapshotFrom(after.trips, after.activeTrip),
+    ...snapshotFrom(after.trips, after.activeTrip, automation),
     action: input.action,
     verdict: verdict.verdict,
     reachedTablet: verdict.reachedTablet,

@@ -1,3 +1,4 @@
+import type { OpenRoadLoad } from "../../../integrations/openroad";
 import {
   isOpenRoadExtConfigured,
   listOpenRoadExtActiveLoads,
@@ -358,6 +359,54 @@ export async function syncTmsActiveLoads() {
     loadsWithTruck,
     loadsSyncedAt: syncedAt.toISOString(),
   };
+}
+
+/** Store one OpenRoad load so a lab send does not wait for the 10-minute fleet sync. */
+export async function upsertSingleOpenRoadLoad(load: OpenRoadLoad) {
+  ensureDatabaseConnected();
+  const mapped = mapOpenRoadLoadFields(load);
+  const primaryDriverId = getPrimaryDriverIdFromDestinations(load.destinations);
+  const driver = primaryDriverId
+    ? await TmsDriverModel.findOne({ openroadDriverId: primaryDriverId }).lean()
+    : null;
+
+  if (driver && (!driver.isActive || isDemoDriver(driver))) {
+    return { stored: false as const, openroadLoadId: load.id };
+  }
+
+  const assignment = primaryDriverId
+    ? await TmsAssignmentModel.findOne({
+        isCurrent: true,
+        assignmentType: "Truck",
+        openroadDriverId: primaryDriverId,
+      }).lean()
+    : null;
+
+  const update: Record<string, unknown> = {
+    openroadLoadId: load.id,
+    ...mapped,
+    primaryDriverId,
+    isActive: true,
+    syncedAt: new Date(),
+  };
+  const unset: Record<string, 1> = {};
+
+  if (assignment?.truckUnit) {
+    update.truckUnit = assignment.truckUnit;
+    update.openroadTruckId = assignment.openroadTruckId;
+    unset.samsaraVehicleId = 1;
+  }
+
+  await TmsLoadModel.updateOne(
+    { openroadLoadId: load.id },
+    {
+      $set: update,
+      ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}),
+    },
+    { upsert: true },
+  );
+
+  return { stored: true as const, openroadLoadId: load.id };
 }
 
 export async function syncTmsFromOpenRoad() {
