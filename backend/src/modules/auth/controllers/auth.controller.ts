@@ -19,7 +19,7 @@ export async function loginController(req: Request, res: Response) {
 
   return res.status(200).json({
     success: true,
-    message: "OTP sent to your email",
+    message: user.otpRequired ? "OTP sent to your email" : "Login successful",
     data: user,
   });
 }

@@ -29,7 +29,8 @@ export async function loginWithEmailAndPassword(payload: LoginPayload) {
 
   const role = await RoleModel.findById(user.roleId as Types.ObjectId).lean();
 
-  await sendOtpToEmail(normalizedEmail);
+  // TEMPORARY: skip OTP until SMTP (e.g. Gmail app password) is configured.
+  // await sendOtpToEmail(normalizedEmail);
 
   return {
     id: user._id,
@@ -37,7 +38,7 @@ export async function loginWithEmailAndPassword(payload: LoginPayload) {
     role: role?.name ?? null,
     roleId: user.roleId,
     dispatcherName: user.dispatcherName ?? null,
-    otpRequired: true,
+    otpRequired: false,
   };
 }
 

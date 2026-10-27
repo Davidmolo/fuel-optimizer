@@ -18,6 +18,7 @@ type LoginResponse = {
     email: string;
     role: string | null;
     roleId: string;
+    dispatcherName?: string | null;
     otpRequired?: boolean;
   };
 };
@@ -67,14 +68,24 @@ export default function Home() {
 
       const result = (await response.json()) as LoginResponse;
 
-      if (!response.ok || !result.success) {
+      if (!response.ok || !result.success || !result.data) {
         setIsError(true);
         setMessage(result.message || "Login failed");
         return;
       }
 
+      if (result.data.otpRequired === false) {
+        saveAuthSession({
+          email: result.data.email,
+          role: result.data.role,
+          dispatcherName: result.data.dispatcherName ?? null,
+        });
+        router.push("/dashboard");
+        return;
+      }
+
       setOtpStep(true);
-      setMessage(`A verification code was sent to ${result.data?.email}.`);
+      setMessage(`A verification code was sent to ${result.data.email}.`);
     } catch {
       setIsError(true);
       setMessage("Unable to connect to server");
