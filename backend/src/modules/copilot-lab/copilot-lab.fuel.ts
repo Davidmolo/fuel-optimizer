@@ -84,6 +84,7 @@ async function recommendStations(origin: LabPoint, polyline: GeoPoint[]) {
   const stations = selectFreshestStations(
     await FuelStationModel.find({
       isActive: true,
+      priceSource: "partner_file",
       latitude: { $gte: boundingBox.minLat, $lte: boundingBox.maxLat },
       longitude: { $gte: boundingBox.minLng, $lte: boundingBox.maxLng },
     }).lean(),

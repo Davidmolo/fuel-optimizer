@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { text } from "@/constants/text";
 import { cn } from "@/lib/utils";
 
 const settingsTabs = [
   { href: "/dashboard/settings/fuel-recommendations", label: "Fuel recommendations" },
+  { href: "/dashboard/settings/fuel-prices", label: text.fuelPrices.tab },
   { href: "/dashboard/settings/data-sync", label: "Data sync" },
   { href: "/dashboard/settings/accounts", label: "Accounts" },
   { href: "/dashboard/settings/copilot-lab", label: "CoPilot lab" },

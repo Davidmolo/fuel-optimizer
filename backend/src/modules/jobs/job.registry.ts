@@ -73,8 +73,8 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
   },
   {
     id: "relay.transactions",
-    name: "Relay station prices",
-    description: "Contracted station locations and diesel prices from recent fuel transactions.",
+    name: "Relay fuel transactions",
+    description: "Archives fuel-card transactions. Station diesel prices come from the Fuel prices upload.",
     cron: "33 */3 * * *",
     cadenceLabel: "Every 3 hours",
     timeoutMs: 300_000,

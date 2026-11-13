@@ -6,22 +6,18 @@ import Button from "@/components/common/button";
 import Card from "@/components/common/card";
 import Spinner from "@/components/common/spinner";
 import DashboardShell from "@/components/dashboard/dashboard-shell";
+import { addIsoDays, arizonaDayEndIso, arizonaDayStartIso, arizonaTodayIso } from "@/lib/app-time";
 import { apiRequest } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { DriverComplianceReport } from "@/types/reports";
 
-function toDateInputValue(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
 function defaultFromDate() {
-  const date = new Date();
-  date.setUTCDate(date.getUTCDate() - 30);
-  return toDateInputValue(date);
+  const today = arizonaTodayIso() ?? "";
+  return addIsoDays(today, -30) ?? today;
 }
 
 function defaultToDate() {
-  return toDateInputValue(new Date());
+  return arizonaTodayIso() ?? "";
 }
 
 function complianceTone(percent: number) {
@@ -56,9 +52,17 @@ export default function CompliancePage() {
     setLoading(true);
     setError(null);
 
+    const fromIso = arizonaDayStartIso(from);
+    const toIso = arizonaDayEndIso(to);
+    if (!fromIso || !toIso) {
+      setError("Choose a valid date range.");
+      setLoading(false);
+      return;
+    }
+
     const params = new URLSearchParams({
-      from: new Date(`${from}T00:00:00.000Z`).toISOString(),
-      to: new Date(`${to}T23:59:59.999Z`).toISOString(),
+      from: fromIso,
+      to: toIso,
     });
 
     const response = await apiRequest<DriverComplianceReport>(

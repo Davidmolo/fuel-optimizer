@@ -1,12 +1,7 @@
-export function formatFleetTimestamp(value?: string) {
-  if (!value) {
-    return "—";
-  }
+import { formatAppDateTime } from "@/lib/app-time";
 
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+export function formatFleetTimestamp(value?: string) {
+  return formatAppDateTime(value);
 }
 
 export function formatFleetRelativeAge(value?: string) {

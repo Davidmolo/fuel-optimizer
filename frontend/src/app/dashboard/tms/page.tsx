@@ -13,6 +13,7 @@ import TmsTripSidePanel from "@/components/tms/tms-trip-side-panel";
 import TripRouteMap from "@/components/tms/trip-route-map";
 import SyncStatusLine from "@/components/jobs/sync-status-line";
 import { apiRequest } from "@/lib/api";
+import { formatAppDateTime } from "@/lib/app-time";
 import { cn } from "@/lib/utils";
 import type { InspectedMapStation } from "@/lib/trip-route-map-markers";
 import {
@@ -29,7 +30,7 @@ function formatTimestamp(value?: string | null) {
     return null;
   }
 
-  return new Date(value).toLocaleString();
+  return formatAppDateTime(value);
 }
 
 export default function TmsPage() {

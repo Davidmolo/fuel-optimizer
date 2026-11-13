@@ -1,6 +1,7 @@
 import FleetFreshnessBadge from "@/components/fleet/fleet-freshness-badge";
 import FleetFuelBar from "@/components/fleet/fleet-fuel-bar";
 import { LoadStatusBadge } from "@/components/tms/trip-context-row";
+import { formatAppDateTime } from "@/lib/app-time";
 import { getTripLinkageIssues } from "@/lib/trip-linkage-status";
 import { cn } from "@/lib/utils";
 import type { TripContext } from "@/types/tms";
@@ -173,12 +174,7 @@ function formatAppointment(value?: string) {
     return null;
   }
 
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatAppDateTime(value);
 }
 
 export function TripStopTimeline({ trip, compact = false }: { trip: TripContext; compact?: boolean }) {

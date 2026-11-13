@@ -247,7 +247,7 @@ export async function getRecommendationForTruck(identifier: string, options: Get
   const customer = await getCustomerBySlug(customerSlug);
   const contractRules = await loadActiveContractRules(String(customer._id));
 
-  const stationFilter: Record<string, unknown> = { isActive: true };
+  const stationFilter: Record<string, unknown> = { isActive: true, priceSource: "partner_file" };
 
   if (options.relayAccount) {
     stationFilter.relayAccount = options.relayAccount;

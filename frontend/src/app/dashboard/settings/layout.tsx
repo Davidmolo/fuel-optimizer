@@ -4,6 +4,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import DashboardShell from "@/components/dashboard/dashboard-shell";
 import SettingsTabs from "@/components/settings/settings-tabs";
+import { text } from "@/constants/text";
 import { getAuthSession, subscribeAuthSession } from "@/lib/auth-session";
 
 function readAuthRole() {
@@ -28,7 +29,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   return (
     <DashboardShell
       title="Settings"
-      subtitle="Manage recommendations, data sync, accounts, and the CoPilot lab"
+      subtitle={text.settings.subtitle}
     >
       <div className="space-y-6">
         <SettingsTabs />

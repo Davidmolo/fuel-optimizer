@@ -1,9 +1,16 @@
 import { model, Schema } from "mongoose";
 import type { RelayAccount } from "../../../integrations/relay";
 
+export const PARTNER_PRICE_PARTNERS = ["loves", "pilot", "ut322"] as const;
+export type PartnerPricePartner = (typeof PARTNER_PRICE_PARTNERS)[number];
+
 export type FuelStationDocument = {
   relayAccount: RelayAccount;
   relayLocationId: string;
+  priceSource?: "partner_file";
+  partner?: PartnerPricePartner;
+  externalStationId?: string;
+  priceEffectiveOn?: string;
   merchantName?: string;
   merchantNumber?: string;
   name?: string;
@@ -32,6 +39,10 @@ const fuelStationSchema = new Schema<FuelStationDocument>(
   {
     relayAccount: { type: String, required: true, enum: ["blue_stallion", "azfs"], index: true },
     relayLocationId: { type: String, required: true, trim: true, index: true },
+    priceSource: { type: String, enum: ["partner_file"] },
+    partner: { type: String, enum: PARTNER_PRICE_PARTNERS },
+    externalStationId: { type: String, trim: true },
+    priceEffectiveOn: { type: String, trim: true },
     merchantName: { type: String, trim: true, index: true },
     merchantNumber: { type: String, trim: true },
     name: { type: String, trim: true },
@@ -57,6 +68,17 @@ const fuelStationSchema = new Schema<FuelStationDocument>(
 );
 
 fuelStationSchema.index({ relayAccount: 1, relayLocationId: 1 }, { unique: true });
+fuelStationSchema.index(
+  { partner: 1, externalStationId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      partner: { $type: "string" },
+      externalStationId: { $type: "string" },
+    },
+  },
+);
 fuelStationSchema.index({ merchantName: 1, state: 1 });
+fuelStationSchema.index({ priceSource: 1, isActive: 1 });
 
 export const FuelStationModel = model<FuelStationDocument>("FuelStation", fuelStationSchema);

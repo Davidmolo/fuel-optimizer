@@ -72,3 +72,36 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
     };
   }
 }
+
+export async function apiUpload<T>(path: string, file: File): Promise<ApiResponse<T>> {
+  const session = typeof window !== "undefined" ? getAuthSession() : null;
+  const body = new FormData();
+  body.set("file", file);
+  const headers = new Headers();
+  if (session?.email) {
+    headers.set("X-User-Email", session.email);
+  }
+
+  try {
+    const response = await fetch(apiUrl(path), {
+      method: "POST",
+      headers,
+      body,
+    });
+    const payload = (await response.json().catch(() => null)) as ApiResponse<T> | null;
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: payload?.message || `Request failed (${response.status})`,
+      };
+    }
+
+    return (payload ?? { success: false, message: "Empty response from API" }) as ApiResponse<T>;
+  } catch {
+    return {
+      success: false,
+      message: "Unable to reach the API. Check that the backend is running.",
+    };
+  }
+}

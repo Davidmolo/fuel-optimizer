@@ -74,7 +74,7 @@ export async function listContractPricing(options: ListContractPricingOptions = 
   const customer = await getCustomerBySlug(customerSlug);
   const contractRules = await loadActiveContractRules(String(customer._id));
 
-  const filter: Record<string, unknown> = {};
+  const filter: Record<string, unknown> = { priceSource: "partner_file" };
 
   if (options.relayAccount) {
     filter.relayAccount = options.relayAccount;

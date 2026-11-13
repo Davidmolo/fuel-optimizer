@@ -17,7 +17,7 @@ type ListStationsOptions = {
 };
 
 export async function listFuelStations(options: ListStationsOptions = {}) {
-  const filter: Record<string, unknown> = {};
+  const filter: Record<string, unknown> = { priceSource: "partner_file" };
 
   if (options.relayAccount) {
     filter.relayAccount = options.relayAccount;

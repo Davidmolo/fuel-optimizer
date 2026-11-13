@@ -30,7 +30,7 @@ export async function syncStationsController(req: Request, res: Response) {
 
   return res.status(200).json({
     success: true,
-    message: "Stations synced from Relay",
+    message: "Relay roster synced",
     data: result,
   });
 }
@@ -50,7 +50,7 @@ export async function syncStationTransactionsController(req: Request, res: Respo
 
   return res.status(200).json({
     success: true,
-    message: "Relay transactions synced",
+    message: "Relay transactions archived",
     data: result,
   });
 }
